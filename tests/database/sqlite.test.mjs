@@ -19,7 +19,7 @@ function seed(repos) {
 }
 const vote={gameId:'g',roundNumber:1,memberId:'m',choice:'guilty',reason:'시험 이유',requestId:'request-1',submittedAt:10};
 test('실제 SQLite 설치·PRAGMA·마이그레이션 재실행',()=>{
- const f=fixture();try{migrate(f.db);migrate(f.db);assert.equal(f.db.pragma('foreign_keys',{simple:true}),1);assert.equal(f.db.pragma('journal_mode',{simple:true}),'wal');assert.equal(f.db.pragma('busy_timeout',{simple:true}),20);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,1);assert.ok(f.db.prepare('SELECT sqlite_version() AS v').get().v);}finally{f.close();}
+ const f=fixture();try{migrate(f.db);migrate(f.db);assert.equal(f.db.pragma('foreign_keys',{simple:true}),1);assert.equal(f.db.pragma('journal_mode',{simple:true}),'wal');assert.equal(f.db.pragma('busy_timeout',{simple:true}),20);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,migrations.length);assert.ok(f.db.prepare('SELECT sqlite_version() AS v').get().v);}finally{f.close();}
 });
 test('중복 키·없는 FK·다른 게임 라운드 조합을 거절한다',()=>{
  const f=fixture();try{migrate(f.db);f.uow.run(seed);f.uow.run(r=>r.votes.insert(vote));assert.throws(()=>f.uow.run(r=>r.votes.insert({...vote,requestId:'different'})),e=>e instanceof StorageError&&e.code==='constraint');assert.throws(()=>f.uow.run(r=>r.votes.insert({...vote,memberId:'missing'})),e=>e.code==='constraint');assert.throws(()=>f.uow.run(r=>r.rounds.insert({gameId:'absent',number:1,startedAt:0,deadline:1})),e=>e.code==='constraint');assert.equal(f.uow.run(r=>r.votes.find('g',1,'m')).choice,'guilty');}finally{f.close();}
@@ -28,7 +28,7 @@ test('중간 실패는 전체 쓰기를 rollback한다',()=>{
  const f=fixture();try{migrate(f.db);assert.throws(()=>f.uow.run(r=>{seed(r);throw new Error('주입 실패');}),/주입 실패/);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n,0);}finally{f.close();}
 });
 test('실패한 다음 마이그레이션은 이전 스키마와 이력을 보존한다',()=>{
- const f=fixture();try{migrate(f.db);assert.throws(()=>migrate(f.db,[...migrations,{version:2,name:'failure',sql:'CREATE TABLE should_rollback(id TEXT); INSERT INTO absent VALUES (1);'}]));assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name='should_rollback'").get().n,0);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,1);}finally{f.close();}
+ const f=fixture();try{migrate(f.db);assert.throws(()=>migrate(f.db,[...migrations,{version:migrations.length+1,name:'failure',sql:'CREATE TABLE should_rollback(id TEXT); INSERT INTO absent VALUES (1);'}]));assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name='should_rollback'").get().n,0);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,migrations.length);}finally{f.close();}
 });
 test('게임·멤버십 키와 교차 방 참여를 보호한다',()=>{
  const f=fixture();try{migrate(f.db);f.uow.run(seed);
@@ -54,10 +54,10 @@ test('DB 락을 busy로 구분하고 잠금 해제 후 다시 쓸 수 있다',()
  }finally{if(f.db.inTransaction)f.db.exec('ROLLBACK');second?.close();f.close();}
 });
 test('증분 업그레이드·순서·이미 적용한 SQL 변경을 검증한다',()=>{
- const f=fixture();try{migrate(f.db);const upgrade={version:2,name:'probe',sql:'CREATE TABLE migration_probe(id TEXT PRIMARY KEY) STRICT;'};migrate(f.db,[...migrations,upgrade]);migrate(f.db,[...migrations,upgrade]);
- assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,2);
+ const f=fixture();try{migrate(f.db);const upgrade={version:migrations.length+1,name:'probe',sql:'CREATE TABLE migration_probe(id TEXT PRIMARY KEY) STRICT;'};migrate(f.db,[...migrations,upgrade]);migrate(f.db,[...migrations,upgrade]);
+ assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n,migrations.length+1);
  assert.throws(()=>migrate(f.db,[...migrations,{...upgrade,sql:'SELECT 1;'}]),/변경/);
- assert.throws(()=>migrate(f.db,[...migrations,{version:4,name:'gap',sql:'SELECT 1;'}]),/순차/);
+ assert.throws(()=>migrate(f.db,[...migrations,{version:migrations.length+2,name:'gap',sql:'SELECT 1;'}]),/순차/);
  }finally{f.close();}
 });
 test('초안 왕복과 재연결 후 저장값을 읽는다',()=>{
@@ -78,7 +78,7 @@ test('상대 경로와 잘못된 timeout은 DB 열기 전에 거절한다',()=>{
 });
 
 test('지원하지 않는 새 DB 스키마와 누락된 정의를 거절한다',()=>{
- const f=fixture();try{migrate(f.db);const next={version:2,name:'future',sql:'CREATE TABLE future_probe(id TEXT) STRICT;'};
+ const f=fixture();try{migrate(f.db);const next={version:migrations.length+1,name:'future',sql:'CREATE TABLE future_probe(id TEXT) STRICT;'};
  migrate(f.db,[...migrations,next]);assert.throws(()=>migrate(f.db),/지원하지 않는/);
  assert.throws(()=>migrate(f.db,[next]),/순차|정의/);
  }finally{f.close();}

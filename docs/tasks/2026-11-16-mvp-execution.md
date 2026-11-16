@@ -71,3 +71,10 @@
 - 실제 API 404≠201 RED 후 방 생성/참가 구현. 독립 리뷰의 같은 순간 폼 제출 2회 문제는 요청2≠1 RED 뒤 동기 mutex로 수정, 회귀 통과.
 - 깨끗한 소스 설치·전체 check: unit16/API6/DB16/browser12와 self15/workspace5/docs6 및 정적 검사 통과. 3/5/6 독립 context에서 같은 방과 단일 방장 확인.
 - 독립 리뷰 승인, 390px 실제 방 캡처 직접 확인. 명단·초대·새로고침 가로 잘림 없음. 자동 동기화/presence·게임·실기기·외부 배포는 아직 미완료.
+
+## MVP-09 검증
+- #8은 PR #42 병합 후 CLOSED 확인.
+- 실제 DB connected 부재 RED 후 heartbeat/감지 구현. migration 1 원문 보존, version 2 backfill 추가.
+- 깨끗한 소스 전체 check: unit18/API7/DB18/browser16 및 self15/workspace5/docs6·정적 검사 통과. 독립 리뷰 승인.
+- 독립 서버 1초 sweep, 15초 무응답, 응답 뒤 3초 폴링, 6초 요청 제한. 가짜 시간 경계/실제 단절·복귀/역전 응답/숨김 탭 합성 이벤트/종료 정리 확인.
+- 로컬 단일 측정 참여 반영 2837ms·단절 표시 15446ms는 SLA가 아니다. 390px 재연결 화면 직접 확인. 10분 퇴장·방장 이전·실기기·외부/원격 CI는 아직 미완료.

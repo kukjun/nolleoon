@@ -1,3 +1,4 @@
+import {PresenceMonitor} from '../infrastructure/sessions/presence-monitor.js';
 import {Rooms} from '../application/rooms.js';
 import {RoomsController} from '../presentation/rooms.controller.js';
 import { Module, type DynamicModule } from '@nestjs/common';
@@ -19,7 +20,7 @@ class StorageResources {
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
-export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock }
+export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; presenceMonitor?: boolean }
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
@@ -28,6 +29,7 @@ export class AppModule {
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
+      {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
       {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:BrowserSessions,inject:[STORAGE],useFactory:(resources:StorageResources)=>new BrowserSessions(resources.uow,config.clock??new SystemClock(),new SecureTokens())}
     ]};

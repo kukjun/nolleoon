@@ -5,7 +5,7 @@ import {Rooms} from '../application/rooms.js';
 import {BrowserSessions} from '../application/browser-sessions.js';
 import {DomainFailure} from '../domain/failure.js';
 import {PUBLIC_ORIGIN} from './session.controller.js';
-import {requestActor,assertWebCommand} from './commands.js';
+import {requestActor,assertWebCommand,assertEmptyCommand} from './commands.js';
 @Controller('rooms')
 export class RoomsController {
  constructor(@Inject(Rooms) private readonly rooms:Rooms,@Inject(BrowserSessions) private readonly sessions:BrowserSessions,@Inject(PUBLIC_ORIGIN) private readonly origin:string){}
@@ -14,6 +14,8 @@ export class RoomsController {
  create(@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.create(actor,this.nickname(request));}
  @Post(':code/join')
  join(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.join(actor,code,this.nickname(request));}
+ @Post(':code/heartbeat')
+ heartbeat(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);assertWebCommand(request,this.origin);assertEmptyCommand(request);return this.rooms.heartbeat(actor,code);}
  @Get(':code')
  read(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.read(requestActor(request,this.sessions),code);}
 }

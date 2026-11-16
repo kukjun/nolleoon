@@ -7,6 +7,7 @@ export function normalizeNickname(input: unknown): {nickname:string;nicknameKey:
  if([...nickname].length<1||[...nickname].length>20)throw new DomainFailure('INVALID_INPUT');
  return {nickname,nicknameKey:nickname.toLowerCase()};
 }
+export const PRESENCE_SILENCE_MS=15000;
 export class Rooms {
  constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec){}
  create(actor:{id:string},input:unknown){
@@ -26,10 +27,14 @@ export class Rooms {
    if(!members.some(m=>m.sessionId===actor.id)){
     if(members.some(m=>m.nicknameKey===name.nicknameKey))throw new DomainFailure('STATE_CONFLICT');
     r.members.insert({id:this.tokens.id(),roomId:room.id,sessionId:actor.id,...name,joinedAt:this.clock.now()});
+    r.rooms.bumpVersion(room.id);
+    room.version++;
    }
    return this.snapshot(r,room,actor.id);
   });
  }
+ sweep(){return this.uow.run(r=>{const rooms=r.members.detectDisconnected(this.clock.now(),PRESENCE_SILENCE_MS);for(const id of rooms)r.rooms.bumpVersion(id);return rooms.length;});}
+ heartbeat(actor:{id:string},code:string){return this.uow.run(r=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,this.clock.now());if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}return this.snapshot(r,room,actor.id);});}
  read(actor:{id:string},code:string){return this.uow.run(r=>this.snapshot(r,this.openRoom(r,code),actor.id));}
  private openRoom(r:Repositories,code:string){
   if(!/^[A-Za-z0-9_-]{43}$/.test(code))throw new DomainFailure('NOT_FOUND');
@@ -38,6 +43,6 @@ export class Rooms {
  private snapshot(r:Repositories,room:RoomRecord,sessionId:string){
   const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
   if(!self)throw new DomainFailure('FORBIDDEN');
-  return {roomId:room.id,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,isHost:m.id===room.hostMemberId}))};
+  return {roomId:room.id,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
  }
 }

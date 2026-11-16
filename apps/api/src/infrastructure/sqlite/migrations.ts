@@ -50,4 +50,8 @@ CREATE TABLE drafts (
  duration_seconds INTEGER NOT NULL CHECK(duration_seconds BETWEEN 60 AND 600 AND duration_seconds % 60 = 0),
  version INTEGER NOT NULL CHECK(version >= 0)
 ) STRICT;
+`},{version:2,name:'member-presence',sql:`
+ALTER TABLE room_members ADD COLUMN last_seen_at INTEGER;
+UPDATE room_members SET last_seen_at=joined_at;
+CREATE INDEX member_presence_sweep ON room_members(last_seen_at) WHERE left_at IS NULL AND disconnected_at IS NULL;
 `}];
