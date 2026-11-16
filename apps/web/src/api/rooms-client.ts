@@ -74,14 +74,14 @@ function isGameSnapshot(value:unknown):boolean {
  return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement)&&isPublishedRounds(value.publishedRounds);
 }
 export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
- if(!record(x)||!keys(x,['roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
+ if(!record(x)||!keys(x,['interrupted','roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||typeof x.interrupted!=='boolean'||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
  if(!record(x.draft)||!keys(x.draft,['version','caseText','penaltyText','durationMinutes'])||!Number.isSafeInteger(x.draft.version)||Number(x.draft.version)<0||typeof x.draft.caseText!=='string'||typeof x.draft.penaltyText!=='string'||!Number.isInteger(x.draft.durationMinutes)||Number(x.draft.durationMinutes)<1||Number(x.draft.durationMinutes)>10)return false;
  if(!record(x.start)||!keys(x.start,['canStart','missing'])||typeof x.start.canStart!=='boolean'||!Array.isArray(x.start.missing)||!x.start.missing.every(message=>typeof message==='string'))return false;
  if(x.game!==null&&!isGameSnapshot(x.game))return false;
  const consent=x.consent;
  if(!record(consent)||!keys(consent,['penaltyRevision','roleRevision','decisionVersion','status','defendantMemberId','canDecide'])||typeof consent.status!=='string'||!['pending','accepted','rejected'].includes(consent.status)||typeof consent.canDecide!=='boolean'||!(consent.defendantMemberId===null||typeof consent.defendantMemberId==='string')||['penaltyRevision','roleRevision','decisionVersion'].some(key=>!Number.isSafeInteger(consent[key])||Number(consent[key])<0))return false;
  const self=x.self;
- return x.members.length>0&&x.members.every(m=>record(m)&&keys(m,['memberId','nickname','isHost','connected','role'])&&typeof m.memberId==='string'&&typeof m.nickname==='string'&&typeof m.isHost==='boolean'&&typeof m.connected==='boolean'&&(m.role==='defendant'||m.role==='participant'))&&new Set(x.members.map(m=>m.memberId)).size===x.members.length&&x.members.filter(m=>m.isHost).length===1&&x.members.some(m=>m.memberId===self.memberId&&m.isHost===self.isHost);
+ return x.members.length>0&&x.members.every(m=>record(m)&&keys(m,['memberId','nickname','isHost','connected','role'])&&typeof m.memberId==='string'&&typeof m.nickname==='string'&&typeof m.isHost==='boolean'&&typeof m.connected==='boolean'&&(m.role==='defendant'||m.role==='participant'))&&new Set(x.members.map(m=>m.memberId)).size===x.members.length&&x.members.filter(m=>m.isHost).length<=1&&x.members.some(m=>m.memberId===self.memberId&&m.isHost===self.isHost);
 }
 export type RoomCommand={kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
 export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{kind:'vote'}>):RoomSnapshot|null {
@@ -118,4 +118,17 @@ export async function requestRoom(code:string|null,nickname?:string,signal?:Abor
   if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};}
   return {ok:false,code:'INVALID_RESPONSE',message:'서버 응답을 확인하지 못했어요. 다시 시도해 주세요.'};
  }catch{return {ok:false,code:'NETWORK_ERROR',message:'서버에 연결하지 못했어요. 다시 시도해 주세요.'};}
+}
+export async function requestLeave(code:string,expectedMemberId:string,signal?:AbortSignal):Promise<{ok:true;memberId:string}|Exclude<RoomResult,{ok:true}>>{
+ const reportIdentityLoss=identityLoss.capture();
+ try{
+  const response=await fetch(`/api/rooms/${encodeURIComponent(code)}/leave`,{method:'POST',credentials:'same-origin',cache:'no-store',signal,headers:{'Content-Type':'application/json','X-Trip-Court-Request':'1'},body:JSON.stringify({expectedMemberId})});
+  const data:unknown=await response.json();
+  if(signal?.aborted)return {ok:false,code:'NETWORK_ERROR',message:'취소된 요청이에요.'};
+  if(response.ok&&record(data)&&keys(data,['left','memberId'])&&data.left===true&&data.memberId===expectedMemberId)return {ok:true,memberId:expectedMemberId};
+  if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){
+   const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};
+  }
+  return {ok:false,code:'INVALID_RESPONSE',message:'나가기 결과를 확인하지 못했어요. 같은 요청을 다시 확인해 주세요.'};
+ }catch{return {ok:false,code:'NETWORK_ERROR',message:'나가기 결과를 확인하지 못했어요. 연결 후 같은 요청을 다시 확인해 주세요.'};}
 }

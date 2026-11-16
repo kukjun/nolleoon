@@ -21,6 +21,8 @@ test('실제 DB 투표 rollback·재시작 receipt·마감과 라운드 경계·
   now=2000;db.prepare('UPDATE rounds SET closed_at=1900 WHERE game_id=?').run(gameId);
   assert.throws(()=>voter.execute(members[2],f.s.inviteCode,gameId,{...body,requestId:'db-closed-vote-0001'}),e=>e.code==='STATE_CONFLICT');
   db.prepare('INSERT INTO rounds(game_id,number,started_at,deadline) VALUES (?,2,2000,182000)').run(gameId);
+  // 새 2차 투표를 합성하는 저장소 fixture: 이전 마감 유지보수로 종료된 game도 voting으로 맞춘다.
+  db.prepare("UPDATE games SET status='voting' WHERE id=?").run(gameId);
   assert.throws(()=>voter.execute(members[2],f.s.inviteCode,gameId,{...body,requestId:'db-oldround-vote-0001'}),e=>e.code==='STATE_CONFLICT');
   assert.deepEqual(voter.execute(actor,f.s.inviteCode,gameId,body),{gameId,roundNumber:1,choice:'guilty',reason:'실제 접수'});
   let boundary=181999;new SubmitVote(uow,{now:()=>boundary++}).execute(members[2],f.s.inviteCode,gameId,{...body,roundNumber:2,requestId:'db-second-vote-0001',choice:'abstain',reason:''});

@@ -18,6 +18,8 @@ export class RoomsController {
  @Post(':code/join')
  join(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.join(actor,code,this.nickname(request));}
  private single(request:Request,key:string){assertWebCommand(request,this.origin);if(Object.keys(request.body).length!==1||!Object.hasOwn(request.body,key))throw new DomainFailure('INVALID_INPUT');return request.body[key] as unknown;}
+ @Post(':code/leave')
+ leave(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response){response.setHeader('Cache-Control','no-store');return this.rooms.leave(requestActor(request,this.sessions),code,this.single(request,'expectedMemberId'));}
  @Post(':code/role')
  role(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.changeRole(requestActor(request,this.sessions),code,this.single(request,'role'));}
  @Post(':code/exclude')

@@ -14,7 +14,7 @@ test('피고 경합·방장피고·타인강제역할금지·단절제외·새�
  assert.equal((await fetch(`${url}/exclude`,opts(f,guest,{memberId:room.self.memberId}))).status,403);
  assert.equal((await fetch(`${url}/exclude`,opts(f,host,{memberId:room.self.memberId}))).status,403);
  const otherRoom=await(await fetch(`${f.url}/api/rooms`,opts(f,third,{nickname:'다른방'}))).json();assert.equal((await fetch(`${url}/exclude`,opts(f,host,{memberId:otherRoom.self.memberId}))).status,404);
- db=openSqlite(f.dbPath);db.prepare('UPDATE room_members SET disconnected_at=1 WHERE id=?').run(target.memberId);
+ db=openSqlite(f.dbPath);db.prepare('UPDATE room_members SET disconnected_at=? WHERE id=?').run(Date.now(),target.memberId);
  assert.equal((await fetch(`${url}/exclude`,opts(f,host,{memberId:target.memberId}))).status,201);
  assert.equal((await fetch(`${url}/heartbeat`,opts(f,guest))).status,403);const rejoined=await(await fetch(`${url}/join`,opts(f,guest,{nickname:'친구'}))).json();assert.notEqual(rejoined.self.memberId,target.memberId);assert.equal(rejoined.members.find(m=>m.memberId===rejoined.self.memberId).role,'participant');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM game_participants').get().n,0);
  db.prepare("INSERT INTO games(id,room_id,status,case_text,penalty_text,duration_seconds,version,created_at) VALUES ('g',?,'defense','case','penalty',180,0,0)").run(room.roomId);

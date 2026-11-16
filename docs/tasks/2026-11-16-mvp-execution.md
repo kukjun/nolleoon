@@ -160,3 +160,12 @@
 - 취소된 오래된401 통지 RED, 인증/probe 세대 경계, 실제 갱신 Set-Cookie 지연 응답 취소 회귀를 보완했다. 최초 미발급은 기존 신원 상실과 구분한다.
 - 신원 상실390px 화면에서 이전 게임 내용 제거·복구 한계·명시적 시작 안내를 직접 확인했다. 실제 Back/Forward와 합성 pageshow/visibility를 구분하며 실기기 BFCache/OS 잠금 검증을 주장하지 않는다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit29/API30/DB30/browser51와 lint/layers/build/types. browser207.4초, 전체 suite240초이며 기존 개별 제한 유지. 소스·복귀/신원 경계·화면 독립 승인, 테스트 포트 정리 확인.
+
+## MVP-20 검증
+- #19는 PR #54 병합 후 CLOSED와 체크리스트 반영 확인.
+- 멤버십에 바인딩한 퇴장 재시도, 감지 시각+600000ms 만료와 요청 전 유지보수를 구현했다. 실패 명령 rollback이 이미 효력 발생한 만료를 되돌리지 않는다.
+- deadline과 피고 퇴장 효력시각의 선후/동일 및 두 monitor 순서를 검증한다. 먼저 종료한 최종 판결은 유지하며, 동률 후 피고 퇴장 시 불변 1차 결과는 저장만 보존하고 #33 공개는 보수적으로 차단한다.
+- 동결 투표 집합·기존 표는 유지하며 재가입은 새 멤버십·관전자다. 같은 브라우저의 중복 참여 행을 사람 수에 중복 계산하지 않는다.
+- 독립 리뷰의 maintenance/touch 서로 다른 시각 문제는 증가 시계 RED 후 요청당 captured now로 통일했다. 예전 유예 fixture는 599999ms로 옮기고 새 600000ms 거부 회귀를 추가해 검증 의도를 보존했다.
+- 320px 퇴장 화면 직접 확인. 방장 공석은 정직하게 표시하며 랜덤 이양 #21·전원 퇴장 폐쇄 #22와 구분한다. 실제 10분 대기·실기기·외부/원격 CI는 주장하지 않는다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API43/DB30/browser54와 lint/layers/build/types. browser212.6초, skip/flaky/unexpected0. 소스·시간순서·퇴장 화면 독립 승인, 테스트 포트 정리 확인.
