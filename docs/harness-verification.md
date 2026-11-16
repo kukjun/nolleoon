@@ -25,3 +25,5 @@ Playwright 실행마다 임시 lease를 발급하고 하네스 종료 시 제거
 `tests/harness/browser-lease.test.mjs`는 별도 그룹 child가 timeout 뒤 더 이상 쓰지 않는지와 lease가 남아도 소유 프로세스 강제 종료를 감지하는지 실제 프로세스로 검사한다. 초기 helper 부재 RED를 확인하고 두 회귀 GREEN을 확인했다. 기존 동일 그룹 정리 시험도 유지한다.
 
 같은 최종 소스를 list reporter로 실행한 38개 browser 시험은 모두 통과했으며 합계 1.8분이었다. 실제 15초 연결 감지와 복귀 대기를 여러 회귀가 포함한다. 전체 suite 예산만 90초에서 150초로 늘렸고, 개별 시험 15초 및 assertion timeout은 그대로다. 이를 개별 실패를 숨기는 완화로 사용하지 않는다.
+
+#17은 기존 전체 browser 128.5초에 실제 재투표 시나리오가 추가됐다. 기존 settlement 3개 약22.6초가 revote2+settlement3 합계49.4초로 증가한 것을 측정해 suite 예산을 150→180초로 조정했다. 개별 시험/assertion 제한은 바꾸지 않았다. 최종 전체 시간은 해당 실행 report로 다시 확인한다.

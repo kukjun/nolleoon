@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {votingFixture} from '../support/voting-fixture.mjs';
 import {openSqlite} from '../../apps/api/dist/infrastructure/sqlite/index.js';
-async function opened(){const f=await votingFixture();const path=`games/${f.s.game.gameId}`;await f.post(`${path}/open-vote`,f.cookies[0],{expectedVersion:0,requestId:'settlement-open-0001'});return {...f,path};}
+async function opened(){const f=await votingFixture();const path=`games/${f.s.game.gameId}`;await f.post(`${path}/open-vote`,f.cookies[0],{roundNumber:1,expectedVersion:0,requestId:'settlement-open-0001'});return {...f,path};}
 const body=(choice,key)=>({roundNumber:1,requestId:key,choice,reason:choice==='abstain'?'':'판단 이유'});
 test('마지막 두 표 경합은 동일 트랜잭션의 단일 결과로 자동 종료한다',async()=>{const f=await opened();try{
  const res=await Promise.all([f.post(`${f.path}/vote`,f.cookies[1],body('guilty','settle-vote-0001')),f.post(`${f.path}/vote`,f.cookies[2],body('guilty','settle-vote-0002'))]);assert.deepEqual(res.map(r=>r.status),[201,201]);

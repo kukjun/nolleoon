@@ -4,8 +4,13 @@ import {isRoomSnapshot,verifiedVoteSnapshot} from '../../apps/web/src/api/rooms-
 test('방 DTO 런타임 검증은 개인 필드·잘못된 방장·중복 멤버를 거부한다',()=>{
  const room={start:{canStart:false,missing:[]},game:null,consent:{penaltyRevision:0,roleRevision:0,decisionVersion:0,status:'pending',defendantMemberId:null,canDecide:false},roleRevision:0,rosterEditable:true,draft:{version:0,caseText:'',penaltyText:'',durationMinutes:3},version:1,roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',role:'participant',nickname:'나',isHost:true,connected:true}]};
  assert.equal(isRoomSnapshot(room),true);
- const game={settlement:null,ownVote:null,version:0,serverNow:1000,round:null,defense:{status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
+ const game={publishedRounds:[],settlement:null,ownVote:null,version:0,serverNow:1000,round:null,defense:{roundNumber:1,status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
  assert.equal(isRoomSnapshot({...room,game}),true);
+ const published={number:1,counts:{guilty:1,notGuilty:1,abstain:0},reasons:[{choice:'guilty',reason:'공개 이유'}]};
+ assert.equal(isRoomSnapshot({...room,game:{...game,publishedRounds:[published]}}),true);
+ assert.equal(isRoomSnapshot({...room,game:{...game,publishedRounds:[{...published,reasons:[{choice:'guilty',reason:'이유',memberId:'private'}]}]}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,publishedRounds:[published,published]}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,defense:{...game.defense,roundNumber:3}}}),false);
  const settlement={roundNumber:1,outcome:'tie',guilty:1,notGuilty:1,abstain:0,total:2,closedAt:2000,closedBy:'all-submitted'};
  assert.equal(isRoomSnapshot({...room,game:{...game,settlement}}),true);
  assert.equal(isRoomSnapshot({...room,game:{...game,settlement:{...settlement,outcome:['tie']}}}),false);

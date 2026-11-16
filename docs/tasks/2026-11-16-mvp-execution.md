@@ -136,3 +136,11 @@
 - monitor가 먼저 마감한 뒤 POST도 DEADLINE_PASSED 안내가 되도록 RED→수정했다. 진행 중 집계/타인 이유는 여전히 비공개다.
 - 390px 집계 화면 직접 확인. 실제 2차 흐름/최종 이유 공개는 #17/#18, 실기기/외부/원격 CI는 아직 후속·미해결이다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit24/API22/DB29/browser41와 lint/layers/build/types. 결과 화면·정산 경계 독립 승인, 테스트 포트 정리 확인. 원격 CI #36은 미실행이다.
+
+## MVP-17 검증
+- #16은 PR #51 병합 후 CLOSED와 체크리스트 반영 확인.
+- 명시적 roundNumber 요청 RED 후 변론/개시/영수증을 라운드별로 격리했다. 1차 동률 뒤 새 최후 변론·무응답/skip·같은 투표 대상/시간의 2차 개시를 연결했다.
+- 1차 공개 이유는 2차 중에도 유지하며 미완료 2차 이유는 숨긴다. 표시 순서는 공개 문자열만으로 결정하고 신원·제출시각/순서를 반환하지 않는다.
+- 독립 검토의 집계/공개 필터 불일치는 비대상·기한후 DB 행의 이유가 포함되는 RED 후 acceptedVotes 공유로 수정했다.
+- 전체 모바일 결과 캡처에서 양 라운드 구분·텍스트 가독성을 직접 확인했다. 결과 중심 배치는 #18에서 다듬으며 전체 인수·실기기·외부/원격 CI는 아직 미완료다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit25/API25/DB30/browser43와 lint/layers/build/types. 최종 browser154.9초를 확인했고 측정에 따른 suite180초 조정만 했으며 개별 timeout은 유지했다. 독립 승인·테스트 포트 정리 확인.
