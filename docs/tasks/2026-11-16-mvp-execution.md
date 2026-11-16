@@ -227,3 +227,12 @@
 - 최초 fixture는 생성 응답 전 URL을 읽어 1failed/1interrupted/1미실행, 다음 실행은 방장 화면 동기화 전 개시 CAS409로 2failed/1passed였다. trace로 시험 동기화 오류를 확인해 수정했으며 제품 보호·assertion을 완화하지 않았다.
 - 최종 targeted E2E3/3 39.8초. 320px 재동률 무죄·390px private 중단을 직접 확인했다. 실제10분·물리기기·외부 배포 증거로 확대하지 않는다. AGENTS는 검사 범위 사실 설명만 갱신했다.
 - 최종 독립 clean-source 설치·전체 check exit0: self20/workspace5/docs6/unit39/API94/DB47/feature-browser65/gameplay-e2e3와 lint/layers/build/types. feature288.2초/E2E39.4초, 두 gate failed/skipped/flaky0. 최종 중단 캡처·독립 승인·포트/child 정리 확인. mobile/external NOT CONFIGURED 및 원격 CI #36 미실행 유지.
+
+## MVP-28 부분 검증 · 실기기 차단
+- #27은 PR #62 병합 후 CLOSED, M5 0open/2closed 확인.
+- 읽기 전용 장치 확인에서 실행 가능한 물리 iPhone/Android를 확보하지 못했다. 라이선스/페어링/프로파일/OS 설정은 변경하지 않고 critical #63과 #28 OPEN을 유지한다.
+- Chromium @mobile 별도 gate를 추가하며 실제 mobile-device는 BLOCKED로 구분한다. touch/viewport/회전/축소높이/계산폰트 확대는 실제 키보드·브라우저확대·잠금·셀룰러전환 증거가 아니다.
+- 중복 닉네임 오류의 입력 aria-invalid/오류 연결 누락을 실제 RED 후 Input error+focus로 수정했다. 실제 최대 장문은 기존 wrap으로 가로 넘침이 재현되지 않아 CSS를 바꾸지 않았다.
+- root font200%가 px본문을 확대하지 못한 시험 가정을 수정해 원래 computed font의2배를 직접 확인했다. 장식 로고 넘침/타이머 줄바꿈은 근사에서 경미 잔여로 기록하며 전면 접근성 합격을 주장하지 않는다.
+- targeted mobile3/3 3.6초·기존 관련2/2 통과. 320px 실제 대기실 직접 확인. PR은 Refs #28이며 물리 인수 전 이슈를 닫지 않는다.
+- 부분 구현 최종 독립 clean-source check exit0: self21/workspace5/docs6/unit39/API94/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. feature287.8초/E2E39.5초/mobile3.8초, failed/skipped/flaky0. 최종320px·포트/child 정리 확인. 실제 mobile-device BLOCKED·external 미구성·전체인수 미완료 유지, #28/#63은 OPEN.

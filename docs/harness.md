@@ -27,6 +27,7 @@ npm run test:integration
 npm run test:database
 npm run test:browser
 npm run test:e2e
+npm run test:mobile
 ```
 
 unit/integration/browser는 빌드 산출물을 사용하므로 build를 먼저 한다. 전체 check는 빌드를 직접 수행하고 실패 시 그에 의존하는 검사를 blocked로 표시하여 이전 산출물로 성공을 만들지 않는다.
@@ -65,3 +66,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 ## 종합 gameplay E2E
 
 `@e2e`가 붙은 시험은 `gameplay-e2e` gate에서만 집계하고, 기존 `browser-launch` 기능 회귀 gate는 해당 태그를 제외한다. 전체 `check`는 두 gate를 순서대로 실행한다. 독립 컨텍스트·요구 연결·실패 증거의 해석은 [E2E 인수 근거](e2e-acceptance.md)를 따른다. 실기기·외부 배포 planned 항목은 계속 미완료로 남긴다.
+
+## 모바일 자동화와 실기기 차단
+
+`@mobile`은 별도 `mobile-emulation` gate에서 실행한다. 기존 기능 gate는 `@e2e|@mobile`을 제외하고 종합 E2E는 `@e2e`만 실행한다. `mobile-device` planned 항목은 물리 기기 접근 미확보로 `blocked`이며 자동화 성공으로 해제하지 않는다. [실기기 인수 체크리스트](mobile-acceptance.md)를 따른다. 전체 자동화 status와 제품 인수 완료는 다른 지표다.

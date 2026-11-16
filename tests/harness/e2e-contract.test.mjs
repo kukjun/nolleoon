@@ -19,13 +19,16 @@ test('gameplay E2E는 실제 별도 집계 gate이며 미구성 목록이 아니
 });
 test('기능 회귀와 E2E CLI 선택은 배타적이며 기존 기능 예산을 유지한다', () => {
  const features = checks.split('\n').find(line => line.includes("id:'browser-launch'"));
- assert.match(features, /'--grep-invert','@e2e'/);
+ assert.match(features, /'--grep-invert','@e2e\|@mobile'/);
  assert.match(features, /timeoutMs:300000/);
- assert.equal(scripts['test:browser'], 'playwright test --reporter=json --grep-invert @e2e');
+ assert.equal(scripts['test:browser'], 'playwright test --reporter=json --grep-invert "@e2e|@mobile"');
  assert.equal(scripts['test:e2e'], 'playwright test --reporter=json --grep @e2e');
- for (const title of ['일반 기능', '@e2e 5인 전체 흐름']) {
+ assert.equal(scripts['test:mobile'], 'playwright test --reporter=json --grep @mobile');
+ for (const title of ['일반 기능', '@e2e 5인 전체 흐름', '@mobile 모바일 에뮬레이션']) {
   const e2e = /@e2e/.test(title);
-  assert.equal(Number(e2e) + Number(!e2e), 1);
+  const mobile = /@mobile/.test(title);
+  const feature = !/@e2e|@mobile/.test(title);
+  assert.equal(Number(e2e) + Number(mobile) + Number(feature), 1);
  }
 });
 test('재시도 없이 실패 trace와 screenshot을 보존하며 기존 assertion 시간을 완화하지 않는다', () => {
@@ -34,4 +37,15 @@ test('재시도 없이 실패 trace와 screenshot을 보존하며 기존 asserti
  assert.equal(config.use.trace, 'off');
  assert.match(read('tests/browser/gameplay-e2e.spec.mjs'), /test\.use\(\{\s*trace\s*:\s*['"]retain-on-failure['"]\s*\}\)/);
  assert.equal(config.use.screenshot, 'only-on-failure');
+});
+
+test('모바일 에뮬레이션은 실행 gate이며 실기기 검증을 대신하지 않는다', () => {
+ const mobile = checks.split('\n').find(line => line.includes("id:'mobile-emulation'"));
+ assert.ok(mobile, 'mobile-emulation runnable gate missing');
+ assert.match(mobile, /kind:'playwright'/);
+ assert.match(mobile, /'--grep','@mobile'/);
+ assert.match(mobile, /timeoutMs:90000/);
+ assert.match(mobile, /dependsOn:'build'/);
+ assert.match(planned, /id:'mobile-device',status:'blocked'/);
+ assert.doesNotMatch(planned, /mobile-emulation/);
 });

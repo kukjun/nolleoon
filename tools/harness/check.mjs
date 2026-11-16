@@ -20,8 +20,9 @@ const checks=[
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
  {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:15000,dependsOn:'build'},
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
- {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e'],timeoutMs:300000,dependsOn:'build'},
- {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'}
+ {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e|@mobile'],timeoutMs:300000,dependsOn:'build'},
+ {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'},
+ {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'}
 ];
 const results=[];
 for(const check of checks) {
@@ -33,14 +34,14 @@ for(const check of checks) {
  } catch(error) { results.push({id:check.id,status:'blocked',reason:error.message,testCount:null}); }
 }
 const planned=[
- {id:'mobile-device',status:'not-configured',reason:'실제 모바일 기기 검증 후 기록'},
+ {id:'mobile-device',status:'blocked',reason:'물리 iPhone은 offline/unavailable, Android 기기 접근 미확보. 에뮬레이션으로 대체 불가'},
  {id:'external-deployment',status:'not-configured',reason:'배포 티켓 범위'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-27 기능 회귀와 별도 다인 gameplay E2E',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'MVP-28 부분 모바일 근사·접근성 (실기기 blocked)',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);
-for(const r of planned)console.log(`NOT CONFIGURED ${r.id}: ${r.reason}`);
+for(const r of planned)console.log(`${r.status.toUpperCase()} ${r.id}: ${r.reason}`);
 console.log('제품 전체 인수: 미완료');console.log(`Evidence: ${dir}/report.json`);
 process.exitCode=report.status==='passed'?0:1;
