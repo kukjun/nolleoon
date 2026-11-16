@@ -245,3 +245,11 @@
 - 읽기 전용 기존 ingress/등록만 확인했다. 제안 포트는 적용 직전 재확인이 필요하고 과거 오류/일시 listener 관측으로 현재 장애 원인을 추정하지 않는다. 실제 DNS/Tunnel/지속 프로세스 적용은 critical #65 대기다.
 - FileVault/로그인/SSD/절전·logrotation·실제 운영 rollback 및 외부HTTPS는 미검증이다. PR은 Refs #29, 이슈 OPEN 유지.
 - 부분 구현 최종 독립 clean-source check exit0: self21/workspace5/docs6/unit43/API96/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. API5.38초/feature287.4초/E2E39.6초/mobile3.8초, failed/skipped/flaky0. 독립 승인·포트/child 정리 확인. 실기기 BLOCKED·운영 미적용·외부 미구성·전체인수 미완료 유지.
+
+## MVP-30 부분 검증 · 외부 인수 차단
+- #29 부분 PR #66 병합, 운영 적용 #29/#65 OPEN 유지.
+- 검사기 부재 RED 후 외부 증거의 오프라인 형식·누락 검사를 구현했다. 빈 target은 blocked이며 주장만 있는 기록/commit 불일치/필수 관측 누락을 거부한다.
+- five-player-vote 관측 kind 존재를 검사할 뿐 실제 다섯 신원이나 증거 진위를 확인하지 않는다. 완비된 합성 입력도 ready-for-independent-review 및 verified:false이며 외부 PASS가 아니다.
+- 실제 네트워크 요청·추정 hostname 방문·운영 방 생성은 0회다. 빈 템플릿과 승인 후 절차만 추가하고 하네스 external-deployment를 BLOCKED로 명시한다.
+- 독립 소스 검토 통과. #30/#65는 OPEN 유지하고 PR은 Refs를 사용한다.
+- 부분 구현 최종 독립 clean-source check exit0: self22/workspace5/docs6/unit49/API96/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. feature287.9초/E2E39.6초/mobile3.8초, failed/skipped/flaky0. 독립 승인·포트/소유 child 정리 확인. 실기기·외부 BLOCKED, 원격 CI #36 미실행, #30/#65 OPEN 유지.

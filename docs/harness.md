@@ -70,3 +70,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 ## 모바일 자동화와 실기기 차단
 
 `@mobile`은 별도 `mobile-emulation` gate에서 실행한다. 기존 기능 gate는 `@e2e|@mobile`을 제외하고 종합 E2E는 `@e2e`만 실행한다. `mobile-device` planned 항목은 물리 기기 접근 미확보로 `blocked`이며 자동화 성공으로 해제하지 않는다. [실기기 인수 체크리스트](mobile-acceptance.md)를 따른다. 전체 자동화 status와 제품 인수 완료는 다른 지표다.
+
+## 외부 인수 준비
+
+`external-deployment`는 실제 배포 승인·적용 #65 대기로 `blocked`다. 로컬 E2E/production smoke 성공으로 해제하지 않는다. [외부 인수 체크리스트](external-acceptance.md)와 빈 evidence 템플릿은 준비용이며, 오프라인 증거 형식 검사는 네트워크 요청 없이 최대 독립검토 준비 상태만 반환한다. 외부 도메인에서 방을 생성하는 시험을 일반 `npm run check`에 추가하지 않는다.

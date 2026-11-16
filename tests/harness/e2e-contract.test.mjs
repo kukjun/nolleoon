@@ -49,3 +49,8 @@ test('모바일 에뮬레이션은 실행 gate이며 실기기 검증을 대신�
  assert.match(planned, /id:'mobile-device',status:'blocked'/);
  assert.doesNotMatch(planned, /mobile-emulation/);
 });
+
+test('외부 배포는 승인 차단이며 로컬 E2E로 통과 처리하지 않는다', () => {
+ assert.match(planned, /id:'external-deployment',status:'blocked'/);
+ assert.doesNotMatch(checks, /kind:'(?:external|network)'/);
+});

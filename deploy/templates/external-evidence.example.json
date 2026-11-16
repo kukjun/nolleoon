@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "targetOrigin": null,
+  "release": {
+    "expectedCommit": null,
+    "observedCommit": null,
+    "sourceEvidence": null
+  },
+  "observations": [],
+  "operatorClaims": []
+}
