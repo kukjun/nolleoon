@@ -7,7 +7,7 @@ import {hasCurrentAcceptance} from './penalty-consent.js';
 export function startConditions(r:Repositories,room:RoomRecord,now:number){
  const members=r.members.active(room.id);const connected=members.filter(m=>m.disconnectedAt==null&&(m.lastSeenAt??m.joinedAt)>now-15000);const defendants=connected.filter(m=>m.role==='defendant');const draft=r.drafts.find(room.id);const missing:string[]=[];
  if(r.games.hasActive(room.id))missing.push('이미 진행 중인 게임이 있어요.');
- else if(r.games.latest(room.id))missing.push('다음 게임 준비는 아직 지원하지 않아요.');
+ else {const latest=r.games.latest(room.id);if(latest&&room.preparedAfterGameId!==latest.id)missing.push('방장이 다음 게임 준비를 먼저 열어 주세요.');}
  if(!connected.some(member=>member.id===room.hostMemberId))missing.push('방장이 연결된 상태로 재판에 참여해야 해요.');
  if(connected.length<3)missing.push('연결된 참가자가 피고를 포함해 3명 이상 필요해요.');
  if(defendants.length!==1)missing.push('연결된 피고 1명이 필요해요.');

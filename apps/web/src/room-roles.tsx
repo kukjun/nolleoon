@@ -7,7 +7,7 @@ export function RoomRoles({room,onUpdated}:{room:RoomSnapshot;onUpdated:(snapsho
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;pending.current?.abort();};},[]);
  async function act(command:{kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}){
   if(lock.current||!room.rosterEditable)return;lock.current=true;setBusy(true);setError('');pending.current=new AbortController();const request=pending.current;const timer=setTimeout(()=>request.abort(),6000);
-  try{const result=await requestRoom(room.inviteCode,undefined,request.signal,false,undefined,command);if(!alive.current)return;if(result.ok){onUpdated(result.data);setTarget(null);}else setError(result.code==='STATE_CONFLICT'?'상태가 달라졌어요. 피고 자리나 참가자 연결 상태를 확인한 뒤 다시 시도해 주세요.':result.message);}finally{clearTimeout(timer);lock.current=false;if(alive.current)setBusy(false);}
+  try{const result=await requestRoom(room.inviteCode,undefined,request.signal,false,undefined,{...command,expectedPreparationVersion:room.preparationVersion});if(!alive.current)return;if(result.ok){onUpdated(result.data);setTarget(null);}else setError(result.code==='STATE_CONFLICT'?'상태가 달라졌어요. 피고 자리나 참가자 연결 상태를 확인한 뒤 다시 시도해 주세요.':result.message);}finally{clearTimeout(timer);lock.current=false;if(alive.current)setBusy(false);}
  }
  const self=room.members.find(member=>member.memberId===room.self.memberId)!;
  const disconnected=room.members.filter(member=>!member.connected&&member.memberId!==room.self.memberId);

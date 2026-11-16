@@ -92,4 +92,14 @@ CREATE TABLE room_closures (
 ) STRICT;
 CREATE TRIGGER closure_no_update BEFORE UPDATE ON room_closures BEGIN SELECT RAISE(ABORT,'immutable closure'); END;
 CREATE TRIGGER closure_no_delete BEFORE DELETE ON room_closures BEGIN SELECT RAISE(ABORT,'immutable closure'); END;
+`},{version:9,name:'next-game-preparation-generation',sql:`
+ALTER TABLE rooms ADD COLUMN preparation_version INTEGER NOT NULL DEFAULT 0 CHECK(preparation_version>=0);
+ALTER TABLE rooms ADD COLUMN prepared_after_game_id TEXT REFERENCES games(id);
+CREATE TABLE next_preparation_receipts (
+ room_id TEXT NOT NULL REFERENCES rooms(id),request_id TEXT NOT NULL,actor_session_id TEXT NOT NULL REFERENCES sessions(id),
+ from_game_id TEXT NOT NULL REFERENCES games(id),expected_preparation_version INTEGER NOT NULL CHECK(expected_preparation_version>=0),
+ preparation_version INTEGER NOT NULL CHECK(preparation_version=expected_preparation_version+1),PRIMARY KEY(room_id,request_id),UNIQUE(room_id,from_game_id)
+) STRICT;
+CREATE TRIGGER next_preparation_no_update BEFORE UPDATE ON next_preparation_receipts BEGIN SELECT RAISE(ABORT,'immutable preparation receipt'); END;
+CREATE TRIGGER next_preparation_no_delete BEFORE DELETE ON next_preparation_receipts BEGIN SELECT RAISE(ABORT,'immutable preparation receipt'); END;
 `}];
