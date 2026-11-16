@@ -26,7 +26,7 @@ function start(args, cwd, env) {
 async function response(url, state) {
   for (let i=0;i<80;i++) {
     if (state.error || state.closed) throw new Error(`프로세스 조기 종료: ${state.error ?? state.output}`);
-    try { const r=await fetch(url,{signal:AbortSignal.timeout(300)}); if(r.ok) return r; } catch {}
+    try { const r=await fetch(url,{signal:AbortSignal.timeout(300)}); if(r.ok) return r; } catch { /* 기동 대기 중 연결 실패는 제한 횟수 내 재시도한다. */ }
     await delay(100);
   }
   throw new Error(`기동 시간 초과: ${state.output}`);
@@ -45,7 +45,7 @@ try {
   const web=start([resolve(root,'node_modules/vite/bin/vite.js'),'preview','--host','127.0.0.1','--port',String(webPort),'--strictPort'],resolve(root,'apps/web'),{});
   const html=await (await response(`http://127.0.0.1:${webPort}`,web)).text();
   assert.match(html, /<title>Trip Court<\/title>/);
-  const bundle=html.match(/src="([^\"]+\.js)"/);
+  const bundle=html.match(/src="([^"]+\.js)"/);
   assert.ok(bundle, '빌드된 JS 번들 참조');
   assert.ok((await response(`http://127.0.0.1:${webPort}${bundle[1]}`,web)).ok);
   console.log('API 환경 오류 종료·헬스 JSON·web 정적 번들 HTTP smoke 통과 (브라우저 렌더/E2E 아님)');

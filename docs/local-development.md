@@ -14,7 +14,7 @@ npm run build
 npm run smoke:workspace
 ```
 
-lockfile로 고정한 workspace 의존성만 설치한다. 설치 스크립트 없이 위 빌드/기동을 검증했다. 이 단계의 명령은 기존 미추적 하네스에 의존하지 않는다. 기존 `check`/`test:harness` 스크립트는 보존했으나 하네스 배포·연결은 MVP-03 범위다.
+lockfile로 고정한 workspace 의존성만 설치한다. 설치 스크립트 없이 위 빌드/기동을 검증했다. 이 단계의 명령은 기존 미추적 하네스에 의존하지 않는다. `check`/`test:harness`는 MVP-03에서 [검증 하네스](harness.md)로 연결했다. 전체 check에는 별도 Chromium 설치가 필요하다.
 
 ## 직접 기동
 

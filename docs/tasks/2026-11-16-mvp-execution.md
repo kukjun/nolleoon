@@ -28,3 +28,13 @@
 - React/Nest/공유 계약 workspace와 루프백 실행 기반 구현.
 - GREEN 환경·구조 계약 5개 통과, 의존성 검사·빌드·HTTP smoke 통과.
 - 깨끗한 staged 소스 내보내기에서 npm ci·계층 검사·전체 빌드·HTTP smoke·문서 6개 시험 통과. 독립 리뷰의 type-import 누락 지적은 회귀 RED→GREEN 후 재승인.
+
+## MVP-03 검증
+- #2는 PR #35 병합 후 CLOSED 확인.
+- 확장 시험 RED 12개 중 3개 실패, fake 대역 미구현 실패 확인 후 구현.
+- 깨끗한 소스 복사본 npm ci 및 전체 check: 하네스 15·workspace 5·문서 6·unit 3·API 1·Chromium 1 통과. lint/계층/build/type 통과.
+- 빈 시험·skip/TODO·실행불가·timeout은 통과하지 않으며 미구현 DB/게임/실기기/외부접속은 별도 미구성 표시.
+- 원격 CI는 게시 후 별도로 확인하며 로컬 통과로 대체하지 않는다.
+- 독립 리뷰 후 새·중첩 시험 자동 수집을 추가하고 회귀 RED→GREEN, 전체 하네스 재실행·재리뷰 승인.
+- 최종 소스 재검증 중 제한된 실행 환경의 Chromium MachPort 권한 오류로 브라우저 검사가 실패했다. 코드 변경/보호 설정 변경 없이 허용된 정상 실행 환경에서 전체 check 재실행해 전부 통과했다.
+- 실행 workflow 게시가 GitHub OAuth workflow 범위 부족으로 거부됨. #36에 차단 기록, 실행되지 않는 docs/ci 초안으로 보존. 원격 CI는 미실행/차단. #3 AC가 CI 초안과 원격 미실행 명시를 허용하므로 로컬 기반 완료와 최종 CI 인수 차단을 분리한다.
