@@ -41,6 +41,22 @@ export class Rooms {
    return this.snapshot(r,room,actor.id);
   });
  }
+ changeRole(actor:{id:string},code:string,role:unknown){
+  if(role!=='defendant'&&role!=='participant')throw new DomainFailure('INVALID_INPUT');
+  return this.uow.run(r=>{const room=this.openRoom(r,code);const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===actor.id);
+   if(!self)throw new DomainFailure('FORBIDDEN');if(r.games.hasActive(room.id))throw new DomainFailure('STATE_CONFLICT');
+   if(self.role!==role){if(role==='defendant'&&members.some(m=>m.role==='defendant'))throw new DomainFailure('STATE_CONFLICT');r.members.setRole(self.id,role);r.rooms.bumpRoleRevision(room.id);r.rooms.bumpVersion(room.id);room.roleRevision=(room.roleRevision??0)+1;room.version++;}
+   return this.snapshot(r,room,actor.id);
+  });
+ }
+ excludeMember(actor:{id:string},code:string,memberId:unknown){
+  if(typeof memberId!=='string'||!memberId||memberId.length>100)throw new DomainFailure('INVALID_INPUT');
+  return this.uow.run(r=>{const room=this.openRoom(r,code);const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===actor.id);
+   if(!self||self.id!==room.hostMemberId||self.id===memberId)throw new DomainFailure('FORBIDDEN');if(r.games.hasActive(room.id))throw new DomainFailure('STATE_CONFLICT');
+   const target=members.find(m=>m.id===memberId);if(!target)throw new DomainFailure('NOT_FOUND');if(target.disconnectedAt==null)throw new DomainFailure('STATE_CONFLICT');
+   r.members.exclude(target.id,this.clock.now());if(target.role==='defendant'){r.rooms.bumpRoleRevision(room.id);room.roleRevision=(room.roleRevision??0)+1;}r.rooms.bumpVersion(room.id);room.version++;return this.snapshot(r,room,actor.id);
+  });
+ }
  saveSettings(actor:{id:string},code:string,input:unknown){
   const draft=validateSettings(input);
   return this.uow.run(r=>{
@@ -63,6 +79,6 @@ export class Rooms {
   const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
   if(!self)throw new DomainFailure('FORBIDDEN');
   const saved=r.drafts.find(room.id);const draft={version:saved?.version??0,caseText:saved?.caseText??'',penaltyText:saved?.penaltyText??'',durationMinutes:(saved?.durationSeconds??180)/60};
-  return {roomId:room.id,draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
+  return {roomId:room.id,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
  }
 }

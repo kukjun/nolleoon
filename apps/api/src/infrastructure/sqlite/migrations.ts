@@ -54,4 +54,8 @@ CREATE TABLE drafts (
 ALTER TABLE room_members ADD COLUMN last_seen_at INTEGER;
 UPDATE room_members SET last_seen_at=joined_at;
 CREATE INDEX member_presence_sweep ON room_members(last_seen_at) WHERE left_at IS NULL AND disconnected_at IS NULL;
+`},{version:3,name:'waiting-room-roles',sql:`
+ALTER TABLE rooms ADD COLUMN role_revision INTEGER NOT NULL DEFAULT 0 CHECK(role_revision>=0);
+ALTER TABLE room_members ADD COLUMN role TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('defendant','participant'));
+CREATE UNIQUE INDEX one_waiting_defendant ON room_members(room_id) WHERE role='defendant' AND left_at IS NULL;
 `}];

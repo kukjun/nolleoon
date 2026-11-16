@@ -1,13 +1,15 @@
 import {useEffect,useRef,useState} from 'react';
 import type {RoomSnapshot} from '@trip-court/contracts';
 import {Button,Input,Status} from './design/components';
+import {RoomRoles} from './room-roles';
 import {GameSettings} from './game-settings';
 import {SnapshotOrder} from './api/snapshot-order';
 import {requestRoom} from './api/rooms-client';
 export function Rooms({onJoined}:{onJoined?:(joined:boolean)=>void}){
  const code=new URL(location.href).searchParams.get('room');
  const [room,setRoom]=useState<RoomSnapshot|null>(null);const [nickname,setNickname]=useState('');const [error,setError]=useState('');const [loading,setLoading]=useState(Boolean(code));const [copied,setCopied]=useState(false);const [missing,setMissing]=useState(false);
- const [reconnecting,setReconnecting]=useState(false);
+ const [reconnecting,setReconnecting]=useState(false);const [excluded,setExcluded]=useState(false);
+ const latestVersion=useRef(0);if(room)latestVersion.current=Math.max(latestVersion.current,room.version);
  const pollNow=useRef<()=>Promise<void>>(async()=>{});
  const submitting=useRef(false);
  useEffect(()=>{onJoined?.(Boolean(room));},[Boolean(room),onJoined]);
@@ -36,8 +38,8 @@ export function Rooms({onJoined}:{onJoined?:(joined:boolean)=>void}){
    let result;
    try{result=await requestRoom(room!.inviteCode,undefined,request.signal,true);}finally{clearTimeout(timeout);}
    if(!alive||!order.current(sequence))return;
-   if(result.ok){if(order.accept(sequence,result.data.version)){setRoom(previous=>previous&&previous.version>result.data.version?previous:result.data);setError('');setReconnecting(false);}}
-   else{setReconnecting(true);setError(result.code==='NETWORK_ERROR'?'연결이 끊겼어요. 마지막 화면을 유지하고 다시 연결 중이에요.':result.message);}
+   if(result.ok){if(result.data.version>=latestVersion.current&&order.accept(sequence,result.data.version)){setRoom(previous=>previous&&previous.version>result.data.version?previous:result.data);setError('');setReconnecting(false);setExcluded(false);}}
+   else{setReconnecting(true);if(result.code==='FORBIDDEN')setExcluded(true);setError(result.code==='NETWORK_ERROR'?'연결이 끊겼어요. 마지막 화면을 유지하고 다시 연결 중이에요.':result.message);}
    timer=setTimeout(()=>void poll(),3000);
   }
   function visibility(){if(document.visibilityState==='hidden'){clearTimeout(timer);order.begin();pending?.abort();}else void poll();}
@@ -46,6 +48,6 @@ export function Rooms({onJoined}:{onJoined?:(joined:boolean)=>void}){
   return()=>{alive=false;clearTimeout(timer);pending?.abort();pollNow.current=async()=>{};document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);};
  },[room?.roomId]);
  async function refresh(){await pollNow.current();}
- if(room){const link=new URL(location.href);link.search='';link.searchParams.set('room',room.inviteCode);return <section className="room-content"><span className="eyebrow">OUR ROOM</span><h2>우리의 대기실</h2><p className="body-copy">링크를 공유하고 함께할 친구들을 초대해요.</p><Status>{room.self.isHost?'나 · 방장':'나 · 참가자'}</Status><Input label="초대 링크" value={link.href} readOnly/><Button variant="secondary" onPress={async()=>{await navigator.clipboard.writeText(link.href);setCopied(true);}}>{copied?'링크를 복사했어요':'초대 링크 복사'}</Button><GameSettings room={room} onSaved={snapshot=>setRoom(previous=>previous&&previous.version>snapshot.version?previous:snapshot)}/><h3>참가자 {room.members.length}명</h3><ul className="room-members">{room.members.map(member=><li data-testid="member" key={member.memberId}><strong>{member.nickname}</strong><span>{member.isHost?'방장':'참가자'}{member.memberId===room.self.memberId?' · 나':''}<small className="connection-label">{reconnecting&&member.memberId===room.self.memberId?'연결 확인 중':member.connected?'연결됨':'연결 끊김'}</small></span></li>)}</ul><Button variant="secondary" onPress={refresh}>참가자 새로고침</Button>{error&&<p role="alert" className="field-error" data-reconnecting={reconnecting}>{error}</p>}<p className="field-hint">참가자 목록은 화면을 보고 있을 때 자동으로 갱신돼요. 게임 시작과 역할 선택은 다음 단계에서 추가됩니다. 방 참여만으로 이전 게임 기록이 공개되지는 않아요.</p></section>;}
+ if(room){const link=new URL(location.href);link.search='';link.searchParams.set('room',room.inviteCode);return <section className="room-content"><span className="eyebrow">OUR ROOM</span><h2>우리의 대기실</h2><p className="body-copy">링크를 공유하고 함께할 친구들을 초대해요.</p><Status>{room.self.isHost?'나 · 방장':'나 · 참가자'}</Status><Input label="초대 링크" value={link.href} readOnly/><Button variant="secondary" onPress={async()=>{await navigator.clipboard.writeText(link.href);setCopied(true);}}>{copied?'링크를 복사했어요':'초대 링크 복사'}</Button>{!excluded&&<><RoomRoles room={room} onUpdated={snapshot=>setRoom(previous=>previous&&previous.version>snapshot.version?previous:snapshot)}/><GameSettings room={room} onSaved={snapshot=>setRoom(previous=>previous&&previous.version>snapshot.version?previous:snapshot)}/></>}<h3>{excluded?'마지막으로 확인한 ':''}참가자 {room.members.length}명</h3><ul className="room-members">{room.members.map(member=><li data-testid="member" key={member.memberId}><strong>{member.nickname}</strong><span>{member.isHost?'방장 · ':''}{member.role==='defendant'?'피고':'참가자'}{member.memberId===room.self.memberId?' · 나':''}<small className="connection-label">{reconnecting&&member.memberId===room.self.memberId?'연결 확인 중':member.connected?'연결됨':'연결 끊김'}</small></span></li>)}</ul><Button variant="secondary" onPress={refresh}>참가자 새로고침</Button>{error&&<p role="alert" className="field-error" data-reconnecting={reconnecting}>{error}</p>}{excluded&&<p><a href={link.href}>다시 참여하기</a><small className="connection-label">이전 참가 상태를 유지하고 있지 않아요. 링크에서 새로 참여해 주세요.</small></p>}<p className="field-hint">참가자 목록은 화면을 보고 있을 때 자동으로 갱신돼요. 게임 시작은 다음 단계에서 추가됩니다. 방 참여만으로 이전 게임 기록이 공개되지는 않아요.</p></section>;}
  return <section className="room-content"><h3>{code?'초대받은 방에 참여해요':'새로운 방을 만들어요'}</h3>{!missing&&<form onSubmit={event=>{event.preventDefault();void submit();}}><Input label="닉네임" value={nickname} onChange={event=>setNickname(event.target.value)} required hint="1~20자의 이름을 입력해 주세요. 앞뒤 공백은 정리돼요. 같은 닉네임으로 이전 신원을 복구할 수는 없어요."/><Button type="submit" loading={loading}>{code?'방 참여하기':'방 만들기'}</Button></form>}{error&&<p role="alert" className="field-error">{error}</p>}{missing&&<a href="/">홈으로 돌아가기</a>}</section>;
 }
