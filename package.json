@@ -1,0 +1,28 @@
+{
+  "name": "trip-court",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "check": "node tools/harness/check.mjs",
+    "test:harness": "node --test tests/harness/*.test.mjs",
+    "build": "npm run build -w @trip-court/contracts && npm run build -w @trip-court/api && npm run build -w @trip-court/web",
+    "test:workspace": "node --test tests/workspace/*.test.mjs",
+    "check:layers": "node tools/workspace/layers.mjs",
+    "smoke:workspace": "node tools/workspace/smoke.mjs",
+    "dev:web": "npm run dev -w @trip-court/web",
+    "start:api": "npm run start -w @trip-court/api"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "npm@11.11.0",
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}
