@@ -66,4 +66,15 @@ CREATE TABLE start_receipts (room_id TEXT NOT NULL REFERENCES rooms(id),request_
 `},{version:6,name:'defense-and-vote-opening',sql:`
 CREATE TABLE defenses (game_id TEXT NOT NULL REFERENCES games(id),round_number INTEGER NOT NULL CHECK(round_number IN (1,2)),member_id TEXT NOT NULL,action TEXT NOT NULL CHECK(action IN ('submitted','skipped')),text TEXT NOT NULL,PRIMARY KEY(game_id,round_number),FOREIGN KEY(game_id,member_id) REFERENCES game_participants(game_id,member_id)) STRICT;
 CREATE TABLE vote_open_receipts (game_id TEXT NOT NULL REFERENCES games(id),request_id TEXT NOT NULL,actor_session_id TEXT NOT NULL REFERENCES sessions(id),intent INTEGER NOT NULL CHECK(intent>=0),round_number INTEGER NOT NULL,PRIMARY KEY(game_id,request_id),FOREIGN KEY(game_id,round_number) REFERENCES rounds(game_id,number)) STRICT;
+`},{version:7,name:'immutable-round-settlement',sql:`
+CREATE TABLE round_settlements (
+ game_id TEXT NOT NULL,round_number INTEGER NOT NULL,
+ outcome TEXT NOT NULL CHECK(outcome IN ('guilty','not-guilty','no-verdict','tie')),
+ guilty INTEGER NOT NULL CHECK(guilty>=0),not_guilty INTEGER NOT NULL CHECK(not_guilty>=0),
+ abstain INTEGER NOT NULL CHECK(abstain>=0),total INTEGER NOT NULL CHECK(total=guilty+not_guilty+abstain),
+ closed_at INTEGER NOT NULL CHECK(closed_at>=0),closed_by TEXT NOT NULL CHECK(closed_by IN ('all-submitted','deadline')),
+ PRIMARY KEY(game_id,round_number),FOREIGN KEY(game_id,round_number) REFERENCES rounds(game_id,number)
+) STRICT;
+CREATE TRIGGER settlement_no_update BEFORE UPDATE ON round_settlements BEGIN SELECT RAISE(ABORT,'immutable settlement'); END;
+CREATE TRIGGER settlement_no_delete BEFORE DELETE ON round_settlements BEGIN SELECT RAISE(ABORT,'immutable settlement'); END;
 `}];

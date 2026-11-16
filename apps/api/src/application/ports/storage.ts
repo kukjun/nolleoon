@@ -1,3 +1,4 @@
+import type {TallyOutcome} from '../../domain/tally.js';
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
 export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; penaltyRevision?: number; roleRevision?: number; hostMemberId?: string | null }
 export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number; role?: 'defendant' | 'participant'; lastSeenAt?: number | null; disconnectedAt?: number | null }
@@ -11,7 +12,9 @@ export interface ConsentRecord {roomId:string;memberId:string;roleRevision:numbe
 export interface StartReceipt {roomId:string;requestId:string;actorSessionId:string;intent:string;gameId:string}
 export interface DefenseRecord {gameId:string;roundNumber:1|2;memberId:string;action:'submitted'|'skipped';text:string}
 export interface OpenReceipt {gameId:string;requestId:string;actorSessionId:string;intent:number;roundNumber:1|2}
+export interface SettlementRecord {gameId:string;roundNumber:1|2;outcome:TallyOutcome;guilty:number;notGuilty:number;abstain:number;total:number;closedAt:number;closedBy:'all-submitted'|'deadline'}
 export interface Repositories {
+  settlements:InsertRepository<SettlementRecord> & {find(gameId:string,roundNumber:number):SettlementRecord|undefined};
   defenses:{find(gameId:string,roundNumber:number):DefenseRecord|undefined;save(record:DefenseRecord):void};
   opens:{find(gameId:string,requestId:string):OpenReceipt|undefined;insert(record:OpenReceipt):void};
   starts:{find(roomId:string,requestId:string):StartReceipt|undefined;insert(record:StartReceipt):void};
@@ -21,8 +24,8 @@ export interface Repositories {
   members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; idsForSession(roomId:string,sessionId:string):string[]; touch(id: string, now: number): void; setRole(id: string, role: 'defendant' | 'participant'): void; exclude(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
   games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean; active(roomId:string):GameRecord|undefined; latest(roomId:string):GameRecord|undefined; find(id:string):GameRecord|undefined; update(record:GameRecord):void };
   participants: InsertRepository<ParticipantRecord> & { list(gameId:string):ParticipantRecord[] };
-  rounds: InsertRepository<RoundRecord> & {find(gameId:string,number:number):RoundRecord|undefined};
-  votes: InsertRepository<VoteRecord> & { find(gameId: string, roundNumber: number, memberId: string): VoteRecord | undefined };
+  rounds: InsertRepository<RoundRecord> & {pending():RoundRecord[];close(gameId:string,number:number,now:number):void;find(gameId:string,number:number):RoundRecord|undefined};
+  votes: InsertRepository<VoteRecord> & {list(gameId:string,roundNumber:number):VoteRecord[]; find(gameId: string, roundNumber: number, memberId: string): VoteRecord | undefined };
   drafts: { save(record: DraftRecord): void; find(roomId: string): DraftRecord | undefined };
 }
 // 저장소 핸들은 콜백 안에서만 유효하다. 비동기 콜백은 허용하지 않는다.

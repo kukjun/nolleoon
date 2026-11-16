@@ -25,10 +25,22 @@ function isOwnVote(value:unknown):boolean {
   &&typeof value.choice==='string'&&['guilty','not-guilty','abstain'].includes(value.choice)
   &&typeof value.reason==='string');
 }
+function isSettlement(value:unknown):boolean {
+ if(value===null)return true;
+ if(!record(value)||!keys(value,[
+  'roundNumber','outcome','guilty','notGuilty','abstain','total','closedAt','closedBy'
+ ]))return false;
+ if(!(value.roundNumber===1||value.roundNumber===2)||typeof value.outcome!=='string'
+  ||!['guilty','not-guilty','no-verdict','tie'].includes(value.outcome)
+  ||!(value.closedBy==='all-submitted'||value.closedBy==='deadline')
+  ||typeof value.closedAt!=='number'||!Number.isFinite(value.closedAt))return false;
+ if(['guilty','notGuilty','abstain','total'].some(key=>!Number.isSafeInteger(value[key])||Number(value[key])<0))return false;
+ return Number(value.guilty)+Number(value.notGuilty)+Number(value.abstain)===value.total;
+}
 function isGameSnapshot(value:unknown):boolean {
  if(!record(value)||!keys(value,[
   'gameId','status','caseText','penaltyText','durationMinutes','self',
-  'participantCount','voterCount','version','serverNow','round','defense','ownVote'
+  'participantCount','voterCount','version','serverNow','round','defense','ownVote','settlement'
  ]))return false;
  if(typeof value.gameId!=='string'||typeof value.status!=='string'
   ||!['defense','voting','final-defense','result','interrupted'].includes(value.status)
@@ -42,7 +54,7 @@ function isGameSnapshot(value:unknown):boolean {
  if(!record(self)||!keys(self,['role','eligible'])||typeof self.role!=='string'
   ||!['defendant','participant','observer'].includes(self.role)
   ||typeof self.eligible!=='boolean'||self.role!=='participant'&&self.eligible)return false;
- return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote);
+ return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement);
 }
 export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
  if(!record(x)||!keys(x,['roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
