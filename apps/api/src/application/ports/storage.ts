@@ -8,7 +8,7 @@ export interface VoteRecord { gameId: string; roundNumber: 1 | 2; memberId: stri
 export interface DraftRecord { roomId: string; caseText: string; penaltyText: string; durationSeconds: number; version: number }
 export interface InsertRepository<T> { insert(record: T): void }
 export interface Repositories {
-  sessions: InsertRepository<SessionRecord>;
+  sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
   rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined };
   members: InsertRepository<MemberRecord>;
   games: InsertRepository<GameRecord>;

@@ -5,4 +5,5 @@ export default [
  { files:['apps/**/*.ts','apps/**/*.tsx','packages/**/*.ts'], ...js.configs.recommended, languageOptions:{parser:tseslint.parser,parserOptions:{ecmaFeatures:{jsx:true}},globals:{process:'readonly',console:'readonly',document:'readonly'}} },
  ...tseslint.configs.recommended.map(config=>({...config,files:['apps/**/*.ts','apps/**/*.tsx','packages/**/*.ts']})),
  { files:['**/*.mjs'], ...js.configs.recommended, languageOptions:{ecmaVersion:'latest',sourceType:'module',globals:{process:'readonly',console:'readonly',setTimeout:'readonly',clearTimeout:'readonly',fetch:'readonly',AbortSignal:'readonly',URL:'readonly',Buffer:'readonly'}} },
+ {files:['tests/browser/*.mjs'],languageOptions:{globals:{document:'readonly'}}},
 ];

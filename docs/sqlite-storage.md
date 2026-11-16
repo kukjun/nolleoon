@@ -15,7 +15,7 @@ npm run test:database
 
 ## 경계
 
-`application/ports/storage.ts`는 순수 TypeScript record/repository/UnitOfWork 계약이다. SQLite/ORM 객체를 domain/application으로 전달하지 않는다. infrastructure의 `openSqlite`와 `SqliteUnitOfWork`가 어댑터다. 아직 API composition root에 실제 영속 DB를 자동 연결하지 않았다. 앱 실행으로 사용자 DB를 만들거나 수정하지 않는다.
+`application/ports/storage.ts`는 순수 TypeScript record/repository/UnitOfWork 계약이다. SQLite/ORM 객체를 domain/application으로 전달하지 않는다. infrastructure의 `openSqlite`와 `SqliteUnitOfWork`가 어댑터다. MVP-05부터 API composition root는 명시한 DB_PATH를 열고 migration을 적용한다. 앱 시작에는 전용 경로를 지정해야 하며 테스트는 항상 임시 DB를 사용한다.
 
 DB 열기는 절대 경로만 허용하고 부모 디렉터리는 호출자가 준비한다. 공개 정적 디렉터리 밖의 안전한 로컬 경로를 선택하는 것은 호출자의 책임이다. 현재 함수는 symlink/공개 디렉터리 containment 보안 경계를 구현하지 않는다. 향후 배포는 ignored `data/` 같은 전용 경로를 사용하고 실제 배포 경로를 확인한다. 모든 통합 시험은 임시 디렉터리의 합성 데이터만 사용하고 연결/파일을 정리한다.
 
