@@ -1,11 +1,22 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {isRoomSnapshot} from '../../apps/web/src/api/rooms-client.ts';
+import {isRoomSnapshot,verifiedVoteSnapshot} from '../../apps/web/src/api/rooms-client.ts';
 test('방 DTO 런타임 검증은 개인 필드·잘못된 방장·중복 멤버를 거부한다',()=>{
  const room={start:{canStart:false,missing:[]},game:null,consent:{penaltyRevision:0,roleRevision:0,decisionVersion:0,status:'pending',defendantMemberId:null,canDecide:false},roleRevision:0,rosterEditable:true,draft:{version:0,caseText:'',penaltyText:'',durationMinutes:3},version:1,roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',role:'participant',nickname:'나',isHost:true,connected:true}]};
  assert.equal(isRoomSnapshot(room),true);
- const game={version:0,serverNow:1000,round:null,defense:{status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
+ const game={ownVote:null,version:0,serverNow:1000,round:null,defense:{status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
  assert.equal(isRoomSnapshot({...room,game}),true);
+ const command={kind:'vote',gameId:'game',roundNumber:1,requestId:'request',choice:'guilty',reason:' 이유 '};
+ const voteResponse={snapshot:{...room,game:{...game,round:{number:2,startedAt:1000,deadline:2000}}},receipt:{gameId:'game',roundNumber:1,choice:'guilty',reason:'이유'}};
+ assert.equal(verifiedVoteSnapshot(voteResponse,command)?.game.ownVote,null);
+ assert.equal(verifiedVoteSnapshot({...voteResponse,receipt:{...voteResponse.receipt,roundNumber:2}},command),null);
+ assert.equal(verifiedVoteSnapshot({...voteResponse,receipt:{...voteResponse.receipt,reason:'다른 이유'}},command),null);
+ assert.equal(verifiedVoteSnapshot({...voteResponse,receipt:{...voteResponse.receipt,private:'secret'}},command),null);
+
+ const ownVote={roundNumber:1,choice:'abstain',reason:''};
+ assert.equal(isRoomSnapshot({...room,game:{...game,ownVote}}),true);
+ assert.equal(isRoomSnapshot({...room,game:{...game,ownVote:{...ownVote,choice:['abstain']}}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,ownVote:{...ownVote,voterId:'private'}}}),false);
  assert.equal(isRoomSnapshot({...room,game:{...game,status:['defense']}}),false);
  assert.equal(isRoomSnapshot({...room,game:{...game,defense:{status:['pending'],text:null}}}),false);
  assert.equal(isRoomSnapshot({...room,game:{...game,serverNow:'1000'}}),false);

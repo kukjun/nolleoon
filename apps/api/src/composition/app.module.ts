@@ -1,3 +1,4 @@
+import {SubmitVote} from '../application/submit-vote.js';
 import {TrialProgress} from '../application/trial-progress.js';
 import {StartTrial} from '../application/start-trial.js';
 import {PresenceMonitor} from '../infrastructure/sessions/presence-monitor.js';
@@ -32,6 +33,7 @@ export class AppModule {
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
+      {provide:SubmitVote,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SubmitVote(resources.uow,config.clock??new SystemClock())},
       {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock())},
       {provide:StartTrial,inject:[STORAGE],useFactory:(resources:StorageResources)=>new StartTrial(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},

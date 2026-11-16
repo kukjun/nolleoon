@@ -3,7 +3,7 @@ export interface RoomRecord { id: string; inviteCode: string; status: 'open' | '
 export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number; role?: 'defendant' | 'participant'; lastSeenAt?: number | null; disconnectedAt?: number | null }
 export interface GameRecord { id: string; roomId: string; status: 'draft' | 'defense' | 'voting' | 'final-defense' | 'result' | 'interrupted'; caseText: string; penaltyText: string; durationSeconds: number; version: number; createdAt: number }
 export interface ParticipantRecord { gameId: string; roomId: string; memberId: string; role: 'defendant' | 'participant' | 'observer'; eligible: boolean }
-export interface RoundRecord { gameId: string; number: 1 | 2; startedAt: number; deadline: number }
+export interface RoundRecord { gameId: string; number: 1 | 2; startedAt: number; deadline: number; closedAt?: number | null }
 export interface VoteRecord { gameId: string; roundNumber: 1 | 2; memberId: string; choice: 'guilty' | 'not-guilty' | 'abstain'; reason: string; requestId: string; submittedAt: number }
 export interface DraftRecord { roomId: string; caseText: string; penaltyText: string; durationSeconds: number; version: number }
 export interface InsertRepository<T> { insert(record: T): void }

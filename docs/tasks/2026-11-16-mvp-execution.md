@@ -116,3 +116,15 @@
 - 시간 입력의 오래된 clean 값이 남는 결함은 실제 RED 후 최신값 동기화·dirty 보존·명시적 버리기·미저장 중 개시 차단으로 수정했다. 경합 시험은 양쪽 합법적 승리 순서를 모두 검증하도록 보강했다.
 - 독립 리뷰가 발견한 지연된 과거 시간 저장 응답의 local input 역전도 RED로 재현해 game ID/version guard로 수정하고 재리뷰 승인받았다.
 - 최종 깨끗한 소스 설치·전체 check 통과: unit21/API16/DB25/browser34 및 self15/workspace5/docs6·정적 검사. 독립 전체 검증과 수정 후 재리뷰 승인. 원격 CI #36은 여전히 미실행이다.
+
+## MVP-15 검증
+- #14는 PR #48 병합 후 CLOSED와 체크리스트 반영 확인.
+- API404 RED 후 별도 SubmitVote 유스케이스로 고정 대상·게임/라운드·서버 마감·한 표 불변을 검사한다. 개인 표 저장은 공유 version/진행 표수를 증가시키지 않는다.
+- 동일 key/의도 재시도는 원래 라운드 접수 envelope로 확인하며 새 라운드 접수로 오인하지 않는다. 같은 버전의 오래된 snapshot도 본인 접수 확인을 지우지 않는다.
+- 독립 검토가 발견한 두 번의 clock 읽기 경계는 RED 재현 후 단일 now 검사/저장으로 수정했다. 유죄/무죄 이유 필수·기권 선택, rollback/재시작·동시 중복·입력 이스케이프를 검사한다.
+- 390px 본인 접수 화면 직접 확인. HTML 형태 입력은 실행하지 않고 텍스트로 표시한다. 투표 정산은 #16, 실제 모바일/외부·원격 CI는 아직 미완료다.
+- 서버가 마감을 확정했을 때는 DEADLINE_PASSED로 명확히 안내하며 불확실 네트워크 재시도와 구분한다. 이미 접수된 원래 요청은 마감 뒤에도 재확인된다.
+- 최초 전체 브라우저 검사는 90초 timeout으로 실패했다. 이후 list 실행 38/38 약108초 통과를 측정해 전체 suite 예산만150초로 늘렸고 개별 assertion/test 제한은 약화하지 않았다.
+- 추가 #49: Playwright 분리 그룹 fixture 잔존을 실행별 임시 lease/owner 생존 검사로 정리한다. 자기 fixture만 닫으며 timeout·owner 종료 detached 회귀 2개 통과, 다른 서비스/설정은 변경하지 않았다.
+- 최초 clean-source 최종 검사에서 새 detached cleanup 시험의 no-unsafe-finally lint가 실패했다. 제품/browser38 및 다른 검사는 통과했지만 전체 통과로 보지 않았다. cleanup을 독립 t.after 훅으로 분리해 오류를 가리지 않게 수정하고 최종 재검증했다.
+- 환경 연결이 끊긴 최종 실행은 보고서/완료 증거가 없어 중단으로 기록했다. Mac 재연결 후 같은 frozen clean 소스에서 다시 실행하여 최종 exit0 확인: self17/workspace5/docs6/unit22/API19/DB26/browser38와 lint/layers/build/types. 독립 최종 승인, 테스트 포트 정리 확인. 원격 CI #36 미실행은 별도다.
