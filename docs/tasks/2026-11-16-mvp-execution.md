@@ -152,3 +152,11 @@
 - 320px 유죄·390px 2차 무죄 캡처 직접 확인. 이유 문자열/소수 인원으로 신원을 추론할 수 있다는 한계를 안내하며 익명성을 과장하지 않는다.
 - 내부 알파와 운영 MVP를 구분한다. 연결/퇴장·다음 게임/이력·내구성·전체 E2E·실기기·외부 배포 및 #33/#36 결정/승인은 후속 범위다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit25/API27/DB30/browser46와 lint/layers/build/types. browser183.9초, suite210초 조정 근거와 개별 제한 유지 확인. 결과 화면·5세션 내부 알파 독립 승인, 테스트 포트 정리 확인.
+
+## MVP-19 검증
+- #18은 PR #53 병합 후 CLOSED, M3 0open/5closed 종료로 내부 알파를 확인했다.
+- 안전한 기존 세션 갱신 endpoint RED 후 유효 토큰만 연장하며 누락/만료 시 신규 행·쿠키를 만들지 않도록 구현했다. 신규 신원은 명시적 시작 요청만 허용한다.
+- 같은 브라우저의 유예 내 재접속은 멤버십·접수·deadline을 유지한다. 10분 이상 퇴장 처리는 #20의 범위다.
+- 취소된 오래된401 통지 RED, 인증/probe 세대 경계, 실제 갱신 Set-Cookie 지연 응답 취소 회귀를 보완했다. 최초 미발급은 기존 신원 상실과 구분한다.
+- 신원 상실390px 화면에서 이전 게임 내용 제거·복구 한계·명시적 시작 안내를 직접 확인했다. 실제 Back/Forward와 합성 pageshow/visibility를 구분하며 실기기 BFCache/OS 잠금 검증을 주장하지 않는다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit29/API30/DB30/browser51와 lint/layers/build/types. browser207.4초, 전체 suite240초이며 기존 개별 제한 유지. 소스·복귀/신원 경계·화면 독립 승인, 테스트 포트 정리 확인.

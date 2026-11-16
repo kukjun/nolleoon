@@ -13,6 +13,18 @@ export class BrowserSessions {
       return {id:record.id};
     });
   }
+  // 자동 재방문 갱신은 새 신원을 발급하지 않는다. 검증과 연장을 한 트랜잭션에서 처리한다.
+  renew(token?: string): {token: string; expiresAt: number} {
+    if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new SessionRequired();
+    return this.uow.run(r=>{
+      const now=this.clock.now();
+      const record=r.sessions.findByTokenHash(this.codec.hash(token));
+      if(!record || record.expiresAt<=now) throw new SessionRequired();
+      const expiresAt=now+SESSION_LIFETIME_MS;
+      r.sessions.extendExpiry(record.id,expiresAt);
+      return {token,expiresAt};
+    });
+  }
   // token은 쿠키 어댑터에만 전달하며 JSON DTO로 직렬화하지 않는다.
   open(token?: string): {token: string; expiresAt: number} {
     return this.uow.run(r=>{

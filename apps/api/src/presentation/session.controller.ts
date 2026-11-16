@@ -12,6 +12,14 @@ export class SessionController {
     response.setHeader('Cache-Control','no-store');
     requestActor(request,this.sessions);return {authenticated:true};
   }
+  @Post('renew')
+  renew(@Req() request: Request, @Res({passthrough:true}) response: Response):SessionSnapshot {
+    response.setHeader('Cache-Control','no-store');
+    assertWebCommand(request,this.origin);assertEmptyCommand(request);
+    const result=this.sessions.renew(sessionToken(request));
+    response.cookie(SESSION_COOKIE,result.token,{httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:SESSION_LIFETIME_MS});
+    return {authenticated:true};
+  }
   @Post()
   open(@Req() request: Request, @Res({passthrough:true}) response: Response):SessionSnapshot {
     response.setHeader('Cache-Control','no-store');

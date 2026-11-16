@@ -1,3 +1,4 @@
+import {identityLoss} from './identity-generation.ts';
 import {errorCodes,errorMessages,type ErrorCode,type RoomSnapshot} from '@trip-court/contracts';
 export type RoomResult={ok:true;data:RoomSnapshot}|{ok:false;code:ErrorCode|'NETWORK_ERROR'|'INVALID_RESPONSE';message:string};
 function record(x:unknown):x is Record<string,unknown>{return typeof x==='object'&&x!==null&&!Array.isArray(x);}
@@ -104,15 +105,17 @@ function commandBody(command:RoomCommand){
  }
 }
 export async function requestRoom(code:string|null,nickname?:string,signal?:AbortSignal,heartbeat=false,settings?:{expectedVersion:number;caseText:string;penaltyText:string;durationMinutes:number},command?:RoomCommand):Promise<RoomResult>{
+ const reportIdentityLoss=identityLoss.capture();
  const path=code===null?'/api/rooms':`/api/rooms/${encodeURIComponent(code)}${command?`${'gameId' in command?`/games/${encodeURIComponent(command.gameId)}`:''}/${command.kind}`:settings?'/settings':heartbeat?'/heartbeat':nickname===undefined?'':'/join'}`;
  try{
   const response=await fetch(path,{method:!command&&!settings&&!heartbeat&&nickname===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',signal,...(!command&&!settings&&!heartbeat&&nickname===undefined?{}:{headers:{'Content-Type':'application/json','X-Trip-Court-Request':'1'},body:JSON.stringify(command?commandBody(command):settings??(heartbeat?{}:{nickname}))})});
   const data:unknown=await response.json();
+  if(signal?.aborted)return {ok:false,code:'NETWORK_ERROR',message:'취소된 요청이에요.'};
   if(response.ok){
    if(command?.kind==='vote'){const snapshot=verifiedVoteSnapshot(data,command);if(snapshot)return {ok:true,data:snapshot};}
    else if(isRoomSnapshot(data))return {ok:true,data};
   }
-  if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;return {ok:false,code,message:errorMessages[code]};}
+  if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};}
   return {ok:false,code:'INVALID_RESPONSE',message:'서버 응답을 확인하지 못했어요. 다시 시도해 주세요.'};
  }catch{return {ok:false,code:'NETWORK_ERROR',message:'서버에 연결하지 못했어요. 다시 시도해 주세요.'};}
 }
