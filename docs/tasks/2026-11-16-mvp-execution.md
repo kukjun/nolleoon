@@ -107,3 +107,12 @@
 - 독립 리뷰에서 game.status/self.role DTO enum 강제변환을 발견해 strict type guard와 회귀로 수정했다.
 - 390px 시작 화면 직접 확인. 실제 변론/투표·다음 게임은 후속 단계이며 원격 CI #36·중단 공개 결정 #33은 미해결이다.
 - 최종 깨끗한 소스 설치·전체 check 통과: unit20/API12/DB24/browser29 및 self15/workspace5/docs6·정적 검사. 최종 enum 수정도 독립 재리뷰 승인.
+
+## MVP-14 검증
+- #13은 PR #47 병합 후 CLOSED 확인, M2 0open/6closed로 종료.
+- API404 RED 후 선택적 변론·방장 투표 개시·시간 조절을 별도 TrialProgress로 구현했다. migration6 변론/개시 영수증 추가, game ID와 버전으로 이전 요청을 격리한다.
+- 단일 round/deadline, 중복 요청·재시작 마감 불변, 변론/시간 변경 경합, 별도 방장/피고, 실제 영어·줄바꿈 허용/제어문자 거절을 검사한다.
+- 5컨텍스트 같은 deadline, 기기 Date.now 변경·오프라인 복귀·0초 대기 표시 검증과 390px 화면 직접 확인. 현재 투표 제출·정산은 #15/#16 후속 단계다.
+- 시간 입력의 오래된 clean 값이 남는 결함은 실제 RED 후 최신값 동기화·dirty 보존·명시적 버리기·미저장 중 개시 차단으로 수정했다. 경합 시험은 양쪽 합법적 승리 순서를 모두 검증하도록 보강했다.
+- 독립 리뷰가 발견한 지연된 과거 시간 저장 응답의 local input 역전도 RED로 재현해 game ID/version guard로 수정하고 재리뷰 승인받았다.
+- 최종 깨끗한 소스 설치·전체 check 통과: unit21/API16/DB25/browser34 및 self15/workspace5/docs6·정적 검사. 독립 전체 검증과 수정 후 재리뷰 승인. 원격 CI #36은 여전히 미실행이다.

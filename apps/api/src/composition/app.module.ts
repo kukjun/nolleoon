@@ -1,3 +1,4 @@
+import {TrialProgress} from '../application/trial-progress.js';
 import {StartTrial} from '../application/start-trial.js';
 import {PresenceMonitor} from '../infrastructure/sessions/presence-monitor.js';
 import {Rooms} from '../application/rooms.js';
@@ -31,6 +32,7 @@ export class AppModule {
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
+      {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock())},
       {provide:StartTrial,inject:[STORAGE],useFactory:(resources:StorageResources)=>new StartTrial(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:BrowserSessions,inject:[STORAGE],useFactory:(resources:StorageResources)=>new BrowserSessions(resources.uow,config.clock??new SystemClock(),new SecureTokens())}

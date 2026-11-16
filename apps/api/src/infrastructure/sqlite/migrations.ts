@@ -63,4 +63,7 @@ ALTER TABLE rooms ADD COLUMN penalty_revision INTEGER NOT NULL DEFAULT 0 CHECK(p
 CREATE TABLE penalty_consents (room_id TEXT PRIMARY KEY NOT NULL REFERENCES rooms(id),member_id TEXT NOT NULL,role_revision INTEGER NOT NULL CHECK(role_revision>=0),penalty_revision INTEGER NOT NULL CHECK(penalty_revision>=0),decision TEXT NOT NULL CHECK(decision IN ('accepted','rejected')),version INTEGER NOT NULL CHECK(version>0),FOREIGN KEY(room_id,member_id) REFERENCES room_members(room_id,id)) STRICT;
 `},{version:5,name:'trial-start-receipts',sql:`
 CREATE TABLE start_receipts (room_id TEXT NOT NULL REFERENCES rooms(id),request_id TEXT NOT NULL,actor_session_id TEXT NOT NULL REFERENCES sessions(id),intent TEXT NOT NULL,game_id TEXT NOT NULL REFERENCES games(id),PRIMARY KEY(room_id,request_id)) STRICT;
+`},{version:6,name:'defense-and-vote-opening',sql:`
+CREATE TABLE defenses (game_id TEXT NOT NULL REFERENCES games(id),round_number INTEGER NOT NULL CHECK(round_number IN (1,2)),member_id TEXT NOT NULL,action TEXT NOT NULL CHECK(action IN ('submitted','skipped')),text TEXT NOT NULL,PRIMARY KEY(game_id,round_number),FOREIGN KEY(game_id,member_id) REFERENCES game_participants(game_id,member_id)) STRICT;
+CREATE TABLE vote_open_receipts (game_id TEXT NOT NULL REFERENCES games(id),request_id TEXT NOT NULL,actor_session_id TEXT NOT NULL REFERENCES sessions(id),intent INTEGER NOT NULL CHECK(intent>=0),round_number INTEGER NOT NULL,PRIMARY KEY(game_id,request_id),FOREIGN KEY(game_id,round_number) REFERENCES rounds(game_id,number)) STRICT;
 `}];

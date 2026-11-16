@@ -4,8 +4,13 @@ import {isRoomSnapshot} from '../../apps/web/src/api/rooms-client.ts';
 test('방 DTO 런타임 검증은 개인 필드·잘못된 방장·중복 멤버를 거부한다',()=>{
  const room={start:{canStart:false,missing:[]},game:null,consent:{penaltyRevision:0,roleRevision:0,decisionVersion:0,status:'pending',defendantMemberId:null,canDecide:false},roleRevision:0,rosterEditable:true,draft:{version:0,caseText:'',penaltyText:'',durationMinutes:3},version:1,roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',role:'participant',nickname:'나',isHost:true,connected:true}]};
  assert.equal(isRoomSnapshot(room),true);
- const game={gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
+ const game={version:0,serverNow:1000,round:null,defense:{status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
  assert.equal(isRoomSnapshot({...room,game}),true);
+ assert.equal(isRoomSnapshot({...room,game:{...game,status:['defense']}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,defense:{status:['pending'],text:null}}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,serverNow:'1000'}}),false);
+ assert.equal(isRoomSnapshot({...room,game:{...game,round:{number:1,startedAt:1000,deadline:900}}}),false);
+ assert.equal(isRoomSnapshot({...room,consent:{...room.consent,status:['pending']}}),false);
  for(const status of [['defense'],{}, {toString:()=> 'defense'},null,0,true])assert.equal(isRoomSnapshot({...room,game:{...game,status}}),false);
  for(const role of [['observer'],{}, {toString:()=> 'observer'},null,0,true])assert.equal(isRoomSnapshot({...room,game:{...game,self:{...game.self,role}}}),false);
  assert.equal(isRoomSnapshot({...room,game:{...game,self:{role:'observer',eligible:true}}}),false);
