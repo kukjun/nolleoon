@@ -1,0 +1,20 @@
+name: Harness checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - run: npm run check
+      # 증거는 실행 환경에만 두고 자동 외부 업로드하지 않는다.

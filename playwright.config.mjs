@@ -1,0 +1,6 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({
+ testDir:'./tests/browser', fullyParallel:false, workers:1, retries:0, timeout:15000,
+ reporter:'json', use:{baseURL:'http://127.0.0.1:4179', headless:true},
+ webServer:{command:'node node_modules/vite/bin/vite.js preview apps/web --host 127.0.0.1 --port 4179 --strictPort',url:'http://127.0.0.1:4179',reuseExistingServer:false,timeout:15000},
+});

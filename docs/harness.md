@@ -1,37 +1,60 @@
-# 하네스 학습 초안
+# 개발 검증 하네스 · MVP-03
 
-상태: 설계 후보. 아래 기능은 아직 구현하거나 검증하지 않았다.
+검토한 저장소 코드의 실행·판정·증거 루프다. 제품 전체 완료나 권한 격리를 보장하지 않는다. 현재 제품 검증 범위는 헬스 유스케이스·Nest HTTP·Chromium 초기 렌더뿐이다.
 
-## 목적
+## 설치와 실행
 
-스킬 수를 늘리는 대신 Codex가 작업을 이해·실행·관찰·검증하는 환경을 만든다.
-사람이 내릴 판단과 자동으로 검사할 조건을 구분한다.
+Node 24.x / npm 11.x. [로컬 기반](local-development.md)을 따른다.
 
-## 작은 구성부터
+```sh
+npm ci --ignore-scripts --no-audit --no-fund
+node node_modules/@playwright/test/cli.js install chromium
+npm run check
+```
 
-1. 맥락: 짧은 작업 안내와 제품 규칙·결정 이유.
-2. 검증: 재현 가능한 실행·테스트·타입 검사·빌드 명령.
-3. 관찰: 실패 로그와 테스트 결과. 실제 사용자 데이터는 쓰지 않는다.
-4. 진행: 구현 → 검증 → 원인 확인 → 제한된 수정 → 결과 보고.
-5. 회귀: 발견한 결함을 재현하는 시험과 다음 작업의 규칙.
-6. 하네스 시험: 검증 실패·타임아웃·테스트 누락을 정상 완료로 오인하지 않는지 확인.
+Linux에서 필요한 시스템 라이브러리가 없으면 CI처럼 공식 Playwright `install --with-deps chromium` 절차를 사용한다. 설치는 네트워크 다운로드를 포함한다. 로컬 운영·보안 설정을 자동 변경하지 않는다.
 
-## 첫 실험 후보
+개별 검사:
 
-'한 사람이 한 번만 투표'를 후보로 삼는다. 규칙 확정 후 정상·중복·동시 요청을
-검사하고, 일부러 결함을 넣었을 때 검사 장치가 실패하는지 확인한다.
+```sh
+npm run test:harness
+npm run lint
+npm run build
+npm run typecheck
+npm run test:unit
+npm run test:integration
+npm run test:browser
+```
 
-## 보호 경계
+unit/integration/browser는 빌드 산출물을 사용하므로 build를 먼저 한다. 전체 check는 빌드를 직접 수행하고 실패 시 그에 의존하는 검사를 blocked로 표시하여 이전 산출물로 성공을 만들지 않는다.
 
-문서와 스킬은 안내이고, 테스트와 CI는 판정이며, 실행 권한은 별도 경계다.
-에이전트가 수정할 수 있는 로컬 검증만으로 절대적인 강제를 주장하지 않는다.
-브랜치 보호·검증 코드 변경 리뷰·권한 범위는 별도로 설계한다.
+## 실행과 판정
 
-## 공개 참고 자료
+- Node TAP: 실제 tests/pass/fail/skipped/todo/cancelled 수를 기록한다. 빈 파일의 암묵적 시험은 거절한다. 0개·skip·todo·미완료는 합격이 아니다.
+- Playwright JSON: expected/unexpected/skipped/flaky 수와 errors를 검증한다. 빈 시험·skip은 incomplete, 실패·flaky·오염된 JSON은 failed다. JSON이 아닌 출력 형식을 임의로 통과시키지 않는다.
+- lint/type/build: 실제 ESLint, TypeScript, workspace 빌드 명령의 종료 코드를 기록한다. 이런 명령에 가짜 시험 수를 부여하지 않는다.
+- 파일/실행 환경 누락은 blocked, 잘못된 설정·assertion·시간 초과는 failed다. 준비한 필수 검사 중 passed 아닌 것이 하나라도 있으면 check 종료 코드는 1이다.
+- DB integration·다인 gameplay E2E·실기기·외부 배포는 아직 not-configured 계획으로 별도 표시한다. 검증 기반 성공을 제품 전체 인수로 표시하지 않는다.
 
-- OpenAI: https://openai.com/index/harness-engineering/
-- Stripe: https://stripe.dev/blog/minions-stripes-one-shot-end-to-end-coding-agents-part-2
-- Codex 공개 훅 테스트: https://github.com/openai/codex/blob/main/codex-rs/core/tests/suite/hooks.rs
+## 구성
 
-공개 소스의 최신 기능이 설치된 Codex에서 지원된다고 가정하지 않는다.
-도입 전에 버전과 지원 범위를 확인한다. 참고 자료는 구현을 그대로 복제하라는 뜻이 아니다.
+`tools/harness/check.mjs`가 repo 문서, 러너 자체 시험, 문서/workspace 계약, lint, 계층, build/type, unit, API integration, 브라우저 기동 순서로 검사한다. Node 시험 그룹은 공유 discovery로 지정 디렉터리 아래 `*.test.mjs`를 재귀 탐색·정렬한다. 개별 npm 명령과 전체/CI가 같은 탐색기를 사용하며 빈 디렉터리·심볼릭 링크는 거절한다. 과거 tests/ui는 포함하지 않는다.
+
+`tests/support/fakes.mjs`의 FakeClock과 SequenceRandom은 경계 시험용 대역이며 실제 게임 정책을 대신하지 않는다.
+
+각 실행 전 Git HEAD와 dirty 상태, 시작 시각을 기록하고 종료 시각·Node/OS/CPU·명령·출력·종료 코드·개수·소요 시간을 `artifacts/harness/<실행>/report.json`에 저장한다. 이 경로는 ignored이고 자동 업로드하지 않는다. HEAD+dirty 목록은 맥락이지 암호학적 빌드 증명이 아니다. 공개할 로그는 비밀·개인정보를 검토한다.
+
+## 실패 주입과 경계
+
+자체 시험은 assertion 실패, 비정상 종료, 타임아웃, 파일 누락, 빈 설정/빈 시험, skip/todo, 혼합 pass/skip, Playwright 실패/빈값/skip/flaky/오염 출력을 주입한다. macOS/Linux에서 각 검사 프로세스를 별도 그룹으로 실행하고 종료/시간 초과 후 같은 그룹 손자 프로세스도 정리한다. 실제 쓰기 ticker를 띄워 정리 이후 멈추는지 시험한다.
+
+이 도구는 샌드박스가 아니다. 선택한 코드가 현재 사용자 환경을 상속하며, 프로세스 그룹을 이탈하는 악의적 데몬·출력 위조·비밀 탐지를 보장하지 않는다. Windows 프로세스 트리 격리는 지원 범위가 아니다. 외부 바인딩·배포·설정/권한·인증 변경은 별도 경계다.
+
+AGENTS는 의도/원칙 안내, runner는 측정, CI는 다른 환경의 재검증이다. Codex 전역 훅·신뢰 설정·브랜치 보호·required check를 설정하지 않았다. 자동 수정/커밋/배포도 하지 않는다.
+
+## CI
+
+`docs/ci/harness.yml`은 실행되지 않는 초안이며, 승인된 인증으로 게시되면 read-only contents 권한으로 npm ci, 공식 Chromium 설치, 동일 check를 실행하도록 작성했다. 비밀값/배포 단계/외부 결과 업로드가 없다. 원격 실행 결과는 해당 GitHub run을 실제 확인한 뒤 기록하며 로컬 통과만으로 원격 통과를 주장하지 않는다.
+
+## 원격 CI 게시 차단
+GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부되었다. CI 정의는 실행되지 않는 `docs/ci/harness.yml`에 보존한다. #36 해결 전 원격 CI는 미실행/차단이며 로컬 통과와 구분한다. 인증이나 보호 설정을 임의 변경하지 않는다.

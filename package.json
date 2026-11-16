@@ -8,13 +8,18 @@
   },
   "scripts": {
     "check": "node tools/harness/check.mjs",
-    "test:harness": "node --test tests/harness/*.test.mjs",
+    "test:harness": "node tools/harness/discovery.mjs tests/harness",
     "build": "npm run build -w @trip-court/contracts && npm run build -w @trip-court/api && npm run build -w @trip-court/web",
-    "test:workspace": "node --test tests/workspace/*.test.mjs",
+    "test:workspace": "node tools/harness/discovery.mjs tests/workspace",
     "check:layers": "node tools/workspace/layers.mjs",
     "smoke:workspace": "node tools/workspace/smoke.mjs",
     "dev:web": "npm run dev -w @trip-court/web",
-    "start:api": "npm run start -w @trip-court/api"
+    "start:api": "npm run start -w @trip-court/api",
+    "lint": "eslint apps packages tools/harness tools/workspace tests/harness tests/workspace tests/unit tests/integration tests/browser tests/support playwright.config.mjs eslint.config.mjs",
+    "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit && tsc -p apps/api/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "test:unit": "node tools/harness/discovery.mjs tests/unit",
+    "test:integration": "node tools/harness/discovery.mjs tests/integration",
+    "test:browser": "playwright test --reporter=json"
   },
   "workspaces": [
     "apps/*",
@@ -22,7 +27,11 @@
   ],
   "packageManager": "npm@11.11.0",
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
     "@types/node": "24.19.2",
-    "typescript": "5.9.3"
+    "eslint": "10.15.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.2"
   }
 }
