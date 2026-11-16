@@ -1,0 +1,6 @@
+# 검토용 ingress 항목 조각이며 완전한 tunnel 설정 파일이 아니다.
+# 승인 후 기존 ingress 목록의 마지막 catch-all 앞에 이 항목만 삽입한다.
+# 기존 항목·catch-all·다른 서비스 설정은 보존한다. 이 파일로 전체 설정을 교체하지 않는다.
+# example.com은 공개 예시이며 실제 DNS/tunnel 변경 권한이나 완료 상태를 뜻하지 않는다.
+- hostname: tripcourt.example.com
+  service: http://127.0.0.1:3101

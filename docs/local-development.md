@@ -54,3 +54,7 @@ API는 `http://127.0.0.1:3001/api/health`, 개발 UI는 Vite가 출력한 loopba
 공식 npm registry 확인 후 React/react-dom 19.3.1, Nest 12.5.0, Vite 8.3.8을 고정했다. TypeScript 최신 7.0.2는 기존 compiler AST API를 제공하지 않아 구조 검사에서 실패했고, 검증한 안정 API가 있는 5.9.3으로 선택했다. Node 타입은 런타임에 맞춘 24.19.2다. 정확한 전이 의존성은 package-lock.json을 따른다.
 
 제품 테스트 전체 합격을 뜻하지 않는다. 초기 환경/구조 계약 5개와 빌드/HTTP smoke만 이 단계의 인수 증거다.
+
+## 운영 빌드의 로컬 smoke
+
+`WEB_ROOT`를 검증된 `apps/web/dist`의 절대 경로로 지정하면 같은 loopback Nest에서 정적 React와 `/api`를 제공한다. 파일 경로 제한과 운영 적용 전 조건은 [배포 준비](deployment-preparation.md)를 따른다. `WEB_ROOT` 생략은 기존 API-only 개발 흐름을 유지한다. 이 기능은 DNS·터널·지속 실행 등록을 자동으로 변경하지 않는다.

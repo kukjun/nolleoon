@@ -236,3 +236,12 @@
 - root font200%가 px본문을 확대하지 못한 시험 가정을 수정해 원래 computed font의2배를 직접 확인했다. 장식 로고 넘침/타이머 줄바꿈은 근사에서 경미 잔여로 기록하며 전면 접근성 합격을 주장하지 않는다.
 - targeted mobile3/3 3.6초·기존 관련2/2 통과. 320px 실제 대기실 직접 확인. PR은 Refs #28이며 물리 인수 전 이슈를 닫지 않는다.
 - 부분 구현 최종 독립 clean-source check exit0: self21/workspace5/docs6/unit39/API94/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. feature287.8초/E2E39.5초/mobile3.8초, failed/skipped/flaky0. 최종320px·포트/child 정리 확인. 실제 mobile-device BLOCKED·external 미구성·전체인수 미완료 유지, #28/#63은 OPEN.
+
+## MVP-29 부분 검증 · 운영 적용 차단
+- #28 부분 PR #64 병합, 실기기 #28/#63 OPEN 유지.
+- production entry `/` 404 RED 후 유효 WEB_ROOT startup snapshot만 같은 origin으로 제공한다. DB/비밀/로그/backup 혼입·symlink/임의 경로/누락 build를 차단하며 unknown API를 SPA200으로 가리지 않는다.
+- 실제 소유 child의 HTML/asset/API/cookie/Origin, 동일 DB 재시작과 온라인 backup→새 경로restore→호환 build 재기동을 검증한다. 기존 서비스/운영 DB/설정은 변경하지 않았다.
+- 템플릿 부재 RED 후 origin/포트/전용process·DB·로그를 분리한 검토용 env/Tunnel/LaunchAgent 템플릿과 운영 runbook을 추가했다. 공개 값은 placeholders이며 실제 credential/경로를 넣지 않았다.
+- 읽기 전용 기존 ingress/등록만 확인했다. 제안 포트는 적용 직전 재확인이 필요하고 과거 오류/일시 listener 관측으로 현재 장애 원인을 추정하지 않는다. 실제 DNS/Tunnel/지속 프로세스 적용은 critical #65 대기다.
+- FileVault/로그인/SSD/절전·logrotation·실제 운영 rollback 및 외부HTTPS는 미검증이다. PR은 Refs #29, 이슈 OPEN 유지.
+- 부분 구현 최종 독립 clean-source check exit0: self21/workspace5/docs6/unit43/API96/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. API5.38초/feature287.4초/E2E39.6초/mobile3.8초, failed/skipped/flaky0. 독립 승인·포트/child 정리 확인. 실기기 BLOCKED·운영 미적용·외부 미구성·전체인수 미완료 유지.
