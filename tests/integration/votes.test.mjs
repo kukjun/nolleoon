@@ -18,7 +18,7 @@ test('동시 다른키는 한 표·기권 이유 선택·현재 라운드와 새
  const call=(body,c=f.cookies[1])=>f.post(`${f.path}/vote`,c,body);
  const raced=await Promise.all([call({...vote,choice:'abstain',reason:''}),call({...vote,requestId:'competing-vote-key'})]);assert.deepEqual(raced.map(r=>r.status).sort(),[201,409]);
  assert.equal((await call({...vote,requestId:'other-user-vote-key',choice:'not-guilty',reason:'<img src=x onerror=alert(1)>'},f.cookies[2])).status,201);
- const all=await(await fetch(f.url,{headers:{cookie:f.cookies[0]}})).json();assert.equal(all.game.status,'voting');assert.equal(all.game.ownVote,null);
+ const all=await(await fetch(f.url,{headers:{cookie:f.cookies[0]}})).json();assert.ok(['result','final-defense'].includes(all.game.status));assert.equal(all.game.settlement.total,2);assert.equal(all.game.ownVote,null);
  }finally{await f.close();}});
 test('늦은 관전자·위조 세션·CSRF·다른 게임은 투표를 만들지 못한다',async()=>{const f=await opened();try{
  const opts=body=>({method:'POST',headers:{origin:f.publicOrigin,'content-type':'application/json','x-trip-court-request':'1'},body:JSON.stringify(body)});

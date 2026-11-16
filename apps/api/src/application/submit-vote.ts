@@ -1,3 +1,4 @@
+import {settleRound} from './settle-round.js';
 import type {UnitOfWork, VoteRecord} from './ports/storage.js';
 import type {Clock} from './browser-sessions.js';
 import {DomainFailure} from '../domain/failure.js';
@@ -37,11 +38,12 @@ export class SubmitVote {
       }
       const current = r.rounds.find(gameId, 2) ?? r.rounds.find(gameId, 1);
       const now = this.clock.now();
-      if (game.status !== 'voting' || !current || current.number !== input.roundNumber
-        || current.closedAt != null) throw new DomainFailure('STATE_CONFLICT');
+      if (!current || current.number !== input.roundNumber) throw new DomainFailure('STATE_CONFLICT');
       if (now >= current.deadline) throw new DomainFailure('DEADLINE_PASSED');
+      if (game.status !== 'voting' || current.closedAt != null) throw new DomainFailure('STATE_CONFLICT');
       r.votes.insert({...input,gameId,memberId:member.id,submittedAt:now});
-      // 개인 접수는 공용 version/진행 표수를 바꾸지 않는다. 정산은 별도 유즈케이스다.
+      settleRound(r,gameId,now);
+      // 개인 접수는 비공개이며 정산 전까지 공용 version을 바꾸지 않는다.
       return {gameId,roundNumber:input.roundNumber,choice:input.choice,reason:input.reason};
     });
   }

@@ -128,3 +128,11 @@
 - 추가 #49: Playwright 분리 그룹 fixture 잔존을 실행별 임시 lease/owner 생존 검사로 정리한다. 자기 fixture만 닫으며 timeout·owner 종료 detached 회귀 2개 통과, 다른 서비스/설정은 변경하지 않았다.
 - 최초 clean-source 최종 검사에서 새 detached cleanup 시험의 no-unsafe-finally lint가 실패했다. 제품/browser38 및 다른 검사는 통과했지만 전체 통과로 보지 않았다. cleanup을 독립 t.after 훅으로 분리해 오류를 가리지 않게 수정하고 최종 재검증했다.
 - 환경 연결이 끊긴 최종 실행은 보고서/완료 증거가 없어 중단으로 기록했다. Mac 재연결 후 같은 frozen clean 소스에서 다시 실행하여 최종 exit0 확인: self17/workspace5/docs6/unit22/API19/DB26/browser38와 lint/layers/build/types. 독립 최종 승인, 테스트 포트 정리 확인. 원격 CI #36 미실행은 별도다.
+
+## MVP-16 검증
+- #15 및 추가 #49는 PR #50 병합 후 CLOSED 확인.
+- 순수 집계 모듈 부재 RED 후 마지막 표 저장과 정산의 동일 트랜잭션, 독립 1초 마감 monitor, migration7 불변 라운드 결과를 구현했다.
+- 전원 기권·기권3/유죄1·퇴장 뒤 고정 총수·중복 정산·rollback·재시작을 검사한다. 미제출 기권은 집계에만 반영하고 가짜 본인 접수 영수증을 만들지 않는다.
+- monitor가 먼저 마감한 뒤 POST도 DEADLINE_PASSED 안내가 되도록 RED→수정했다. 진행 중 집계/타인 이유는 여전히 비공개다.
+- 390px 집계 화면 직접 확인. 실제 2차 흐름/최종 이유 공개는 #17/#18, 실기기/외부/원격 CI는 아직 후속·미해결이다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit24/API22/DB29/browser41와 lint/layers/build/types. 결과 화면·정산 경계 독립 승인, 테스트 포트 정리 확인. 원격 CI #36은 미실행이다.

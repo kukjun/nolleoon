@@ -1,3 +1,5 @@
+import {SettleRounds} from '../application/settle-round.js';
+import {SettlementMonitor} from '../infrastructure/sessions/settlement-monitor.js';
 import {SubmitVote} from '../application/submit-vote.js';
 import {TrialProgress} from '../application/trial-progress.js';
 import {StartTrial} from '../application/start-trial.js';
@@ -23,7 +25,7 @@ class StorageResources {
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
-export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; presenceMonitor?: boolean }
+export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; presenceMonitor?: boolean; settlementMonitor?: boolean }
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
@@ -33,6 +35,8 @@ export class AppModule {
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
+      {provide:SettleRounds,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SettleRounds(resources.uow,config.clock??new SystemClock())},
+      {provide:SettlementMonitor,inject:[SettleRounds],useFactory:(rounds:SettleRounds)=>new SettlementMonitor(rounds,config.settlementMonitor??true)},
       {provide:SubmitVote,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SubmitVote(resources.uow,config.clock??new SystemClock())},
       {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock())},
       {provide:StartTrial,inject:[STORAGE],useFactory:(resources:StorageResources)=>new StartTrial(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
