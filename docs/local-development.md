@@ -1,6 +1,6 @@
 # 로컬 개발 기반 · MVP-02
 
-이 단계는 React 화면 뼈대와 Nest 통합 BFF의 HTTP 헬스만 제공한다. 방/게임/DB/세션은 구현하지 않았다. 기존 `ui/`는 참고 목업으로 보존하며 실제 앱과 혼동하지 않는다.
+이 단계는 React 화면 뼈대와 Nest 통합 BFF의 HTTP 헬스만 제공한다. 방/게임/세션 인증은 구현하지 않았다. SQLite 저장소 기반은 [별도 문서](sqlite-storage.md)를 따른다. 기존 `ui/`는 참고 목업으로 보존하며 실제 앱과 혼동하지 않는다.
 
 ## 환경과 설치
 
@@ -8,13 +8,14 @@ Node 24.x, npm 11.x를 사용한다. 검증 환경은 Node 24.14.1 / npm 11.11.0
 
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund
+npm rebuild better-sqlite3
 npm run test:workspace
 npm run check:layers
 npm run build
 npm run smoke:workspace
 ```
 
-lockfile로 고정한 workspace 의존성만 설치한다. 설치 스크립트 없이 위 빌드/기동을 검증했다. 이 단계의 명령은 기존 미추적 하네스에 의존하지 않는다. `check`/`test:harness`는 MVP-03에서 [검증 하네스](harness.md)로 연결했다. 전체 check에는 별도 Chromium 설치가 필요하다.
+lockfile로 고정한 workspace 의존성만 설치한다. MVP-04부터는 선택한 better-sqlite3 네이티브 의존성만 명시적으로 rebuild한다. 이 단계의 명령은 기존 미추적 하네스에 의존하지 않는다. `check`/`test:harness`는 MVP-03에서 [검증 하네스](harness.md)로 연결했다. 전체 check에는 별도 Chromium 설치가 필요하다.
 
 ## 직접 기동
 

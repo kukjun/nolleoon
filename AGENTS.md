@@ -21,7 +21,7 @@
 
 - 하네스 검사: `node tools/harness/check.mjs`
 - 하네스 자체 시험: `node --test tests/harness/runner.test.mjs`
-- `npm run check`: lint·계층·build/type·헬스 unit/API integration·Chromium 초기 렌더 검사. DB·다인 gameplay·실기기·외부 배포는 아직 미구성. 하네스 통과를 제품 완료로 보고하지 않는다.
+- `npm run check`: lint·계층·build/type·헬스 unit/API integration·SQLite 저장소·Chromium 초기 렌더 검사. 다인 gameplay·실기기·외부 배포는 아직 미구성. 하네스 통과를 제품 완료로 보고하지 않는다.
 - 작업 전 `docs/tasks/TEMPLATE.md`의 목표·경계·합격 기준을 구체화한다.
 - 변경 후 검사 결과와 실패·미실행을 읽고 보고한다. 반복 실패는 무한 재시도하지 말고 원인과 다음 선택을 설명한다.
 - 검증 코드나 CI를 바꿨다면 그 변경을 별도로 명시한다.

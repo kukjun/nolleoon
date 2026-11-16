@@ -15,6 +15,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm rebuild better-sqlite3
       - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
       - run: npm run check
       # 증거는 실행 환경에만 두고 자동 외부 업로드하지 않는다.
