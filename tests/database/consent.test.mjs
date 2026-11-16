@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {openSqlite,migrate,SqliteUnitOfWork} from '../../apps/api/dist/infrastructure/sqlite/index.js';import {Rooms} from '../../apps/api/dist/application/rooms.js';import {SecureTokens} from '../../apps/api/dist/infrastructure/sessions/secure-tokens.js';
+test('방장피고 수락·결정버전·DB재개방 보존 및 저장실패rollback',()=>{
+ const dir=mkdtempSync(join(tmpdir(),'trip-consent-'));const path=join(dir,'test.sqlite');let db=openSqlite(path);
+ try{migrate(db);const uow=new SqliteUnitOfWork(db);uow.run(r=>r.sessions.insert({id:'s',tokenHash:'h',createdAt:0,expiresAt:999999}));const rooms=new Rooms(uow,{now:()=>1},new SecureTokens());const room=rooms.create({id:'s'},'방장');rooms.changeRole({id:'s'},room.inviteCode,'defendant');const draft=rooms.saveSettings({id:'s'},room.inviteCode,{expectedVersion:0,caseText:'사건',penaltyText:'벌칙',durationMinutes:3});const input={roleRevision:draft.roleRevision,penaltyRevision:draft.consent.penaltyRevision,expectedDecisionVersion:0,decision:'accepted'};
+ const failing={run:work=>uow.run(r=>work({...r,rooms:{...r.rooms,bumpVersion(){throw new Error('fixture failure');}}}))};assert.throws(()=>new Rooms(failing,{now:()=>1},new SecureTokens()).decideConsent({id:'s'},room.inviteCode,input),/fixture failure/);assert.equal(rooms.read({id:'s'},room.inviteCode).consent.decisionVersion,0);
+ const saved=rooms.decideConsent({id:'s'},room.inviteCode,input);assert.equal(saved.consent.status,'accepted');db.close();db=openSqlite(path);migrate(db);assert.deepEqual(new Rooms(new SqliteUnitOfWork(db),{now:()=>2},new SecureTokens()).read({id:'s'},room.inviteCode).consent,saved.consent);
+ }finally{if(db.open)db.close();rmSync(dir,{recursive:true,force:true});}
+});
