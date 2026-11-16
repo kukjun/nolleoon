@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import type {RoomSnapshot} from '@trip-court/contracts';
 import {Button,Input,Status} from './design/components';
+import {identityLoss} from './api/identity-generation';
 import {ResultView} from './result-view';
 import {mergeRoomSnapshot} from './api/room-merge';
 import {TrialControls} from './trial-controls';
@@ -10,7 +11,8 @@ import {RoomRoles} from './room-roles';
 import {GameSettings} from './game-settings';
 import {SnapshotOrder} from './api/snapshot-order';
 import {requestRoom} from './api/rooms-client';
-export function Rooms({onJoined}:{onJoined?:(joined:boolean)=>void}){
+export function Rooms({onJoined,onIdentityLost}:{onJoined?:(joined:boolean)=>void;onIdentityLost:()=>void}){
+ useEffect(()=>identityLoss.subscribe(onIdentityLost),[onIdentityLost]);
  const code=new URL(location.href).searchParams.get('room');
  const [room,setRoom]=useState<RoomSnapshot|null>(null);const [nickname,setNickname]=useState('');const [error,setError]=useState('');const [loading,setLoading]=useState(Boolean(code));const [copied,setCopied]=useState(false);const [missing,setMissing]=useState(false);
  const [reconnecting,setReconnecting]=useState(false);const [excluded,setExcluded]=useState(false);
@@ -43,14 +45,15 @@ export function Rooms({onJoined}:{onJoined?:(joined:boolean)=>void}){
    let result;
    try{result=await requestRoom(room!.inviteCode,undefined,request.signal,true);}finally{clearTimeout(timeout);}
    if(!alive||!order.current(sequence))return;
+   if(!result.ok&&result.code==='SESSION_REQUIRED')return;
    if(result.ok){if(result.data.version>=latestVersion.current&&order.accept(sequence,result.data.version)){setRoom(previous=>mergeRoomSnapshot(previous,result.data));setError('');setReconnecting(false);setExcluded(false);}}
    else{setReconnecting(true);if(result.code==='FORBIDDEN')setExcluded(true);setError(result.code==='NETWORK_ERROR'?'연결이 끊겼어요. 마지막 화면을 유지하고 다시 연결 중이에요.':result.message);}
    timer=setTimeout(()=>void poll(),3000);
   }
   function visibility(){if(document.visibilityState==='hidden'){clearTimeout(timer);order.begin();pending?.abort();}else void poll();}
   function resume(){void poll();}
-  pollNow.current=poll;void poll();document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',resume);window.addEventListener('online',resume);
-  return()=>{alive=false;clearTimeout(timer);pending?.abort();pollNow.current=async()=>{};document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);};
+  pollNow.current=poll;void poll();document.addEventListener('visibilitychange',visibility);window.addEventListener('focus',resume);window.addEventListener('online',resume);window.addEventListener('pageshow',resume);
+  return()=>{alive=false;clearTimeout(timer);pending?.abort();pollNow.current=async()=>{};document.removeEventListener('visibilitychange',visibility);window.removeEventListener('focus',resume);window.removeEventListener('online',resume);window.removeEventListener('pageshow',resume);};
  },[room?.roomId]);
  async function refresh(){await pollNow.current();}
  if(room?.game?.status==='result'&&!excluded)return <ResultView room={room} error={error} onRefresh={refresh}/>;
