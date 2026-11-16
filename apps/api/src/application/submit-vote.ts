@@ -28,7 +28,8 @@ export class SubmitVote {
   return this.uow.run(r => {
       const room = r.rooms.findByInvite(code);
       const game = r.games.find(gameId);
-      if (!room || room.status !== 'open' || !game || game.roomId !== room.id) throw new DomainFailure('NOT_FOUND');
+      if(room?.status==='closed')throw new DomainFailure('ROOM_CLOSED');
+      if (!room || !game || game.roomId !== room.id) throw new DomainFailure('NOT_FOUND');
       const member = r.members.active(room.id).find(m => m.sessionId === actor.id);
       const participant = member && r.participants.list(gameId).find(p => p.memberId === member.id);
       if (!member || !participant || participant.role !== 'participant' || !participant.eligible) throw new DomainFailure('FORBIDDEN');

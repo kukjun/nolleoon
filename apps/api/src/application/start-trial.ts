@@ -27,7 +27,7 @@ export class StartTrial {
   return this.uow.run(r=>{
    const room=r.rooms.findByInvite(code);if(!room)throw new DomainFailure('NOT_FOUND');
    const receipt=r.starts.find(room.id,requestId);if(receipt){if(receipt.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(receipt.intent!==intent)throw new DomainFailure('STATE_CONFLICT');return receipt.gameId;}
-   if(room.status!=='open')throw new DomainFailure('NOT_FOUND');const self=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!self||self.id!==room.hostMemberId)throw new DomainFailure('FORBIDDEN');
+   if(room.status!=='open')throw new DomainFailure('ROOM_CLOSED');const self=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!self||self.id!==room.hostMemberId)throw new DomainFailure('FORBIDDEN');
    for(const id of r.members.detectDisconnected(now,15000)){r.rooms.bumpVersion(id);if(id===room.id)room.version++;}
    const conditions=startConditions(r,room,now);if(conditions.missing.length||conditions.draft?.version!==value.expectedDraftVersion||(room.roleRevision??0)!==value.expectedRoleRevision||(r.consents.find(room.id)?.version??0)!==value.expectedDecisionVersion)throw new DomainFailure('STATE_CONFLICT');
    const draft=conditions.draft!;const gameId=this.tokens.id();r.games.insert({id:gameId,roomId:room.id,status:'defense',caseText:draft.caseText,penaltyText:draft.penaltyText,durationSeconds:draft.durationSeconds,version:0,createdAt:now});

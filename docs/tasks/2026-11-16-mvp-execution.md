@@ -177,3 +177,11 @@
 - 독립 실제 HTTP 검토에서 끊긴 방장이 자신이 빠진 명단으로 시작 가능한 결함을 재현했다. 연결된 방장 포함 조건으로 201→409 RED/GREEN을 확인하고 heartbeat 복귀 후 4명 시작·기존 receipt 재확인 회귀를 보완했다. 잘못된 난수 반환 rollback도 검사했다.
 - 390px 새 방장 화면에서 초안 보존·설정 권한·별도 역할 표시를 직접 확인했다. 전원 퇴장 폐쇄는 #22, 실제 기기·외부 배포·원격 CI #36은 미완료다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API52/DB30/browser55와 lint/layers/build/types. 소스·방장 시작 경계·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.
+
+## MVP-22 검증
+- #21은 PR #56 병합 후 CLOSED와 체크리스트 반영 확인.
+- 종료 endpoint 부재 RED 후 수동/전원 퇴장 종료, 유예 인원 유지, 마지막 만료 효력시각과 마감 우선순위를 구현했다. 종료 뒤 명령은 ROOM_CLOSED로 거부하고 완료 결과는 보존한다.
+- migration8로 최초 중단 원인·방 종료 기록을 불변 저장한다. 과거 원인 불명은 legacy-private으로 이전하며 created_at 대체값을 실제 중단시각으로 주장하지 않는다. #33의 피고 퇴장 공개 범위는 이후 방 종료로 넓어지지 않는다.
+- 종료 재시도 소유권·마지막 표/참여 경합·중간 저장 rollback/재개방을 검사한다. UI 시험에서 중복 React key로 생긴 버튼 중복을 발견해 분리했다.
+- 320px 실제 화면에서 종료·판결 없음·허용 사건만 표시되는 것을 직접 확인했다. 이력 목록·실기기·외부 배포·원격 CI는 후속/미완료다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API63/DB32/browser58와 lint/layers/build/types. browser232.2초, failed/skipped/flaky0. 소스·종료 공개 경계·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.

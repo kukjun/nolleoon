@@ -4,7 +4,7 @@ import { errorMessages, type ErrorCode, type ErrorResponse } from '@trip-court/c
 import { DomainFailure } from '../domain/failure.js';
 import { SessionRequired } from '../application/browser-sessions.js';
 import { StorageError } from '../application/ports/storage.js';
-const statuses:Record<ErrorCode,number>={SESSION_REQUIRED:401,FORBIDDEN:403,INVALID_INPUT:400,NOT_FOUND:404,STATE_CONFLICT:409,DEADLINE_PASSED:409,TEMPORARILY_UNAVAILABLE:503,INTERNAL_ERROR:500};
+const statuses:Record<ErrorCode,number>={ROOM_CLOSED:410,SESSION_REQUIRED:401,FORBIDDEN:403,INVALID_INPUT:400,NOT_FOUND:404,STATE_CONFLICT:409,DEADLINE_PASSED:409,TEMPORARILY_UNAVAILABLE:503,INTERNAL_ERROR:500};
 export function presentError(error:unknown):{status:number;body:ErrorResponse} {
  let code:ErrorCode='INTERNAL_ERROR';
  if(error instanceof SessionRequired)code='SESSION_REQUIRED';
