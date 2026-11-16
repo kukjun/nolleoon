@@ -11,7 +11,7 @@ export interface Repositories {
   sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
   rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; setHost(id: string, memberId: string): void; bumpVersion(id: string): void };
   members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; touch(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
-  games: InsertRepository<GameRecord>;
+  games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean };
   participants: InsertRepository<ParticipantRecord>;
   rounds: InsertRepository<RoundRecord>;
   votes: InsertRepository<VoteRecord> & { find(gameId: string, roundNumber: number, memberId: string): VoteRecord | undefined };

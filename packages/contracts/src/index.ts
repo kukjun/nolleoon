@@ -12,4 +12,5 @@ export type GameSnapshot = {phase:'interrupted';caseText?:string;actions:GameAct
  deadline?:number;verdict?:'guilty'|'not-guilty'|'no-verdict';
 };
 
-export interface RoomSnapshot {roomId:string;version:number;inviteCode:string;self:{memberId:string;isHost:boolean};members:{memberId:string;nickname:string;isHost:boolean;connected:boolean}[]}
+export interface GameDraftSnapshot {version:number;caseText:string;penaltyText:string;durationMinutes:number}
+export interface RoomSnapshot {roomId:string;draft:GameDraftSnapshot;version:number;inviteCode:string;self:{memberId:string;isHost:boolean};members:{memberId:string;nickname:string;isHost:boolean;connected:boolean}[]}
