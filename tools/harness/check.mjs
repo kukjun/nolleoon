@@ -19,6 +19,7 @@ const checks=[
  {id:'types',kind:'script',files:['tools/harness/tasks.mjs'],args:['typecheck'],timeoutMs:60000,dependsOn:'build'},
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
  {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:15000,dependsOn:'build'},
+ {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
  {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json'],timeoutMs:60000,dependsOn:'build'}
 ];
 const results=[];
@@ -31,13 +32,12 @@ for(const check of checks) {
  } catch(error) { results.push({id:check.id,status:'blocked',reason:error.message,testCount:null}); }
 }
 const planned=[
- {id:'db-integration',status:'not-configured',reason:'MVP-04 SQLite 구현 후 추가'},
  {id:'gameplay-e2e',status:'not-configured',reason:'게임 기능 구현 후 다인 시나리오 추가'},
  {id:'mobile-device',status:'not-configured',reason:'실제 모바일 기기 검증 후 기록'},
  {id:'external-deployment',status:'not-configured',reason:'배포 티켓 범위'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-03 검증 기반 및 헬스/브라우저 기동만',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'MVP-04 검증 기반·헬스·SQLite 저장소·브라우저 기동',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);

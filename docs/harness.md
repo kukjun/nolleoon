@@ -1,6 +1,6 @@
 # 개발 검증 하네스 · MVP-03
 
-검토한 저장소 코드의 실행·판정·증거 루프다. 제품 전체 완료나 권한 격리를 보장하지 않는다. 현재 제품 검증 범위는 헬스 유스케이스·Nest HTTP·Chromium 초기 렌더뿐이다.
+검토한 저장소 코드의 실행·판정·증거 루프다. 제품 전체 완료나 권한 격리를 보장하지 않는다. 현재 제품 검증 범위는 헬스 유스케이스·Nest HTTP·SQLite 저장소·Chromium 초기 렌더다.
 
 ## 설치와 실행
 
@@ -8,6 +8,7 @@ Node 24.x / npm 11.x. [로컬 기반](local-development.md)을 따른다.
 
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund
+npm rebuild better-sqlite3
 node node_modules/@playwright/test/cli.js install chromium
 npm run check
 ```
@@ -23,6 +24,7 @@ npm run build
 npm run typecheck
 npm run test:unit
 npm run test:integration
+npm run test:database
 npm run test:browser
 ```
 
@@ -34,7 +36,7 @@ unit/integration/browser는 빌드 산출물을 사용하므로 build를 먼저 
 - Playwright JSON: expected/unexpected/skipped/flaky 수와 errors를 검증한다. 빈 시험·skip은 incomplete, 실패·flaky·오염된 JSON은 failed다. JSON이 아닌 출력 형식을 임의로 통과시키지 않는다.
 - lint/type/build: 실제 ESLint, TypeScript, workspace 빌드 명령의 종료 코드를 기록한다. 이런 명령에 가짜 시험 수를 부여하지 않는다.
 - 파일/실행 환경 누락은 blocked, 잘못된 설정·assertion·시간 초과는 failed다. 준비한 필수 검사 중 passed 아닌 것이 하나라도 있으면 check 종료 코드는 1이다.
-- DB integration·다인 gameplay E2E·실기기·외부 배포는 아직 not-configured 계획으로 별도 표시한다. 검증 기반 성공을 제품 전체 인수로 표시하지 않는다.
+- 다인 gameplay E2E·실기기·외부 배포는 아직 not-configured 계획으로 별도 표시한다. 검증 기반 성공을 제품 전체 인수로 표시하지 않는다.
 
 ## 구성
 

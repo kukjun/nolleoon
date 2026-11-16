@@ -23,7 +23,7 @@ export function discoverTests(root, directory) {
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href) {
   try {
-    const allowed=['tests/harness','tests/workspace','tests/unit','tests/integration'];
+    const allowed=['tests/harness','tests/workspace','tests/unit','tests/integration','tests/database'];
     const directory=process.argv[2];
     if(!allowed.includes(directory)) throw new Error('허용되지 않은 시험 그룹입니다.');
     const root=resolve(import.meta.dirname,'../..');
