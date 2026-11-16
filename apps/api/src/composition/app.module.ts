@@ -1,3 +1,5 @@
+import {Rooms} from '../application/rooms.js';
+import {RoomsController} from '../presentation/rooms.controller.js';
 import { Module, type DynamicModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ApiErrorFilter } from '../presentation/errors.js';
@@ -21,11 +23,12 @@ export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
-    return {module:AppModule,controllers:[HealthController,SessionController],providers:[
+    return {module:AppModule,controllers:[HealthController,SessionController,RoomsController],providers:[
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
+      {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:BrowserSessions,inject:[STORAGE],useFactory:(resources:StorageResources)=>new BrowserSessions(resources.uow,config.clock??new SystemClock(),new SecureTokens())}
     ]};
   }
