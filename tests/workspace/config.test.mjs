@@ -7,7 +7,9 @@ test('앱 workspace와 공유 계약이 있다', () => {
 test('환경 누락·잘못된 포트·외부 바인딩을 거절한다', async () => {
  const { parseEnvironment } = await import('../../apps/api/src/config/environment.mjs');
  for (const env of [{}, {API_PORT:''}, {API_PORT:'3.5'}, {API_PORT:'3001', API_HOST:''}, {API_PORT:'x'}, {API_PORT:'0'}, {API_PORT:'65536'}, {API_PORT:'3001', API_HOST:'0.0.0.0'}]) assert.throws(() => parseEnvironment(env));
- assert.deepEqual(parseEnvironment({API_PORT:'3001'}), {port:3001, host:'127.0.0.1'});
+ const valid={API_PORT:'3001',DB_PATH:'/tmp/trip-config.sqlite',PUBLIC_ORIGIN:'http://127.0.0.1:5173'};
+ assert.deepEqual(parseEnvironment(valid), {port:3001, host:'127.0.0.1',dbPath:valid.DB_PATH,publicOrigin:valid.PUBLIC_ORIGIN});
+ for(const change of [{DB_PATH:''},{DB_PATH:'relative.sqlite'},{PUBLIC_ORIGIN:''},{PUBLIC_ORIGIN:'http://external.example'},{PUBLIC_ORIGIN:'https://example.com/path'},{PUBLIC_ORIGIN:'https://user:pass@example.com'},{PUBLIC_ORIGIN:'https://example.com/'}]) assert.throws(()=>parseEnvironment({...valid,...change}));
 });
 test('계층 검사기는 프레임워크·DB·역방향 import를 탐지한다', async () => {
  const { forbiddenImports } = await import('../../tools/workspace/layers.mjs');

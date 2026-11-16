@@ -5,10 +5,11 @@ import { parseEnvironment } from './config/environment.mjs';
 
 async function bootstrap() {
   const env = parseEnvironment(process.env);
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule.register(env),{abortOnError:false});
   app.setGlobalPrefix('api');
   app.enableShutdownHooks();
-  await app.listen(env.port, env.host);
+  try { await app.listen(env.port, env.host); }
+  catch(error) { await app.close(); throw error; }
 }
 bootstrap().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : 'API 시작에 실패했습니다.');

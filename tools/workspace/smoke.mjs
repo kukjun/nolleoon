@@ -1,12 +1,14 @@
 import { spawn } from 'node:child_process';
-import { access } from 'node:fs/promises';
+import { access, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import assert from 'node:assert/strict';
 
 const root = resolve(import.meta.dirname, '../..');
 const children = [];
+const temporary = await mkdtemp(resolve(tmpdir(),"trip-court-smoke-"));
 async function freePort() {
   const server = createServer();
   await new Promise((ok, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', ok); });
@@ -39,16 +41,22 @@ try {
   assert.notEqual(bad.code, 0);
   assert.match(bad.output, /API_PORT/);
   const apiPort=await freePort();
-  const api=start(['apps/api/dist/main.js'],root,{API_PORT:String(apiPort),API_HOST:'127.0.0.1'});
-  assert.deepEqual(await (await response(`http://127.0.0.1:${apiPort}/api/health`,api)).json(), {status:'ok',service:'trip-court-api'});
   const webPort=await freePort();
-  const web=start([resolve(root,'node_modules/vite/bin/vite.js'),'preview','--host','127.0.0.1','--port',String(webPort),'--strictPort'],resolve(root,'apps/web'),{});
+  const api=start(['apps/api/dist/main.js'],root,{API_PORT:String(apiPort),API_HOST:'127.0.0.1',DB_PATH:resolve(temporary,'test.sqlite'),PUBLIC_ORIGIN:`http://127.0.0.1:${webPort}`});
+  assert.deepEqual(await (await response(`http://127.0.0.1:${apiPort}/api/health`,api)).json(), {status:'ok',service:'trip-court-api'});
+  const web=start([resolve(root,'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port',String(webPort),'--strictPort'],resolve(root,'apps/web'),{API_PORT:String(apiPort)});
   const html=await (await response(`http://127.0.0.1:${webPort}`,web)).text();
   assert.match(html, /<title>Trip Court<\/title>/);
-  const bundle=html.match(/src="([^"]+\.js)"/);
-  assert.ok(bundle, '빌드된 JS 번들 참조');
+  const bundle=html.match(/src="([^"]+\.tsx)"/);
+  assert.ok(bundle, 'Vite 개발 진입점 참조');
   assert.ok((await response(`http://127.0.0.1:${webPort}${bundle[1]}`,web)).ok);
-  console.log('API 환경 오류 종료·헬스 JSON·web 정적 번들 HTTP smoke 통과 (브라우저 렌더/E2E 아님)');
+  const origin=`http://127.0.0.1:${webPort}`;
+  assert.equal((await fetch(`${origin}/api/session`)).status,401);
+  const session=await fetch(`${origin}/api/session`,{method:'POST',headers:{origin,'content-type':'application/json','x-trip-court-request':'1'},body:'{}'});
+  assert.equal(session.status,201);assert.deepEqual(await session.json(),{authenticated:true});
+  const cookie=session.headers.get('set-cookie').split(';')[0];
+  assert.equal((await fetch(`${origin}/api/session`,{headers:{cookie}})).status,200);
+  console.log('실제 API 기동·Vite dev /api 프록시·세션 발급/복구 HTTP smoke 통과 (브라우저 렌더/E2E 아님)');
 } catch(error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode=1;
@@ -58,4 +66,5 @@ try {
     await Promise.race([state.done, delay(2000)]);
     if(!state.closed) { state.child.kill('SIGKILL'); await state.done; }
   }));
+  await rm(temporary,{recursive:true,force:true});
 }

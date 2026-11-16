@@ -45,3 +45,9 @@
 - 독립 리뷰의 제약 시험 fixture 강화 후 DB 15개 통과. 복합 FK 2개/index 2개를 임시 빌드에서 제거한 변이 시험은 각각 실패했고 원복·재빌드했다.
 - 깨끗한 소스에서 npm ci 및 better-sqlite3 네이티브 rebuild·빌드·DB 시험 검증. 전체 하네스와 독립 재리뷰 통과.
 - Node ABI 137, better-sqlite3 13.2.0, 실제 SQLite 3.54.1. 백업 복원/실제 데이터 연결/인증·게임 기능/원격 CI는 이 성공에 포함하지 않는다.
+
+## MVP-05 검증
+- #4는 PR #38 병합 후 CLOSED 확인.
+- 초기 `node --test tests/unit/sessions.test.mjs`는 구현 전 모듈 부재(ERR_MODULE_NOT_FOUND)로 tests 1/pass 0/fail 1, 종료 코드 1. assertion 실행 전의 RED임을 구분한다.
+- 최종 깨끗한 소스 npm ci/native rebuild·전체 check 통과: self15/workspace5/docs6/unit4/API4/DB15/browser2와 lint/layers/build/types. 실제 main+Vite 개발 경로의 401→쿠키발급→복구 smoke 통과.
+- 독립 리뷰 승인. 쿠키 flags/동일·신규 브라우저/위조·만료·CSRF/서버 재시작을 확인. 실제 모바일·외부 HTTPS·게임별 권한·원격 CI는 미검증.
