@@ -1,5 +1,5 @@
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
-export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number }
+export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; hostMemberId?: string | null }
 export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number }
 export interface GameRecord { id: string; roomId: string; status: 'draft' | 'defense' | 'voting' | 'final-defense' | 'result' | 'interrupted'; caseText: string; penaltyText: string; durationSeconds: number; version: number; createdAt: number }
 export interface ParticipantRecord { gameId: string; roomId: string; memberId: string; role: 'defendant' | 'participant' | 'observer'; eligible: boolean }
@@ -9,8 +9,8 @@ export interface DraftRecord { roomId: string; caseText: string; penaltyText: st
 export interface InsertRepository<T> { insert(record: T): void }
 export interface Repositories {
   sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
-  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined };
-  members: InsertRepository<MemberRecord>;
+  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; setHost(id: string, memberId: string): void };
+  members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[] };
   games: InsertRepository<GameRecord>;
   participants: InsertRepository<ParticipantRecord>;
   rounds: InsertRepository<RoundRecord>;

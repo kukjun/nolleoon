@@ -1,0 +1,14 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {isRoomSnapshot} from '../../apps/web/src/api/rooms-client.ts';
+test('방 DTO 런타임 검증은 개인 필드·잘못된 방장·중복 멤버를 거부한다',()=>{
+ const room={roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',nickname:'나',isHost:true}]};
+ assert.equal(isRoomSnapshot(room),true);
+ assert.equal(isRoomSnapshot({...room,sessionId:'private'}),false);
+ assert.equal(isRoomSnapshot({...room,members:[{...room.members[0],sessionId:'private'}]}),false);
+ assert.equal(isRoomSnapshot({...room,members:[...room.members,...room.members]}),false);
+ assert.equal(isRoomSnapshot({...room,self:{memberId:'missing',isHost:false}}),false);
+ assert.equal(isRoomSnapshot({...room,members:[{...room.members[0],isHost:false}]}),false);
+ assert.equal(isRoomSnapshot({...room,self:{memberId:'one',isHost:false}}),false);
+ assert.equal(isRoomSnapshot({...room,members:[]}),false);
+});

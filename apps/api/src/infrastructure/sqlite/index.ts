@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { migrations, type Migration } from './migrations.js';
-import { StorageError, type UnitOfWork, type Repositories, type RoomRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
+import { StorageError, type UnitOfWork, type Repositories, type RoomRecord, type MemberRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
 export { StorageError } from '../../application/ports/storage.js';
 
 export function openSqlite(path: string, options: {busyTimeoutMs?: number} = {}): Database.Database {
@@ -53,10 +53,11 @@ export class SqliteUnitOfWork implements UnitOfWork {
     let active=true;
     const execute=(sql:string,params:object)=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');this.db.prepare(sql).run(params);};
     const find=<TRecord>(sql:string,...params:(string|number)[]):TRecord|undefined=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');return this.db.prepare(sql).get(...params) as TRecord|undefined;};
+    const all=<TRecord>(sql:string,...params:(string|number)[]):TRecord[]=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');return this.db.prepare(sql).all(...params) as TRecord[];};
     const repositories:Repositories={
       sessions:{insert:r=>execute('INSERT INTO sessions(id,token_hash,created_at,expires_at) VALUES (@id,@tokenHash,@createdAt,@expiresAt)',r),findByTokenHash:hash=>find<SessionRecord>('SELECT id,token_hash AS tokenHash,created_at AS createdAt,expires_at AS expiresAt FROM sessions WHERE token_hash=?',hash),extendExpiry:(id,expiresAt)=>execute('UPDATE sessions SET expires_at=@expiresAt WHERE id=@id',{id,expiresAt})},
-      rooms:{insert:r=>execute('INSERT INTO rooms(id,invite_code,status,version,created_at) VALUES (@id,@inviteCode,@status,@version,@createdAt)',r),find:id=>find<RoomRecord>('SELECT id,invite_code AS inviteCode,status,version,created_at AS createdAt FROM rooms WHERE id=?',id)},
-      members:{insert:r=>execute('INSERT INTO room_members(id,room_id,session_id,nickname,nickname_key,joined_at) VALUES (@id,@roomId,@sessionId,@nickname,@nicknameKey,@joinedAt)',r)},
+      rooms:{insert:r=>execute('INSERT INTO rooms(id,invite_code,status,version,created_at) VALUES (@id,@inviteCode,@status,@version,@createdAt)',r),find:id=>find<RoomRecord>('SELECT id,invite_code AS inviteCode,status,version,created_at AS createdAt,host_member_id AS hostMemberId FROM rooms WHERE id=?',id),findByInvite:code=>find<RoomRecord>('SELECT id,invite_code AS inviteCode,status,version,created_at AS createdAt,host_member_id AS hostMemberId FROM rooms WHERE invite_code=?',code),setHost:(id,memberId)=>execute('UPDATE rooms SET host_member_id=@memberId WHERE id=@id',{id,memberId})},
+      members:{insert:r=>execute('INSERT INTO room_members(id,room_id,session_id,nickname,nickname_key,joined_at) VALUES (@id,@roomId,@sessionId,@nickname,@nicknameKey,@joinedAt)',r),active:roomId=>all<MemberRecord>('SELECT id,room_id AS roomId,session_id AS sessionId,nickname,nickname_key AS nicknameKey,joined_at AS joinedAt FROM room_members WHERE room_id=? AND left_at IS NULL ORDER BY joined_at,id',roomId)},
       games:{insert:r=>execute('INSERT INTO games(id,room_id,status,case_text,penalty_text,duration_seconds,version,created_at) VALUES (@id,@roomId,@status,@caseText,@penaltyText,@durationSeconds,@version,@createdAt)',r)},
       participants:{insert:r=>execute('INSERT INTO game_participants(game_id,room_id,member_id,role,eligible) VALUES (@gameId,@roomId,@memberId,@role,@eligible)',{...r,eligible:r.eligible?1:0})},
       rounds:{insert:r=>execute('INSERT INTO rounds(game_id,number,started_at,deadline) VALUES (@gameId,@number,@startedAt,@deadline)',r)},

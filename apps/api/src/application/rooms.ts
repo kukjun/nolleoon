@@ -1,0 +1,43 @@
+import type { UnitOfWork, Repositories, RoomRecord } from './ports/storage.js';
+import type { Clock, TokenCodec } from './browser-sessions.js';
+import { DomainFailure } from '../domain/failure.js';
+export function normalizeNickname(input: unknown): {nickname:string;nicknameKey:string} {
+ if(typeof input!=='string'||/[\p{Cc}\p{Cf}]/u.test(input))throw new DomainFailure('INVALID_INPUT');
+ const nickname=input.normalize('NFKC').trim().replace(/\s+/gu,' ');
+ if([...nickname].length<1||[...nickname].length>20)throw new DomainFailure('INVALID_INPUT');
+ return {nickname,nicknameKey:nickname.toLowerCase()};
+}
+export class Rooms {
+ constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec){}
+ create(actor:{id:string},input:unknown){
+  const name=normalizeNickname(input);
+  return this.uow.run(r=>{
+   const room={id:this.tokens.id(),inviteCode:this.tokens.token(),status:'open' as const,version:0,createdAt:this.clock.now()};
+   const member={id:this.tokens.id(),roomId:room.id,sessionId:actor.id,...name,joinedAt:this.clock.now()};
+   r.rooms.insert(room);r.members.insert(member);r.rooms.setHost(room.id,member.id);
+   return this.snapshot(r,{...room,hostMemberId:member.id},actor.id);
+  });
+ }
+ join(actor:{id:string},code:string,input:unknown){
+  const name=normalizeNickname(input);
+  return this.uow.run(r=>{
+   const room=this.openRoom(r,code);const members=r.members.active(room.id);
+   // 같은 브라우저의 재시도는 닉네임 변경이나 두 번째 참가가 아니다.
+   if(!members.some(m=>m.sessionId===actor.id)){
+    if(members.some(m=>m.nicknameKey===name.nicknameKey))throw new DomainFailure('STATE_CONFLICT');
+    r.members.insert({id:this.tokens.id(),roomId:room.id,sessionId:actor.id,...name,joinedAt:this.clock.now()});
+   }
+   return this.snapshot(r,room,actor.id);
+  });
+ }
+ read(actor:{id:string},code:string){return this.uow.run(r=>this.snapshot(r,this.openRoom(r,code),actor.id));}
+ private openRoom(r:Repositories,code:string){
+  if(!/^[A-Za-z0-9_-]{43}$/.test(code))throw new DomainFailure('NOT_FOUND');
+  const room=r.rooms.findByInvite(code);if(!room||room.status!=='open')throw new DomainFailure('NOT_FOUND');return room;
+ }
+ private snapshot(r:Repositories,room:RoomRecord,sessionId:string){
+  const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
+  if(!self)throw new DomainFailure('FORBIDDEN');
+  return {roomId:room.id,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,isHost:m.id===room.hostMemberId}))};
+ }
+}

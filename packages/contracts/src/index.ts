@@ -11,3 +11,5 @@ export type GameSnapshot = {phase:'interrupted';caseText?:string;actions:GameAct
  self:{role:'defendant'|'participant'|'observer';isHost:boolean};actions:GameAction[];publishedRounds:PublishedRound[];
  deadline?:number;verdict?:'guilty'|'not-guilty'|'no-verdict';
 };
+
+export interface RoomSnapshot {roomId:string;inviteCode:string;self:{memberId:string;isHost:boolean};members:{memberId:string;nickname:string;isHost:boolean}[]}

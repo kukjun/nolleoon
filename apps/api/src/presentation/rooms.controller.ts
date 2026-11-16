@@ -1,0 +1,19 @@
+import {Controller,Get,Post,Param,Req,Res,Inject} from '@nestjs/common';
+import type {Request,Response} from 'express';
+import type {RoomSnapshot} from '@trip-court/contracts';
+import {Rooms} from '../application/rooms.js';
+import {BrowserSessions} from '../application/browser-sessions.js';
+import {DomainFailure} from '../domain/failure.js';
+import {PUBLIC_ORIGIN} from './session.controller.js';
+import {requestActor,assertWebCommand} from './commands.js';
+@Controller('rooms')
+export class RoomsController {
+ constructor(@Inject(Rooms) private readonly rooms:Rooms,@Inject(BrowserSessions) private readonly sessions:BrowserSessions,@Inject(PUBLIC_ORIGIN) private readonly origin:string){}
+ private nickname(request:Request){assertWebCommand(request,this.origin);if(Object.keys(request.body).length!==1||!Object.hasOwn(request.body,'nickname'))throw new DomainFailure('INVALID_INPUT');return request.body.nickname as unknown;}
+ @Post()
+ create(@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.create(actor,this.nickname(request));}
+ @Post(':code/join')
+ join(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.join(actor,code,this.nickname(request));}
+ @Get(':code')
+ read(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.read(requestActor(request,this.sessions),code);}
+}

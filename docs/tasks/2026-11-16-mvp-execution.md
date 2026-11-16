@@ -65,3 +65,9 @@
 - 깨끗한 소스 npm ci/native rebuild·전체 check 및 실제 main/Vite smoke 통과: unit14/API5/DB15/browser5와 self15/workspace5/docs6 및 정적 검사.
 - 독립 개인정보 공개·권한·오류 리뷰 승인. 실제 게임 endpoint·마감 엔진은 후속 범위이고 action 표시는 명령 허가의 대체물이 아니다.
 - M1 개발 기반 1~7 구현·검증을 마쳤다. #33 공개 결정과 #36 원격 CI 인증은 미해결이며 전체 MVP 인수는 미완료다.
+
+## MVP-08 검증
+- #7은 PR #41 병합 후 CLOSED, M1 마일스톤 0open/7closed 확인 후 종료.
+- 실제 API 404≠201 RED 후 방 생성/참가 구현. 독립 리뷰의 같은 순간 폼 제출 2회 문제는 요청2≠1 RED 뒤 동기 mutex로 수정, 회귀 통과.
+- 깨끗한 소스 설치·전체 check: unit16/API6/DB16/browser12와 self15/workspace5/docs6 및 정적 검사 통과. 3/5/6 독립 context에서 같은 방과 단일 방장 확인.
+- 독립 리뷰 승인, 390px 실제 방 캡처 직접 확인. 명단·초대·새로고침 가로 잘림 없음. 자동 동기화/presence·게임·실기기·외부 배포는 아직 미완료.
