@@ -1,6 +1,6 @@
 # 데이터 모델 설계
 
-[규칙](00-current-rules.md) · [ADR](../decisions/0002-mvp-architecture.md). 아래는 구현 대상이며 아직 DB가 만들어진 것은 아니다.
+[규칙](00-current-rules.md) · [ADR](../decisions/0002-mvp-architecture.md). 아래는 전체 구현 대상이다. SQLite 기반과 일부 기능 스키마가 구현됐으며 실제 적용 버전은 migration과 기능별 검증 문서를 따른다. 이 표만으로 모든 엔터티의 구현 완료를 주장하지 않는다.
 
 | 엔터티 | 핵심 필드·불변식 |
 |---|---|

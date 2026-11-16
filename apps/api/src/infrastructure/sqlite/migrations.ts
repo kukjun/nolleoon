@@ -61,4 +61,6 @@ CREATE UNIQUE INDEX one_waiting_defendant ON room_members(room_id) WHERE role='d
 `},{version:4,name:'penalty-consent',sql:`
 ALTER TABLE rooms ADD COLUMN penalty_revision INTEGER NOT NULL DEFAULT 0 CHECK(penalty_revision>=0);
 CREATE TABLE penalty_consents (room_id TEXT PRIMARY KEY NOT NULL REFERENCES rooms(id),member_id TEXT NOT NULL,role_revision INTEGER NOT NULL CHECK(role_revision>=0),penalty_revision INTEGER NOT NULL CHECK(penalty_revision>=0),decision TEXT NOT NULL CHECK(decision IN ('accepted','rejected')),version INTEGER NOT NULL CHECK(version>0),FOREIGN KEY(room_id,member_id) REFERENCES room_members(room_id,id)) STRICT;
+`},{version:5,name:'trial-start-receipts',sql:`
+CREATE TABLE start_receipts (room_id TEXT NOT NULL REFERENCES rooms(id),request_id TEXT NOT NULL,actor_session_id TEXT NOT NULL REFERENCES sessions(id),intent TEXT NOT NULL,game_id TEXT NOT NULL REFERENCES games(id),PRIMARY KEY(room_id,request_id)) STRICT;
 `}];

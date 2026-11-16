@@ -8,13 +8,15 @@ export interface VoteRecord { gameId: string; roundNumber: 1 | 2; memberId: stri
 export interface DraftRecord { roomId: string; caseText: string; penaltyText: string; durationSeconds: number; version: number }
 export interface InsertRepository<T> { insert(record: T): void }
 export interface ConsentRecord {roomId:string;memberId:string;roleRevision:number;penaltyRevision:number;decision:'accepted'|'rejected';version:number}
+export interface StartReceipt {roomId:string;requestId:string;actorSessionId:string;intent:string;gameId:string}
 export interface Repositories {
+  starts:{find(roomId:string,requestId:string):StartReceipt|undefined;insert(record:StartReceipt):void};
   consents:{find(roomId:string):ConsentRecord|undefined;save(record:ConsentRecord):void};
   sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
   rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; setHost(id: string, memberId: string): void; bumpVersion(id: string): void; bumpRoleRevision(id: string): void; bumpPenaltyRevision(id: string): void };
-  members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; touch(id: string, now: number): void; setRole(id: string, role: 'defendant' | 'participant'): void; exclude(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
-  games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean };
-  participants: InsertRepository<ParticipantRecord>;
+  members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; idsForSession(roomId:string,sessionId:string):string[]; touch(id: string, now: number): void; setRole(id: string, role: 'defendant' | 'participant'): void; exclude(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
+  games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean; active(roomId:string):GameRecord|undefined; latest(roomId:string):GameRecord|undefined; find(id:string):GameRecord|undefined };
+  participants: InsertRepository<ParticipantRecord> & { list(gameId:string):ParticipantRecord[] };
   rounds: InsertRepository<RoundRecord>;
   votes: InsertRepository<VoteRecord> & { find(gameId: string, roundNumber: number, memberId: string): VoteRecord | undefined };
   drafts: { save(record: DraftRecord): void; find(roomId: string): DraftRecord | undefined };

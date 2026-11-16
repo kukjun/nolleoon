@@ -99,3 +99,11 @@
 - 독립 리뷰에서 status 배열을 문자열처럼 허용한 DTO 강제변환을 RED로 재현해 strict type guard로 수정, 관련 변환 우회 회귀 통과.
 - 최종 깨끗한 소스 전체 check: unit20/API10/DB22/browser26와 self15/workspace5/docs6 및 정적 검사 통과. 독립 리뷰 승인.
 - 저장된 벌칙/미저장 수정 구분과 390px 수락 영역 직접 확인. 실제 게임 시작은 #13이며 실기기·외부/원격 CI는 미완료다.
+
+## MVP-13 검증
+- #12는 PR #46 병합 후 CLOSED와 체크리스트 반영 확인.
+- 실제 시작 API404 RED 후 별도 StartTrial 유스케이스·migration5 요청 영수증·고정 명단 구현.
+- 동일/상이 요청 동시 시작, 현재 수락·접속 경계, rollback/재기동 재시도, 5컨텍스트 시작과 늦은 관전자, 종료 뒤 신규 참가자 공개 차단을 검사했다.
+- 독립 리뷰에서 game.status/self.role DTO enum 강제변환을 발견해 strict type guard와 회귀로 수정했다.
+- 390px 시작 화면 직접 확인. 실제 변론/투표·다음 게임은 후속 단계이며 원격 CI #36·중단 공개 결정 #33은 미해결이다.
+- 최종 깨끗한 소스 설치·전체 check 통과: unit20/API12/DB24/browser29 및 self15/workspace5/docs6·정적 검사. 최종 enum 수정도 독립 재리뷰 승인.

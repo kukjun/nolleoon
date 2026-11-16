@@ -1,6 +1,6 @@
 # 상태 전이 설계
 
-정책: [현재 규칙](00-current-rules.md). 구현 설계이며 미실행.
+정책: [현재 규칙](00-current-rules.md). 전체 상태 전이 설계다. 현재 구현·검증된 전이는 개별 기능 이슈/PR을 따르며 전체 흐름 완료와 구분한다.
 
 Room: OPEN → CLOSED. Game: DRAFT → DEFENSE → VOTING_1 → RESULT 또는 FINAL_DEFENSE → VOTING_2 → RESULT. 진행 상태에서 방 종료/피고 나감은 INTERRUPTED로 종결한다. INTERRUPTED를 타이머 정산이 RESULT로 덮어쓰지 않는다.
 
