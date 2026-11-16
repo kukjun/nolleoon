@@ -2,7 +2,7 @@
 
 BFF는 ‘화면이 필요한 데이터와 명령의 입구’다. 별도 서버를 추가하지 않고 Nest 앱 안에서 요청 검증·신원 확인·응답 조립을 한다. 도메인 판단을 React에 복사하지 않고, DB entity를 화면에 그대로 보내지 않는다.
 
-## 지금 실제 동작하는 경로
+## MVP-07 당시 구현 경로와 현재 상태
 
 React `requestSession` → 같은 origin `/api/session` → Nest SessionController → BrowserSessions use case → UnitOfWork/SQLite → 명시적 SessionSnapshot → React 상태.
 
@@ -10,9 +10,9 @@ GET 신원 확인·POST 발급/갱신은 실제 구현이다. command helper가 
 
 공유 계약은 `packages/contracts`에 있고 web 클라이언트는 성공 payload 형태를 확인한다. 응답이 잘못되거나 오류 code가 알려져 있지 않으면 성공 표시를 하지 않는다. 서버 메시지 문자열을 그대로 화면에 반사하지 않고 공유된 고정 한국어 메시지를 사용한다.
 
-## 게임 snapshot은 아직 계약이다
+## 초기 합성 계약과 현재 제품 경로
 
-`GameStateView`는 서버가 구성해야 할 신뢰된 내부 조회 모델, `presentGame`은 명시적인 공개 필드만 만드는 presenter다. 합성 데이터로 계약을 시험하지만 **게임 snapshot endpoint, 방/게임 생성·투표 endpoint는 아직 없다**. 현재 테스트를 실제 다인 게임 완료로 해석하지 않는다.
+`GameStateView`와 `presentGame`은 MVP-07에서 합성 데이터로 검증한 초기 계약 scaffold다. 현재 실제 방·게임·투표·기록 endpoint는 별도 use case와 `Rooms`의 명시적 DTO 조립 경로를 사용한다. 이 초기 presenter를 현재 endpoint의 전체 권한 구현으로 오해하지 않는다. 실제 다인 경로의 검증은 [E2E 인수 기록](e2e-acceptance.md)을 보고, 실기기·외부 배포 등 미완료 인수와 구분한다.
 
 | actor | 진행 게임 조회 | 역할/단계 action 힌트 |
 |---|---|---|
@@ -23,7 +23,7 @@ GET 신원 확인·POST 발급/갱신은 실제 구현이다. command helper가 
 | 이탈한 기존 게임 참가자 | 기존 게임 기록 권한 유지 | 명령 불가 |
 | 해당 게임 비참가자 | 거절 | 없음 |
 
-같은 신원의 이전 이탈 멤버십과 새 관전자 멤버십이 함께 있으면 현재 활성 멤버십을 선택한다. 이전 투표 자격은 되살리지 않는다. 복수 활성 멤버십은 임의로 고르지 않고 STATE_CONFLICT로 거절한다. 실제 repository가 이 모델을 구성하는 방식은 후속 기능에서 연결한다.
+같은 신원의 이전 이탈 멤버십과 새 관전자 멤버십이 함께 있으면 현재 활성 멤버십을 선택한다. 이전 투표 자격은 되살리지 않는다. 복수 활성 멤버십은 임의로 고르지 않고 STATE_CONFLICT로 거절한다. 이 설명은 초기 합성 모델의 계약이며, 현재 저장소 연결과 명령 권한은 실제 use case 회귀 시험으로 검증한다.
 
 ## 공개 정책
 
@@ -37,14 +37,14 @@ GET 신원 확인·POST 발급/갱신은 실제 구현이다. command helper가 
 
 현재 `gameActions`/`assertGameAction`은 역할·단계·제출 여부·이탈·방 상태 및 선택적 version의 필요 조건만 검사한다. start-trial의 인원/벌칙 수락, 투표 deadline, 동시 명령 경합 등 **실제 명령 성공 조건을 전부 구현하지 않았다**. UI 후보 action이 있어도 실제 명령이 거절될 수 있다.
 
-후속 명령 use case는 다음을 같은 transaction 안에서 수행해야 한다:
+현재 명령 use case는 초기 action 힌트와 별개로 다음 조건을 검사한다. due maintenance는 명령 거절 시 만료 처리가 롤백되지 않도록 먼저 수행하고, 명령의 검증·저장은 같은 transaction 안에서 수행한다:
 1. 쿠키로 검증된 actor만 받기.
 2. DB에서 현재 게임/멤버십/version/마감 재조회.
 3. 최신 상태로 역할·단계 권한을 다시 검사. 프론트가 제출한 actions나 과거 snapshot은 무시.
 4. 개별 명령의 인원·최신 수락·동결 cohort·서버 now < deadline·멱등성 등을 추가 검사.
 5. 조건부 저장/unique 제약과 원자적 정산 후, 허용 DTO만 반환.
 
-이 transaction-time 엔진은 MVP-08 이후 각 기능에서 구현한다. #7만으로 실제 투표 마감/원자성까지 완성했다고 보고하지 않는다.
+이 transaction-time 엔진은 MVP-08 이후 기능별로 구현·검증했다. 초기 #7 계약 시험만으로 현재 투표 마감·원자성 검증을 대신하지 않는다.
 
 ## 안전한 오류 계약
 
@@ -57,11 +57,11 @@ GET 신원 확인·POST 발급/갱신은 실제 구현이다. command helper가 
 | INVALID_INPUT | 400 | JSON/입력 계약 불일치 |
 | NOT_FOUND | 404 | 없는 route/항목 |
 | STATE_CONFLICT | 409 | 최신 상태/version/저장 제약 충돌 |
-| DEADLINE_PASSED | 409 | 향후 마감 use case에서 사용할 코드 |
+| DEADLINE_PASSED | 409 | 서버 마감 이후 신규 투표 거절 |
 | TEMPORARILY_UNAVAILABLE | 503 | SQLite busy 등 일시 사용 불가 |
 | INTERNAL_ERROR | 500 | 안전한 일반 실패 메시지 |
 
-클라이언트만의 NETWORK_ERROR/INVALID_RESPONSE는 서버 오류 code와 구분한다. 자동 명령 재시도를 하지 않으며 응답 유실 시 조회·멱등성 확인 정책은 후속 기능에서 연결한다.
+클라이언트만의 NETWORK_ERROR/INVALID_RESPONSE는 서버 오류 code와 구분한다. 자동 명령 재시도를 하지 않으며 응답 유실 시 조회·기능별 멱등성 확인을 사용한다. 방 생성처럼 영속 요청 receipt가 없는 명령의 재시도는 새 방을 만들 수 있으며, 자동 재시도하지 않는다.
 
 ## 시험과 한계
 

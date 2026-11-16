@@ -27,17 +27,40 @@ export function Rooms({onJoined,onIdentityLost}:{onJoined?:(joined:boolean)=>voi
  const submitting=useRef(false);
  useEffect(()=>{onJoined?.(Boolean(room)||left);},[Boolean(room),left,onJoined]);
  const generation=useRef(0);const controller=useRef<AbortController|null>(null);
- useEffect(()=>{let alive=true;const abort=new AbortController();controller.current=abort;const current=++generation.current;
-  if(code&&!room)void requestRoom(code,undefined,abort.signal).then(result=>{if(!alive||current!==generation.current)return;setLoading(false);if(result.ok)setRoom(result.data);else if(result.code!=='FORBIDDEN'){setError(result.message);setMissing(result.code==='NOT_FOUND'||result.code==='ROOM_CLOSED');}});
-  return()=>{alive=false;generation.current++;abort.abort();};
+ const [lookupFailed,setLookupFailed]=useState(false);
+ async function entryRequest(name?:string){
+  controller.current?.abort();
+  const abort=new AbortController();controller.current=abort;
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{return await Promise.race([
+   requestRoom(code,name,abort.signal),
+   new Promise<undefined>(resolve=>{timer=setTimeout(()=>{resolve(undefined);abort.abort();},6000);})
+  ]);}finally{clearTimeout(timer);if(controller.current===abort)controller.current=null;}
+ }
+ async function lookup(){
+  const current=++generation.current;setLoading(true);setError('');setLookupFailed(false);
+  const result=await entryRequest();
+  if(current!==generation.current)return;
+  setLoading(false);
+  if(!result){setLookupFailed(true);setError('방 연결 확인이 늦어지고 있어요. 다시 확인해 주세요.');return;}
+  if(result.ok)setRoom(result.data);
+  else if(result.code!=='FORBIDDEN'){
+   setError(result.message);setMissing(result.code==='NOT_FOUND'||result.code==='ROOM_CLOSED');
+   setLookupFailed(result.code==='NETWORK_ERROR');
+  }
+ }
+ useEffect(()=>{
+  if(code&&!room)void lookup();
+  return()=>{generation.current++;controller.current?.abort();};
  },[code]);
  async function submit(){
   if(submitting.current||loading)return;if(!nickname.trim()){setNicknameError('닉네임을 입력해 주세요.');joinForm.current?.querySelector('input')?.focus();return;}
   submitting.current=true;
   const current=++generation.current;setLoading(true);setError('');setNicknameError('');
   try{
-   const result=await requestRoom(code,nickname,controller.current?.signal);
+   const result=await entryRequest(nickname);
    if(current!==generation.current)return;
+   if(!result||(!result.ok&&result.code==='NETWORK_ERROR')){setError('응답을 확인하지 못했어요. 서버에서 이미 처리됐을 수도 있어요. 닉네임은 유지했어요. 참여는 같은 링크에서 다시 시도할 수 있고, 방 만들기를 다시 누르면 새 방이 생길 수 있어요.');return;}
    if(result.ok){if(!code){const url=new URL(location.href);url.searchParams.set('room',result.data.inviteCode);history.replaceState(null,'',url);}setRoom(result.data);}else{if(result.code==='STATE_CONFLICT'||result.code==='INVALID_INPUT'){setNicknameError(result.code==='STATE_CONFLICT'?'이미 사용 중인 닉네임이에요. 다른 이름을 입력해 주세요.':result.message);joinForm.current?.querySelector('input')?.focus();}else setError(result.message);setMissing(result.code==='NOT_FOUND'||result.code==='ROOM_CLOSED');}
   }finally{submitting.current=false;if(current===generation.current)setLoading(false);}
  }
@@ -71,5 +94,5 @@ export function Rooms({onJoined,onIdentityLost}:{onJoined?:(joined:boolean)=>voi
  if(room?.closed)return <>{room.game?.status==='result'?<><Status>방이 닫혔어요. 완료된 결과는 유지돼요.</Status><ResultView room={room} error={error} onRefresh={refresh}/></>:<section className="room-content"><h2>방이 닫혔어요</h2><p>{room.interrupted?'진행 중인 재판은 판결 없이 중단됐어요.':'이 방에서는 더 이상 참여하거나 게임을 진행할 수 없어요.'}</p>{room.interruption?.caseText&&<><h3>중단된 사건</h3><p>{room.interruption.caseText}</p></>}<a href="/">홈으로 돌아가기</a></section>}</>;
  if(room?.game?.status==='result'&&!excluded)return <><ResultView room={room} error={error} onRefresh={refresh}/>{nextControl}{previousControl}{closeControl}{leaveControl}</>;
  if(room){const link=new URL(location.href);link.search='';link.searchParams.set('room',room.inviteCode);return <section className="room-content"><span className="eyebrow">OUR ROOM</span><h2>{room.interrupted?'재판이 중단됐어요':'우리의 대기실'}</h2>{room.interrupted&&<Status>피고의 참여가 종료되어 재판이 중단됐어요. 중단된 게임의 내용은 표시하지 않아요.</Status>}<p className="body-copy">링크를 공유하고 함께할 친구들을 초대해요.</p><Status>{room.self.isHost?'나 · 방장':'나 · 참가자'}</Status><Input label="초대 링크" value={link.href} readOnly/><Button variant="secondary" onPress={async()=>{await navigator.clipboard.writeText(link.href);setCopied(true);}}>{copied?'링크를 복사했어요':'초대 링크 복사'}</Button>{!excluded&&!room.game&&!room.interrupted&&<><RoomRoles key={`RoomRoles:${room.preparationVersion}`} room={room} onUpdated={snapshot=>setRoom(previous=>mergeRoomSnapshot(previous,snapshot))}/><GameSettings key={`GameSettings:${room.preparationVersion}`} room={room} onSaved={snapshot=>setRoom(previous=>mergeRoomSnapshot(previous,snapshot))}/><PenaltyConsent key={`PenaltyConsent:${room.preparationVersion}`} room={room} onUpdated={snapshot=>setRoom(previous=>mergeRoomSnapshot(previous,snapshot))}/><GameStart key={`GameStart:${room.preparationVersion}`} room={room} onUpdated={snapshot=>setRoom(previous=>mergeRoomSnapshot(previous,snapshot))}/></>}{!excluded&&room.game&&<><StartedGame room={room}/><TrialControls key={`${room.game.gameId}:${room.game.defense.roundNumber}:${room.game.status}`} room={room} onUpdated={snapshot=>setRoom(previous=>mergeRoomSnapshot(previous,snapshot))}/></>}{!room.members.some(member=>member.isHost)&&<Status>현재 방장이 없어요. 참가자가 다시 연결되면 서버가 새 방장을 정해요. 그전에는 방장 권한이 필요한 진행을 기다려 주세요.</Status>}<h3>{excluded?'마지막으로 확인한 ':''}참가자 {room.members.length}명</h3><ul className="room-members">{room.members.map(member=><li data-testid="member" key={member.memberId}><strong>{member.nickname}</strong><span>{member.isHost?'방장 · ':''}{member.role==='defendant'?'피고':'참가자'}{member.memberId===room.self.memberId?' · 나':''}<small className="connection-label">{reconnecting&&member.memberId===room.self.memberId?'연결 확인 중':member.connected?'연결됨':'연결 끊김'}</small></span></li>)}</ul><Button variant="secondary" onPress={refresh}>참가자 새로고침</Button>{error&&<p role="alert" className="field-error" data-reconnecting={reconnecting}>{error}</p>}{excluded&&<p><a href={link.href}>다시 참여하기</a><small className="connection-label">이전 참가 상태를 유지하고 있지 않아요. 링크에서 새로 참여해 주세요.</small></p>}{nextControl}{previousControl}{closeControl}{leaveControl}<p className="field-hint">참가자 목록은 화면을 보고 있을 때 자동으로 갱신돼요. 방 참여만으로 이전 게임 기록이 공개되지는 않아요.</p></section>;}
- return <section className="room-content"><h3>{code?'초대받은 방에 참여해요':'새로운 방을 만들어요'}</h3>{!missing&&<form ref={joinForm} onSubmit={event=>{event.preventDefault();void submit();}}><Input label="닉네임" error={nicknameError} value={nickname} onChange={event=>{setNickname(event.target.value);setNicknameError('');}} required hint="1~20자의 이름을 입력해 주세요. 앞뒤 공백은 정리돼요. 같은 닉네임으로 이전 신원을 복구할 수는 없어요."/><Button type="submit" loading={loading}>{code?'방 참여하기':'방 만들기'}</Button></form>}{error&&<p role="alert" className="field-error">{error}</p>}{missing&&<a href="/">홈으로 돌아가기</a>}</section>;
+ return <section className="room-content"><h3>{code?'초대받은 방에 참여해요':'새로운 방을 만들어요'}</h3>{!missing&&<form ref={joinForm} onSubmit={event=>{event.preventDefault();void submit();}}><Input label="닉네임" error={nicknameError} value={nickname} onChange={event=>{setNickname(event.target.value);setNicknameError('');}} required hint="1~20자의 이름을 입력해 주세요. 앞뒤 공백은 정리돼요. 같은 닉네임으로 이전 신원을 복구할 수는 없어요."/><Button type="submit" loading={loading} disabled={lookupFailed}>{code?'방 참여하기':'방 만들기'}</Button></form>}{error&&<p role="alert" className="field-error">{error}</p>}{lookupFailed&&<Button onPress={lookup}>방 연결 다시 확인</Button>}{missing&&<a href="/">홈으로 돌아가기</a>}</section>;
 }

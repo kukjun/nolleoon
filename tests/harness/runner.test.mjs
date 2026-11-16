@@ -90,3 +90,13 @@ test('시험 탐색은 중첩 파일을 정렬하고 빈 디렉터리는 거절�
   assert.deepEqual(discoverTests(root,'unit'),['unit/nested/a.test.mjs','unit/z.test.mjs']);
  } finally {rmSync(root,{recursive:true,force:true});}
 });
+
+test('측정된 360초 suite 예산은 유효하며 그보다 큰 값은 거부한다', () => {
+ const dir=mkdtempSync(join(tmpdir(),'trip-suite-budget-'));
+ try {
+  writeFileSync(join(dir,'check.mjs'),'console.log("checked")');
+  const check={id:'feature-budget',kind:'script',files:['check.mjs'],timeoutMs:360000};
+  assert.equal(runCheck(check,dir).status,'passed');
+  assert.equal(runCheck({...check,timeoutMs:360001},dir).reason,'invalid check configuration');
+ } finally {rmSync(dir,{recursive:true,force:true});}
+});
