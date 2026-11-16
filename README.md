@@ -4,10 +4,12 @@
 
 ## 현재 상태
 
-MVP 요구사항과 실행 이슈 32개를 승인하고 순차 구현 중이다.
+MVP 요구사항과 실행 이슈를 기준으로 게임 기능과 자동 회귀를 구현했다. 실기기·외부 운영·최종 인수는 아직 완료하지 않았다.
 선택한 기술은 React/TypeScript + NestJS 내부 Web BFF + SQLite, 로컬 서버 + Cloudflare Tunnel이다.
-현재 저장소 문서·기존 UI 시연은 완성된 다중 사용자 제품이나 운영 배포가 아니다.
+실제 앱은 방·역할·벌칙 수락·동시 투표·재투표·기록을 제공하며, 합성 데이터의 독립 브라우저 다인 E2E를 검증한다. 기존 `ui/`는 참고 목업이다. 자동 시험 통과를 운영 배포나 MVP 최종 인수로 해석하지 않는다.
 
+- [인수 상태·증거 기준](docs/acceptance.md)
+- [사용 안내](docs/user-guide.md)
 - [최신 제품 규칙](docs/design/00-current-rules.md)
 - [MVP 범위·완료 기준](docs/mvp/scope-and-done.md)
 - [실행 이슈 매핑](docs/mvp/github-issues.md)
@@ -36,4 +38,4 @@ MVP 요구사항과 실행 이슈 32개를 승인하고 순차 구현 중이다.
 
 ## 로컬 개발
 
-현재 React/Nest workspace의 설치·빌드·헬스 확인은 [로컬 개발 안내](docs/local-development.md)를 따른다. 게임 기능과 DB는 아직 구현 중이며 헬스 성공이 게임 인수를 뜻하지 않는다.
+React/Nest/SQLite 설치·빌드·실행은 [로컬 개발 안내](docs/local-development.md)를 따른다. 전체 자동 검사와 실제 인수의 차이는 [인수 안내](docs/acceptance.md)를 확인한다.

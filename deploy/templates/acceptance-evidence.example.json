@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "expectedCommit": null,
+  "source": {"commit": null, "dirty": null},
+  "window": {"notBefore": null, "notAfter": null},
+  "gates": [],
+  "unresolvedBlockers": [33, 36, 63, 65],
+  "userAcceptance": {"commit": null, "accepted": false, "observedAt": null, "evidenceRef": null}
+}
