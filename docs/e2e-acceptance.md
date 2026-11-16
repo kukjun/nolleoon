@@ -23,9 +23,9 @@ npm run test:e2e
 npm run check
 ```
 
-두 Playwright gate는 순서대로 실행하며 4179를 동시에 사용하지 않는다. 시험 서버는 실행마다 새 임시 DB를 만들고 종료 시 닫는다. 각 시나리오는 새 방·새 컨텍스트를 만들며 실제 사용자 쿠키/DB를 재사용하지 않는다. 두 gate의 JSON report는 각각 실제 실행 수를 기록한다. 0개, skip-only, unexpected failure, flaky 결과를 성공으로 계산하지 않는다. `retries: 0`을 유지하며 실패를 재시도 횟수로 숨기지 않는다.
+기능·종합·모바일 에뮬레이션 Playwright gate는 순서대로 실행하며 4179를 동시에 사용하지 않는다. 시험 서버는 실행마다 새 임시 DB를 만들고 종료 시 닫는다. 각 시나리오는 새 방·새 컨텍스트를 만들며 실제 사용자 쿠키/DB를 재사용하지 않는다. 각 gate의 JSON report는 각각 실제 실행 수를 기록한다. 0개, skip-only, unexpected failure, flaky 결과를 성공으로 계산하지 않는다. `retries: 0`을 유지하며 실패를 재시도 횟수로 숨기지 않는다.
 
-신규 종합 E2E에만 `retain-on-failure` trace를 적용하고 기존 기능 회귀의 trace는 비활성 상태를 유지한다. 실패 screenshot은 두 gate에 적용한다. 실패 trace와 screenshot에는 합성 게임 데이터만 담긴다. ignored 산출물이며 공개 저장소에 업로드하지 않는다. 재실행 때 산출물이 교체될 수 있으므로 실패 원인과 해당 실행 경로를 먼저 작업 기록에 남긴다. 스크린샷만으로 API 권한이나 SQLite 내구성을 입증하지 않는다.
+신규 종합 E2E에만 `retain-on-failure` trace를 적용하고 기존 기능 회귀의 trace는 비활성 상태를 유지한다. 실패 screenshot은 각 gate에 적용한다. 실패 trace와 screenshot에는 합성 게임 데이터만 담긴다. ignored 산출물이며 공개 저장소에 업로드하지 않는다. 재실행 때 산출물이 교체될 수 있으므로 실패 원인과 해당 실행 경로를 먼저 작업 기록에 남긴다. 스크린샷만으로 API 권한이나 SQLite 내구성을 입증하지 않는다.
 
 ## 요구사항에서 실제 시험으로
 
