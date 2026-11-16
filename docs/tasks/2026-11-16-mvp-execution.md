@@ -263,3 +263,11 @@
 - 기존 feature65 287.9초에 실제6초 timeout회귀가 추가돼 suite예산만300→360초로 조정했다. assertion/retries/개별 한계는 완화하지 않았다. 실제 전체 결과는 후속 clean 검증에 기록한다.
 - 최초 clean 전체 검사에서 feature는 실행 전 설정 오류로 실패했다. runner허용상한300초와 새360초 설정의 불일치였으며 browser실행시간0·개수null을 통과로 세지 않았다. 실제360초 설정 실행/360001거부 RED 후 runner상한을 일치시키고 자체 회귀를 추가했다. 나머지 gate 통과는 feature70 통과를 의미하지 않는다.
 - 수정 후 독립 clean-source check exit0: self23/workspace5/docs6/unit49/API96/DB47/feature70/E2E3/mobile-emulation3와 lint/layers/build/types. feature308.5초/E2E40.0초/mobile3.9초, failed/skipped/flaky0. 실제 feature가 기존300초를 초과했음을 확인. 독립 소스 재리뷰·두파일 AST동등성 재확인·포트/child 정리 승인. 원격CI/실기기/외부 인수는 미완료이며 #31 OPEN 유지.
+
+## MVP-32 부분 준비 · 최종 RC 검증 방식
+- #31 부분 PR #69 병합, 실제 발견 결함 #67 CLOSED. #31 인수 선행과 #28–30은 OPEN 유지.
+- 오래된 안내·검사기 부재·홈 미래 기능 문구의 RED3 후 최신 사용 가이드/인수 허브/오프라인 증거 검사를 구현했다.
+- 같은 RC·clean 상태·동결/검토 시각 범위·필수 gate·실제 시험 개수·실기기/외부 분리·미해결 blocker·사용자 인수 항목의 형식 누락을 검사한다. 임의24시간 만료나 승인 자동 생성은 없으며 항상 verified:false다.
+- 빈 실제 템플릿은 blocked이며 완전한 합성 입력도 ready-for-human-review까지만 가능하다. 진위/실제 배포/권한/사용자 동의를 검증했다는 주장이 아니다.
+- 320px 홈 안내 직접 확인. 추적 파일을 먼저 commit하고 같은 정확한 RC의 깨끗한 checkout에서 최종 전체 검사를 실행한다. 그 뒤 보고서·실측 결과는 artifacts/PR comment로 남기고 이 문서에 성공 결과를 선기록하지 않는다.
+- 원격 CI #36, 중단 공개 정책 #33, 물리기기 #63, 실제 운영/외부 #65와 사용자 최종 인수는 미완료다. #32는 준비 부분이며 전체 MVP 완료로 닫지 않는다.

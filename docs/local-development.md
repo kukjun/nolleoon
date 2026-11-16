@@ -1,6 +1,6 @@
-# 로컬 개발 기반 · MVP-02
+# 로컬 개발 안내
 
-이 단계는 React 화면 뼈대와 Nest 통합 BFF의 HTTP 헬스만 제공한다. 방/게임 기능은 구현하지 않았다. 브라우저 세션 발급·복구는 [세션 설계](browser-sessions.md)를 따른다. SQLite 저장소 기반은 [별도 문서](sqlite-storage.md)를 따른다. 기존 `ui/`는 참고 목업으로 보존하며 실제 앱과 혼동하지 않는다.
+현재 앱은 방 생성·참여, 역할·벌칙 수락, 게임·투표·재투표, 퇴장·방장 이양·종료와 개인 기록을 구현한다. 구현과 자동 검증이 실기기·외부 배포의 완료를 뜻하지는 않으며 [인수 안내](acceptance.md)에서 구분한다. 브라우저 세션 발급·복구는 [세션 설계](browser-sessions.md)를 따른다. SQLite 저장소 기반은 [별도 문서](sqlite-storage.md)를 따른다. 기존 `ui/`는 참고 목업으로 보존하며 실제 앱과 혼동하지 않는다.
 
 ## 환경과 설치
 
@@ -32,7 +32,7 @@ API_PORT=3001 DB_PATH="$PWD/data/trip-court.sqlite" PUBLIC_ORIGIN=http://127.0.0
 npm run dev:web
 ```
 
-API는 `http://127.0.0.1:3001/api/health`, 개발 UI는 Vite가 출력한 loopback 주소(기본 포트 5173)로 접속한다. 포트 점유 시 strictPort 실패이며 자동으로 다른 포트로 변경하지 않는다. 필요하면 `npm run dev -w @trip-court/web -- --port 5174`처럼 다른 로컬 포트를 지정한다. 각 터미널의 Ctrl+C로 종료한다. 현재 UI는 세션 발급/복구와 저장소 유실 안내를 제공한다. 게임 기능은 없다. Vite는 /api를 로컬 3001 API에 프록시한다. API 포트를 바꾸면 두 터미널의 API_PORT를 동일하게 지정하고, web 포트를 바꾸면 PUBLIC_ORIGIN도 맞춰야 한다.
+API는 `http://127.0.0.1:3001/api/health`, 개발 UI는 Vite가 출력한 loopback 주소(기본 포트 5173)로 접속한다. 포트 점유 시 strictPort 실패이며 자동으로 다른 포트로 변경하지 않는다. 필요하면 `npm run dev -w @trip-court/web -- --port 5174`처럼 다른 로컬 포트를 지정한다. 각 터미널의 Ctrl+C로 종료한다. 현재 UI의 실제 게임 흐름은 [사용 안내](user-guide.md)를 따른다. Vite는 /api를 로컬 3001 API에 프록시한다. API 포트를 바꾸면 두 터미널의 API_PORT를 동일하게 지정하고, web 포트를 바꾸면 PUBLIC_ORIGIN도 맞춰야 한다.
 
 `.env.example`에는 비밀 없는 값만 있다. 앱은 `.env`를 자동으로 읽지 않는다. 위처럼 환경변수를 지정하거나 예시를 복사해 실제 전용 DB_PATH를 넣은 뒤 `node --env-file=.env apps/api/dist/main.js`로 실행한다. DB_PATH 부모 디렉터리는 미리 만든다. API_PORT 누락/빈값/범위 밖/소수는 시작 전에 오류로 종료한다. API_HOST는 생략 또는 `127.0.0.1`만 가능하다. PUBLIC_ORIGIN은 브라우저가 접근하는 정확한 origin이고 외부 요청의 Host 헤더로 추정하지 않는다. HTTPS 또는 loopback HTTP만 허용한다. 이 로컬 단계에서는 외부 바인딩·Tunnel·배포를 수행하지 않는다.
 
@@ -53,7 +53,7 @@ API는 `http://127.0.0.1:3001/api/health`, 개발 UI는 Vite가 출력한 loopba
 
 공식 npm registry 확인 후 React/react-dom 19.3.1, Nest 12.5.0, Vite 8.3.8을 고정했다. TypeScript 최신 7.0.2는 기존 compiler AST API를 제공하지 않아 구조 검사에서 실패했고, 검증한 안정 API가 있는 5.9.3으로 선택했다. Node 타입은 런타임에 맞춘 24.19.2다. 정확한 전이 의존성은 package-lock.json을 따른다.
 
-제품 테스트 전체 합격을 뜻하지 않는다. 초기 환경/구조 계약 5개와 빌드/HTTP smoke만 이 단계의 인수 증거다.
+초기 환경/구조 계약과 HTTP smoke는 전체 제품 인수의 대체가 아니다. `npm run check`는 단위·API·DB·브라우저 기능·다인 E2E·모바일 에뮬레이션을 실행하며, 정확한 수와 소스는 해당 실행 보고서에서 확인한다. 실제 단말·외부 운영·원격 CI·정책·사용자 승인 근거는 별도로 필요하다.
 
 ## 운영 빌드의 로컬 smoke
 
