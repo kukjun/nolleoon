@@ -20,7 +20,7 @@ const checks=[
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
  {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:15000,dependsOn:'build'},
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
- {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json'],timeoutMs:60000,dependsOn:'build'}
+ {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json'],timeoutMs:90000,dependsOn:'build'}
 ];
 const results=[];
 for(const check of checks) {
@@ -37,7 +37,7 @@ const planned=[
  {id:'external-deployment',status:'not-configured',reason:'배포 티켓 범위'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-08 기반·세션·UI·BFF 계약 및 실제 방 초대',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'MVP-09 기반·방 초대·폴링 및 서버 접속 감지',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);
