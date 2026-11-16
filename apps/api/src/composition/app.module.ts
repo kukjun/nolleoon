@@ -1,3 +1,4 @@
+import {RequestGuard} from '../presentation/request-guard.js';
 import {HistoryController} from '../presentation/history.controller.js';
 import {PersonalHistory} from '../application/personal-history.js';
 import {NextGame} from '../application/next-game.js';
@@ -11,7 +12,7 @@ import {PresenceMonitor} from '../infrastructure/sessions/presence-monitor.js';
 import {Rooms} from '../application/rooms.js';
 import {RoomsController} from '../presentation/rooms.controller.js';
 import { Module, type DynamicModule } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ApiErrorFilter } from '../presentation/errors.js';
 import { GetHealth } from '../application/get-health.js';
 import { BrowserSessions, type Clock } from '../application/browser-sessions.js';
@@ -35,6 +36,7 @@ export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();
     return {module:AppModule,controllers:[HistoryController,HealthController,SessionController,RoomsController],providers:[
+      {provide:APP_GUARD,inject:[BrowserSessions],useFactory:(sessions:BrowserSessions)=>new RequestGuard(sessions,config.clock??new SystemClock())},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},

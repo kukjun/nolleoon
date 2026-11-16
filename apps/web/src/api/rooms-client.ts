@@ -148,8 +148,15 @@ export async function requestGameHistory(code:string,gameId:string,signal?:Abort
  const reportIdentityLoss=identityLoss.capture();
  try{const response=await fetch(`/api/rooms/${encodeURIComponent(code)}/games/${encodeURIComponent(gameId)}`,{credentials:'same-origin',cache:'no-store',signal});const data:unknown=await response.json();
   if(signal?.aborted)return {ok:false,code:'NETWORK_ERROR',message:'취소된 요청이에요.'};
-  if(response.ok&&record(data)&&keys(data,['gameId','game','interrupted','interruption'])&&data.gameId===gameId&&typeof data.interrupted==='boolean'&&(data.game===null||(record(data.game)&&isGameSnapshot(data.game)&&data.game.status==='result'))&&(data.interruption===null||(record(data.interruption)&&keys(data.interruption,['caseText'])&&(data.interruption.caseText===null||typeof data.interruption.caseText==='string'))))return {ok:true,data:data as unknown as import('@trip-court/contracts').GameHistoryDetail};
+  if(response.ok&&record(data)&&keys(data,['gameId','game','interrupted','interruption'])&&isCompletedOrInterruptedHistory(data,gameId))return {ok:true,data:data as unknown as import('@trip-court/contracts').GameHistoryDetail};
   if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};}
   return {ok:false,code:'INVALID_RESPONSE',message:'이전 게임 기록을 확인하지 못했어요.'};
  }catch{return {ok:false,code:'NETWORK_ERROR',message:'서버에 연결하지 못했어요. 다시 시도해 주세요.'};}
+}
+
+// Outer response identity and terminal phase must agree with the nested record.
+export function isCompletedOrInterruptedHistory(value:Record<string,unknown>,gameId:string):boolean {
+ if(value.gameId!==gameId||typeof value.interrupted!=='boolean')return false;
+ if(value.interrupted)return value.game===null&&(value.interruption===null||(record(value.interruption)&&keys(value.interruption,['caseText'])&&(value.interruption.caseText===null||typeof value.interruption.caseText==='string')));
+ return value.interruption===null&&record(value.game)&&isGameSnapshot(value.game)&&value.game.gameId===gameId&&value.game.status==='result';
 }

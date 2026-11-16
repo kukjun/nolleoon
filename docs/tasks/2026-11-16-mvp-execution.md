@@ -202,3 +202,11 @@
 - 320px 개인 기록 화면 직접 확인. 쿠키 신원 정책과 서버 초기 무삭제/영구보관 비보장을 안내한다. migration 없음, 실제 기기·외부 배포·원격 CI는 미완료다.
 - 최초 clean 전체 검사는 browser63/64에서 기존 320px 결과 우선 배치 회귀가 실패했다(y<180 기대, 실제189). 새 개인 기록 버튼이 결과를 밀어낸 결함이며 assertion을 낮추지 않고 버튼 배치를 수정 후 재검증한다. timeout이 아니며 나머지 정적/unit/API/DB gate는 통과했다.
 - 수정 후 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit34/API76/DB33/browser64와 lint/layers/build/types. browser276.9초, failed/skipped/flaky0. 원래 y<180 유지, 최종 clone의 최신 안내문320px 캡처 독립 확인 및 포트 정리. 원격 CI #36 미실행.
+
+## MVP-25 검증
+- #24는 PR #59 병합 후 CLOSED, M4는 0open/6closed로 종료 확인.
+- 종료 후 비참가자 snapshot의 이전 역할/수락 revision·편집 상태 노출과 이력 내부/외부 ID 불일치를 실제 RED 후 수정했다. 준비 단계·현재 방 정보와 이전 게임 metadata를 구분한다.
+- 실제 텍스트 XSS, actor/cross-room/CSRF/입력·반복 경합을 검사한다. 임시 컴파일 복사본+합성 DB에서 정상4개 대조군 통과, 의도한 보안 assertion으로 mutant4개 검출을 unit에 포함했다. 운영/원본 소스는 변이하지 않는다.
+- bounded 앱 요청 예산·Retry-After와 post-parse JSON64KiB, 기존 parser100KiB를 구분한다. proxy 공유 IP/고정 창/재시작/단일 프로세스 한계를 기록하며 DDoS 보호·배포 설정 완료를 주장하지 않는다.
+- Express 동등 경로의 대소문자/끝 slash가 세부 참여 예산을 우회하는 RED도 정규화로 수정했다. migration 없고 기존 보안/네트워크 설정·인증 권한은 바꾸지 않았다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit39/API86/DB33/browser65와 lint/layers/build/types. unit에 대조군4/4·mutant4/4 검출 포함, browser284.6초 failed/skipped/flaky0. 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.

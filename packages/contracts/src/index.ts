@@ -1,8 +1,8 @@
 export interface HealthResponse { status:'ok';service:'trip-court-api' }
 export interface SessionSnapshot { authenticated:true }
-export const errorCodes=['ROOM_CLOSED','SESSION_REQUIRED','FORBIDDEN','INVALID_INPUT','NOT_FOUND','STATE_CONFLICT','DEADLINE_PASSED','TEMPORARILY_UNAVAILABLE','INTERNAL_ERROR'] as const;
+export const errorCodes=['RATE_LIMITED','PAYLOAD_TOO_LARGE','ROOM_CLOSED','SESSION_REQUIRED','FORBIDDEN','INVALID_INPUT','NOT_FOUND','STATE_CONFLICT','DEADLINE_PASSED','TEMPORARILY_UNAVAILABLE','INTERNAL_ERROR'] as const;
 export type ErrorCode=typeof errorCodes[number];
-export const errorMessages:Record<ErrorCode,string>={ROOM_CLOSED:'이미 닫힌 방이에요. 새로 참여하거나 게임을 진행할 수 없어요.',SESSION_REQUIRED:'브라우저 신원을 확인할 수 없습니다.',FORBIDDEN:'이 요청을 수행할 권한이 없습니다.',INVALID_INPUT:'입력 내용을 확인해 주세요.',NOT_FOUND:'요청한 항목을 찾을 수 없습니다.',STATE_CONFLICT:'상태가 변경됐어요. 최신 내용을 확인해 주세요.',DEADLINE_PASSED:'제출 시간이 지났습니다.',TEMPORARILY_UNAVAILABLE:'잠시 후 상태를 확인하고 다시 시도해 주세요.',INTERNAL_ERROR:'요청을 처리하지 못했습니다.'};
+export const errorMessages:Record<ErrorCode,string>={RATE_LIMITED:'요청이 많아요. 잠시 기다렸다가 다시 시도해 주세요.',PAYLOAD_TOO_LARGE:'입력 데이터가 너무 커요. 내용을 줄여 주세요.',ROOM_CLOSED:'이미 닫힌 방이에요. 새로 참여하거나 게임을 진행할 수 없어요.',SESSION_REQUIRED:'브라우저 신원을 확인할 수 없습니다.',FORBIDDEN:'이 요청을 수행할 권한이 없습니다.',INVALID_INPUT:'입력 내용을 확인해 주세요.',NOT_FOUND:'요청한 항목을 찾을 수 없습니다.',STATE_CONFLICT:'상태가 변경됐어요. 최신 내용을 확인해 주세요.',DEADLINE_PASSED:'제출 시간이 지났습니다.',TEMPORARILY_UNAVAILABLE:'잠시 후 상태를 확인하고 다시 시도해 주세요.',INTERNAL_ERROR:'요청을 처리하지 못했습니다.'};
 export interface ErrorResponse { error:{code:ErrorCode;message:string} }
 export type GameAction='configure-game'|'select-role'|'accept-penalty'|'start-trial'|'submit-defense'|'start-vote'|'submit-vote'|'close-room';
 export interface PublishedRound {number:1|2;counts:{guilty:number;notGuilty:number;abstain:number};reasons:{choice:'guilty'|'not-guilty'|'abstain';reason:string}[]}
