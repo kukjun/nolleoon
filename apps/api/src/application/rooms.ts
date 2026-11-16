@@ -1,3 +1,4 @@
+import {closeRoom} from './room-closure.js';
 import {assignVacantHost} from './host-transfer.js';
 import type {RandomSource} from './ports/random.js';
 import {maintainBeforeRequest,maintainRooms,leaveMember} from './membership-lifecycle.js';
@@ -25,11 +26,26 @@ export const PRESENCE_SILENCE_MS=15000;
 export class Rooms {
  constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
  private run<T>(work:(r:Repositories,now:number)=>T):T {const now=this.clock.now();maintainBeforeRequest(this.uow,now,this.random);return this.uow.run(r=>work(r,now));}
+ close(actor:{id:string},code:string,expectedMemberId:unknown){
+  if(typeof expectedMemberId!=='string'||!expectedMemberId||expectedMemberId.length>100)throw new DomainFailure('INVALID_INPUT');
+  return this.run((r,now)=>{
+   const room=this.findRoom(r,code);const member=r.members.find(expectedMemberId);
+   if(!member||member.roomId!==room.id||member.sessionId!==actor.id)throw new DomainFailure('FORBIDDEN');
+   if(room.status==='closed'){
+    if(r.closures.find(room.id)?.closedByMemberId!==member.id)throw new DomainFailure('FORBIDDEN');
+   }else{
+    if(member.leftAt!=null||room.hostMemberId!==member.id)throw new DomainFailure('FORBIDDEN');
+    closeRoom(r,room.id,now,member.id);
+   }
+   return this.snapshot(r,r.rooms.find(room.id)!,actor.id,now);
+  });
+ }
  leave(actor:{id:string},code:string,expectedMemberId:unknown){
   if(typeof expectedMemberId!=='string'||!expectedMemberId||expectedMemberId.length>100)throw new DomainFailure('INVALID_INPUT');
   return this.run((r,now)=>{
-   const room=this.openRoom(r,code);const member=r.members.find(expectedMemberId);
+   const room=this.findRoom(r,code);const member=r.members.find(expectedMemberId);
    if(!member||member.roomId!==room.id||member.sessionId!==actor.id)throw new DomainFailure('FORBIDDEN');
+   if(room.status==='closed'&&member.leftAt==null)throw new DomainFailure('ROOM_CLOSED');
    if(member.leftAt==null){leaveMember(r,member,now);assignVacantHost(r,room.id,now,this.random);}
    return {left:true as const,memberId:member.id};
   });
@@ -93,25 +109,28 @@ export class Rooms {
   });
  }
  sweep(){return this.uow.run(r=>maintainRooms(r,this.clock.now(),this.random));}
- heartbeat(actor:{id:string},code:string){return this.run((r,now)=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,now);if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}if(assignVacantHost(r,room.id,now,this.random)){Object.assign(room,r.rooms.find(room.id));}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);});}
- read(actor:{id:string},code:string,gameId?:string){return this.run((r,now)=>this.snapshot(r,this.openRoom(r,code),actor.id,now,gameId));}
- private openRoom(r:Repositories,code:string){
+ heartbeat(actor:{id:string},code:string){return this.run((r,now)=>{const room=this.findRoom(r,code);if(room.status==='closed')return this.snapshot(r,room,actor.id,now);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,now);if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}if(assignVacantHost(r,room.id,now,this.random)){Object.assign(room,r.rooms.find(room.id));}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);});}
+ read(actor:{id:string},code:string,gameId?:string){return this.run((r,now)=>this.snapshot(r,this.findRoom(r,code),actor.id,now,gameId));}
+ private findRoom(r:Repositories,code:string){
   if(!/^[A-Za-z0-9_-]{43}$/.test(code))throw new DomainFailure('NOT_FOUND');
-  const room=r.rooms.findByInvite(code);if(!room||room.status!=='open')throw new DomainFailure('NOT_FOUND');return room;
+  const room=r.rooms.findByInvite(code);if(!room)throw new DomainFailure('NOT_FOUND');return room;
  }
+ private openRoom(r:Repositories,code:string){const room=this.findRoom(r,code);if(room.status==='closed')throw new DomainFailure('ROOM_CLOSED');return room;}
  private observe(r:Repositories,room:RoomRecord,sessionId:string){const game=r.games.active(room.id);if(!game)return;const member=r.members.active(room.id).find(m=>m.sessionId===sessionId);if(member&&!r.participants.list(game.id).some(p=>p.memberId===member.id)){r.participants.insert({gameId:game.id,roomId:room.id,memberId:member.id,role:'observer',eligible:false});r.rooms.bumpVersion(room.id);room.version++;}}
  private snapshot(r:Repositories,room:RoomRecord,sessionId:string,now:number,gameId?:string){
-  const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
-  if(!self)throw new DomainFailure('FORBIDDEN');
+  const members=r.members.active(room.id);const historicalIds=r.members.idsForSession(room.id,sessionId);const self=members.find(m=>m.sessionId===sessionId)??(room.status==='closed'?historicalIds.map(id=>r.members.find(id)).find(Boolean):undefined);
+  if(!self)throw new DomainFailure(room.status==='closed'?'ROOM_CLOSED':'FORBIDDEN');
   const saved=r.drafts.find(room.id);let draft={version:saved?.version??0,caseText:saved?.caseText??'',penaltyText:saved?.penaltyText??'',durationMinutes:(saved?.durationSeconds??180)/60};
   const defendant=members.find(m=>m.role==='defendant');const record=r.consents.find(room.id);let consent={penaltyRevision:room.penaltyRevision??0,roleRevision:room.roleRevision??0,decisionVersion:record?.version??0,status:consentStatus({memberId:defendant?.id??null,roleRevision:room.roleRevision??0,penaltyRevision:room.penaltyRevision??0,penaltyText:draft.penaltyText},record),defendantMemberId:defendant?.id??null,canDecide:self.id===defendant?.id&&Boolean(draft.penaltyText.trim())&&!r.games.hasActive(room.id)};
-  const candidate=gameId?r.games.find(gameId):r.games.latest(room.id);const participants=candidate?.roomId===room.id?r.participants.list(candidate.id):[];const historicalIds=r.members.idsForSession(room.id,sessionId);const active=candidate&&!['result','interrupted'].includes(candidate.status);const participation=participants.find(p=>p.memberId===self.id)??(!active?participants.find(p=>historicalIds.includes(p.memberId)):undefined);
+  const candidate=gameId?r.games.find(gameId):r.games.latest(room.id);const participants=candidate?.roomId===room.id?r.participants.list(candidate.id):[];const active=candidate&&!['result','interrupted'].includes(candidate.status);const participation=participants.find(p=>p.memberId===self.id)??(!active?participants.find(p=>historicalIds.includes(p.memberId)):undefined);
   const firstRound=candidate?(r.rounds.find(candidate.id,2)??r.rounds.find(candidate.id,1)):undefined;const defenseRound=candidate?.status==='final-defense'||firstRound?.number===2?2 as const:1 as const;const response=candidate?r.defenses.find(candidate.id,defenseRound):undefined;
   const ownVote=candidate&&participation&&firstRound?r.votes.find(candidate.id,firstRound.number,participation.memberId):undefined;
   const settlement=candidate&&firstRound?r.settlements.find(candidate.id,firstRound.number):undefined;
   const game=candidate&&candidate.status!=='interrupted'&&participation?{publishedRounds:publishedRounds(r,candidate.id),settlement:settlement?{roundNumber:settlement.roundNumber,outcome:settlement.outcome,guilty:settlement.guilty,notGuilty:settlement.notGuilty,abstain:settlement.abstain,total:settlement.total,closedAt:settlement.closedAt,closedBy:settlement.closedBy}:null,ownVote:ownVote?{roundNumber:ownVote.roundNumber,choice:ownVote.choice,reason:ownVote.reason}:null,gameId:candidate.id,version:candidate.version,serverNow:now,round:firstRound?{number:firstRound.number,startedAt:firstRound.startedAt,deadline:firstRound.deadline}:null,defense:{roundNumber:defenseRound,status:response?.action??'pending' as 'pending'|'submitted'|'skipped',text:response?.action==='submitted'?response.text:null},status:candidate.status,caseText:candidate.caseText,penaltyText:candidate.penaltyText,durationMinutes:candidate.durationSeconds/60,self:{role:participation.role,eligible:participation.eligible},participantCount:new Set(participants.map(p=>r.members.find(p.memberId)?.sessionId).filter(Boolean)).size,voterCount:participants.filter(p=>p.eligible).length}:null;
-  if(candidate&&(candidate.status==='interrupted'||(!active&&!participation))){draft={...draft,caseText:'',penaltyText:'',durationMinutes:3};consent={...consent,status:'pending',defendantMemberId:null,canDecide:false};}
-  const conditions=startConditions(r,room,now);const start={canStart:self.id===room.hostMemberId&&conditions.missing.length===0,missing:conditions.missing};
-  return {interrupted:candidate?.status==='interrupted',roomId:room.id,game,start,consent,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
+  if(room.status==='closed'||candidate&&(candidate.status==='interrupted'||(!active&&!participation))){draft={...draft,caseText:'',penaltyText:'',durationMinutes:3};consent={...consent,status:'pending',defendantMemberId:null,canDecide:false};}
+  const conditions=startConditions(r,room,now);const start={canStart:room.status==='open'&&self.id===room.hostMemberId&&conditions.missing.length===0,missing:conditions.missing};
+  const interrupted=Boolean(participation)&&candidate?.status==='interrupted';
+  const interruption=interrupted?{caseText:r.interruptions.find(candidate!.id)?.cause==='room-closed'?candidate!.caseText:null}:null;
+  return {closed:room.status==='closed',interruption,interrupted,roomId:room.id,game,start,consent,roleRevision:room.roleRevision??0,rosterEditable:room.status==='open'&&!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:(room.status==='closed'?[]:members).map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
  }
 }

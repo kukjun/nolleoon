@@ -74,16 +74,18 @@ function isGameSnapshot(value:unknown):boolean {
  return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement)&&isPublishedRounds(value.publishedRounds);
 }
 export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
- if(!record(x)||!keys(x,['interrupted','roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||typeof x.interrupted!=='boolean'||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
+ if(!record(x)||!keys(x,['closed','interruption','interrupted','roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||typeof x.closed!=='boolean'||typeof x.interrupted!=='boolean'||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
  if(!record(x.draft)||!keys(x.draft,['version','caseText','penaltyText','durationMinutes'])||!Number.isSafeInteger(x.draft.version)||Number(x.draft.version)<0||typeof x.draft.caseText!=='string'||typeof x.draft.penaltyText!=='string'||!Number.isInteger(x.draft.durationMinutes)||Number(x.draft.durationMinutes)<1||Number(x.draft.durationMinutes)>10)return false;
  if(!record(x.start)||!keys(x.start,['canStart','missing'])||typeof x.start.canStart!=='boolean'||!Array.isArray(x.start.missing)||!x.start.missing.every(message=>typeof message==='string'))return false;
  if(x.game!==null&&!isGameSnapshot(x.game))return false;
+ if(x.interruption!==null&&(!record(x.interruption)||!keys(x.interruption,['caseText'])||!(x.interruption.caseText===null||typeof x.interruption.caseText==='string')))return false;
  const consent=x.consent;
  if(!record(consent)||!keys(consent,['penaltyRevision','roleRevision','decisionVersion','status','defendantMemberId','canDecide'])||typeof consent.status!=='string'||!['pending','accepted','rejected'].includes(consent.status)||typeof consent.canDecide!=='boolean'||!(consent.defendantMemberId===null||typeof consent.defendantMemberId==='string')||['penaltyRevision','roleRevision','decisionVersion'].some(key=>!Number.isSafeInteger(consent[key])||Number(consent[key])<0))return false;
  const self=x.self;
+ if(x.closed)return x.members.length===0&&self.isHost===false;
  return x.members.length>0&&x.members.every(m=>record(m)&&keys(m,['memberId','nickname','isHost','connected','role'])&&typeof m.memberId==='string'&&typeof m.nickname==='string'&&typeof m.isHost==='boolean'&&typeof m.connected==='boolean'&&(m.role==='defendant'||m.role==='participant'))&&new Set(x.members.map(m=>m.memberId)).size===x.members.length&&x.members.filter(m=>m.isHost).length<=1&&x.members.some(m=>m.memberId===self.memberId&&m.isHost===self.isHost);
 }
-export type RoomCommand={kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
+export type RoomCommand={kind:'close';expectedMemberId:string}|{kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
 export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{kind:'vote'}>):RoomSnapshot|null {
  if(!record(data)||!keys(data,['snapshot','receipt'])||!isRoomSnapshot(data.snapshot)
   ||!record(data.receipt)||!keys(data.receipt,['gameId','roundNumber','choice','reason']))return null;
@@ -94,6 +96,7 @@ export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{k
 }
 function commandBody(command:RoomCommand){
  switch(command.kind){
+ case 'close':return {expectedMemberId:command.expectedMemberId};
  case 'role':return {role:command.role};
  case 'exclude':return {memberId:command.memberId};
  case 'consent':return {penaltyRevision:command.penaltyRevision,roleRevision:command.roleRevision,expectedDecisionVersion:command.expectedDecisionVersion,decision:command.decision};

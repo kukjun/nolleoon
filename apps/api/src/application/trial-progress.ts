@@ -22,7 +22,8 @@ export class TrialProgress {
   private context(r: Repositories, actor: {id: string}, code: string, gameId: string) {
     const room = r.rooms.findByInvite(code);
     const game = r.games.find(gameId);
-    if (!room || room.status !== 'open' || !game || game.roomId !== room.id) {
+    if(room?.status==='closed')throw new DomainFailure('ROOM_CLOSED');
+    if (!room || !game || game.roomId !== room.id) {
       throw new DomainFailure('NOT_FOUND');
     }
     const member = r.members.active(room.id).find(m => m.sessionId === actor.id);

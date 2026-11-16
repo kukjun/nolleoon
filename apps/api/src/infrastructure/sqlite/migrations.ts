@@ -77,4 +77,19 @@ CREATE TABLE round_settlements (
 ) STRICT;
 CREATE TRIGGER settlement_no_update BEFORE UPDATE ON round_settlements BEGIN SELECT RAISE(ABORT,'immutable settlement'); END;
 CREATE TRIGGER settlement_no_delete BEFORE DELETE ON round_settlements BEGIN SELECT RAISE(ABORT,'immutable settlement'); END;
+`},{version:8,name:'room-closure-and-original-interruption',sql:`
+CREATE TABLE game_interruptions (
+ game_id TEXT PRIMARY KEY NOT NULL REFERENCES games(id),
+ cause TEXT NOT NULL CHECK(cause IN ('defendant-left','room-closed','legacy-private')),
+ interrupted_at INTEGER NOT NULL CHECK(interrupted_at>=0)
+) STRICT;
+INSERT INTO game_interruptions(game_id,cause,interrupted_at) SELECT id,'legacy-private',created_at FROM games WHERE status='interrupted';
+CREATE TRIGGER interruption_no_update BEFORE UPDATE ON game_interruptions BEGIN SELECT RAISE(ABORT,'immutable interruption'); END;
+CREATE TRIGGER interruption_no_delete BEFORE DELETE ON game_interruptions BEGIN SELECT RAISE(ABORT,'immutable interruption'); END;
+CREATE TABLE room_closures (
+ room_id TEXT PRIMARY KEY NOT NULL REFERENCES rooms(id),closed_at INTEGER NOT NULL CHECK(closed_at>=0),closed_by_member_id TEXT,
+ FOREIGN KEY(room_id,closed_by_member_id) REFERENCES room_members(room_id,id)
+) STRICT;
+CREATE TRIGGER closure_no_update BEFORE UPDATE ON room_closures BEGIN SELECT RAISE(ABORT,'immutable closure'); END;
+CREATE TRIGGER closure_no_delete BEFORE DELETE ON room_closures BEGIN SELECT RAISE(ABORT,'immutable closure'); END;
 `}];

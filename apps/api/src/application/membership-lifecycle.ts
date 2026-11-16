@@ -1,3 +1,4 @@
+import {closeRoom,interruptGame} from './room-closure.js';
 import type {RandomSource} from './ports/random.js';
 import {assignVacantHost} from './host-transfer.js';
 import type {Repositories,MemberRecord,UnitOfWork} from './ports/storage.js';
@@ -15,15 +16,14 @@ export function leaveMember(r:Repositories, member:MemberRecord, effectiveAt:num
   if(round&&round.closedAt==null&&round.deadline<=effectiveAt)settleRound(r,game.id,round.deadline);
   game=r.games.active(room.id);
   if(game&&r.participants.list(game.id).some(p=>p.memberId===member.id&&p.role==='defendant')){
-   const pending=r.rounds.find(game.id,2)??r.rounds.find(game.id,1);
-   if(pending&&pending.closedAt==null)r.rounds.close(game.id,pending.number,effectiveAt);
-   r.games.update({...game,status:'interrupted',version:game.version+1});
+   interruptGame(r,game,'defendant-left',effectiveAt);
   }
  }
  r.members.exclude(member.id,effectiveAt);
  if(room.hostMemberId===member.id)r.rooms.setHost(room.id,null);
  if(member.role==='defendant')r.rooms.bumpRoleRevision(room.id);
  r.rooms.bumpVersion(room.id);
+ if(r.members.active(room.id).length===0)closeRoom(r,room.id,effectiveAt,null);
 }
 
 // 두 monitor와 모든 요청 경계에서 동일하게 시간순으로 재생한다.

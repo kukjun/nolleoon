@@ -21,6 +21,6 @@ test('방 생성·동시 중복 닉네임·재입장·권한 사칭·닫힌 링�
  assert.equal((await fetch(`${f.url}/api/rooms/${'x'.repeat(43)}/join`,command(f,outsider,{nickname:'외부'}))).status,404);
  db=openSqlite(f.dbPath);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM game_participants').get().n,0);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM games').get().n,0);
  db.prepare("UPDATE rooms SET status='closed' WHERE id=?").run(room.roomId);
- assert.equal((await fetch(`${url}/join`,command(f,outsider,{nickname:'외부'}))).status,404);assert.equal((await fetch(url,{headers:{cookie:cookies[0]}})).status,404);
+ assert.equal((await fetch(`${url}/join`,command(f,outsider,{nickname:'외부'}))).status,410);assert.equal((await fetch(url,{headers:{cookie:cookies[0]}})).status,200);
  }finally{db?.close();await f.close();}
 });
