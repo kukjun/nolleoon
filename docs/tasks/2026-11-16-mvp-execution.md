@@ -210,3 +210,12 @@
 - bounded 앱 요청 예산·Retry-After와 post-parse JSON64KiB, 기존 parser100KiB를 구분한다. proxy 공유 IP/고정 창/재시작/단일 프로세스 한계를 기록하며 DDoS 보호·배포 설정 완료를 주장하지 않는다.
 - Express 동등 경로의 대소문자/끝 slash가 세부 참여 예산을 우회하는 RED도 정규화로 수정했다. migration 없고 기존 보안/네트워크 설정·인증 권한은 바꾸지 않았다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit39/API86/DB33/browser65와 lint/layers/build/types. unit에 대조군4/4·mutant4/4 검출 포함, browser284.6초 failed/skipped/flaky0. 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.
+
+## MVP-26 검증
+- #25는 PR #60 병합 후 CLOSED와 체크리스트 반영 확인.
+- backup module 부재 RED 후 SQLite online backup·검증·동일 파일시스템 no-clobber 게시와 새 경로만 복원을 구현했다. manifest가 정상이어도 실제 table/index 누락을 허용하던 RED를 trusted in-memory schema 대조로 차단했다.
+- WAL 커밋/미커밋·손상/부분파일/미래/불완전schema·symlink/경합 대상·원래 입력 보존·CLI 출력 비식별을 실제 합성 DB로 검증했다. 운영 DB/기존 서비스/권한은 바꾸지 않았다.
+- 실제 usecase transaction의 쓰기 뒤 IPC 장벽에서 소유 child만 SIGKILL하고 표/정산/이양 rollback을 확인했다. 재시작 시 마감/만료 선후·동시 및 동률 중단·유예 복구를 검사했다.
+- 백업을 새 DB 경로로 복원해 새 Nest 서버에서 원래 쿠키로 동일 이력을 HTTP 조회했다. 프로세스 장애는 전원손실 증거가 아니며 디스크 실제소진/디렉터리 metadata 내구성·자동 백업/암호화·운영 전환은 미실행이다.
+- migration/browser 신규 없음, 실제 기기·외부 배포·원격 CI는 후속/미완료다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit39/API94/DB47/browser65와 lint/layers/build/types. API5.14초/DB0.485초/browser284.6초, failed/skipped/flaky0. 독립 승인 및 포트·소유 시험 child 정리 확인. 원격 CI #36 미실행.

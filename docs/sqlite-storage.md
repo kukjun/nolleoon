@@ -41,6 +41,6 @@ UnitOfWork는 동기 콜백 안에서만 repository를 제공한다. 예외는 r
 
 실제 파일을 같은 내장 SQLite 런타임의 두 번째 연결로 열어 저장값을 읽는 시험은 통과했다. 이것은 **백업 생성/복구 시험이 아니다**. 스키마의 STRICT table 및 기타 SQL 기능을 지원하는 SQLite와 해당 앱의 마이그레이션 이력이 함께 맞아야 한다. 임의 구버전 SQLite/구버전 앱 복원 호환을 보장하지 않는다.
 
-WAL은 DB의 영속 상태 일부이므로 실행 중 메인 파일만 복사하거나 WAL을 삭제하면 안 된다. [SQLite WAL 문서](https://sqlite.org/wal.html) 운영 백업은 SQLite의 일관된 snapshot 방식(Online Backup API 등)을 사용하고 복원 검증까지 수행해야 한다. [SQLite Backup API](https://www.sqlite.org/backup.html) 구체 백업/복구 구현·운영 시험은 MVP-26에서 수행하며 아직 미실행이다.
+WAL은 DB의 영속 상태 일부이므로 실행 중 메인 파일만 복사하거나 WAL을 삭제하면 안 된다. [SQLite WAL 문서](https://sqlite.org/wal.html) 운영 백업은 SQLite의 일관된 snapshot 방식(Online Backup API 등)을 사용하고 복원 검증까지 수행해야 한다. [SQLite Backup API](https://www.sqlite.org/backup.html) MVP-26의 구체 도구·실행 근거는 [온라인 백업/새 경로 복원](sqlite-backup.md)과 [재시작 내구성](durability.md)을 따른다. 이 저장소 기반 문단의 파일 재열기 시험을 운영 복구 완료로 확대 해석하지 않는다.
 
 `.gitignore`는 DB 본체와 -wal/-shm/-journal sidecar를 제외한다. DB·시험 산출물을 공개 저장소에 넣지 않는다.
