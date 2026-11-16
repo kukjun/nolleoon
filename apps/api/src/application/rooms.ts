@@ -1,3 +1,4 @@
+import {startConditions} from './start-trial.js';
 import {consentStatus,validateConsent} from './penalty-consent.js';
 import type { UnitOfWork, Repositories, RoomRecord } from './ports/storage.js';
 import type { Clock, TokenCodec } from './browser-sessions.js';
@@ -39,7 +40,7 @@ export class Rooms {
     r.rooms.bumpVersion(room.id);
     room.version++;
    }
-   return this.snapshot(r,room,actor.id);
+   this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id);
   });
  }
  changeRole(actor:{id:string},code:string,role:unknown){
@@ -78,17 +79,22 @@ export class Rooms {
   });
  }
  sweep(){return this.uow.run(r=>{const rooms=r.members.detectDisconnected(this.clock.now(),PRESENCE_SILENCE_MS);for(const id of rooms)r.rooms.bumpVersion(id);return rooms.length;});}
- heartbeat(actor:{id:string},code:string){return this.uow.run(r=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,this.clock.now());if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}return this.snapshot(r,room,actor.id);});}
- read(actor:{id:string},code:string){return this.uow.run(r=>this.snapshot(r,this.openRoom(r,code),actor.id));}
+ heartbeat(actor:{id:string},code:string){return this.uow.run(r=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,this.clock.now());if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id);});}
+ read(actor:{id:string},code:string,gameId?:string){return this.uow.run(r=>this.snapshot(r,this.openRoom(r,code),actor.id,gameId));}
  private openRoom(r:Repositories,code:string){
   if(!/^[A-Za-z0-9_-]{43}$/.test(code))throw new DomainFailure('NOT_FOUND');
   const room=r.rooms.findByInvite(code);if(!room||room.status!=='open')throw new DomainFailure('NOT_FOUND');return room;
  }
- private snapshot(r:Repositories,room:RoomRecord,sessionId:string){
+ private observe(r:Repositories,room:RoomRecord,sessionId:string){const game=r.games.active(room.id);if(!game)return;const member=r.members.active(room.id).find(m=>m.sessionId===sessionId);if(member&&!r.participants.list(game.id).some(p=>p.memberId===member.id)){r.participants.insert({gameId:game.id,roomId:room.id,memberId:member.id,role:'observer',eligible:false});r.rooms.bumpVersion(room.id);room.version++;}}
+ private snapshot(r:Repositories,room:RoomRecord,sessionId:string,gameId?:string){
   const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
   if(!self)throw new DomainFailure('FORBIDDEN');
-  const saved=r.drafts.find(room.id);const draft={version:saved?.version??0,caseText:saved?.caseText??'',penaltyText:saved?.penaltyText??'',durationMinutes:(saved?.durationSeconds??180)/60};
-  const defendant=members.find(m=>m.role==='defendant');const record=r.consents.find(room.id);const consent={penaltyRevision:room.penaltyRevision??0,roleRevision:room.roleRevision??0,decisionVersion:record?.version??0,status:consentStatus({memberId:defendant?.id??null,roleRevision:room.roleRevision??0,penaltyRevision:room.penaltyRevision??0,penaltyText:draft.penaltyText},record),defendantMemberId:defendant?.id??null,canDecide:self.id===defendant?.id&&Boolean(draft.penaltyText.trim())&&!r.games.hasActive(room.id)};
-  return {roomId:room.id,consent,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
+  const saved=r.drafts.find(room.id);let draft={version:saved?.version??0,caseText:saved?.caseText??'',penaltyText:saved?.penaltyText??'',durationMinutes:(saved?.durationSeconds??180)/60};
+  const defendant=members.find(m=>m.role==='defendant');const record=r.consents.find(room.id);let consent={penaltyRevision:room.penaltyRevision??0,roleRevision:room.roleRevision??0,decisionVersion:record?.version??0,status:consentStatus({memberId:defendant?.id??null,roleRevision:room.roleRevision??0,penaltyRevision:room.penaltyRevision??0,penaltyText:draft.penaltyText},record),defendantMemberId:defendant?.id??null,canDecide:self.id===defendant?.id&&Boolean(draft.penaltyText.trim())&&!r.games.hasActive(room.id)};
+  const candidate=gameId?r.games.find(gameId):r.games.latest(room.id);const participants=candidate?.roomId===room.id?r.participants.list(candidate.id):[];const historicalIds=r.members.idsForSession(room.id,sessionId);const active=candidate&&!['result','interrupted'].includes(candidate.status);const participation=participants.find(p=>p.memberId===self.id)??(!active?participants.find(p=>historicalIds.includes(p.memberId)):undefined);
+  const game=candidate&&candidate.status!=='interrupted'&&participation?{gameId:candidate.id,status:candidate.status,caseText:candidate.caseText,penaltyText:candidate.penaltyText,durationMinutes:candidate.durationSeconds/60,self:{role:participation.role,eligible:participation.eligible},participantCount:participants.length,voterCount:participants.filter(p=>p.eligible).length}:null;
+  if(candidate&&(candidate.status==='interrupted'||(!active&&!participation))){draft={...draft,caseText:'',penaltyText:'',durationMinutes:3};consent={...consent,status:'pending',defendantMemberId:null,canDecide:false};}
+  const conditions=startConditions(r,room,this.clock.now());const start={canStart:self.id===room.hostMemberId&&conditions.missing.length===0,missing:conditions.missing};
+  return {roomId:room.id,game,start,consent,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
  }
 }
