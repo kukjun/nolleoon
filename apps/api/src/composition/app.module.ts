@@ -1,4 +1,6 @@
 import { Module, type DynamicModule } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
+import { ApiErrorFilter } from '../presentation/errors.js';
 import { GetHealth } from '../application/get-health.js';
 import { BrowserSessions, type Clock } from '../application/browser-sessions.js';
 import { HealthController } from '../presentation/health.controller.js';
@@ -20,6 +22,7 @@ export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     return {module:AppModule,controllers:[HealthController,SessionController],providers:[
+      {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
