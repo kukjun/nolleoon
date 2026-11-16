@@ -1,6 +1,6 @@
 import {errorCodes,errorMessages,type ErrorCode,type PersonalHistoryPage,type PersonalHistoryDetail} from '@trip-court/contracts';
 import {identityLoss} from './identity-generation.ts';
-import {isGameSnapshot} from './rooms-client.ts';
+import {isCompletedOrInterruptedHistory} from './rooms-client.ts';
 type Failure={ok:false;code:ErrorCode|'NETWORK_ERROR'|'INVALID_RESPONSE';message:string};
 type Result<T>={ok:true;data:T}|Failure;
 function record(value:unknown):value is Record<string,unknown>{return value!==null&&typeof value==='object'&&!Array.isArray(value);}
@@ -16,8 +16,7 @@ function isList(value:unknown):value is PersonalHistoryPage{
 function isDetail(value:unknown,gameId:string):value is PersonalHistoryDetail{
  if(!record(value)||!keys(value,['gameId','game','interrupted','interruption','ongoing'])||value.gameId!==gameId||typeof value.interrupted!=='boolean')return false;
  if(value.ongoing!==null)return !value.interrupted&&value.game===null&&value.interruption===null&&record(value.ongoing)&&keys(value.ongoing,['caseText'])&&typeof value.ongoing.caseText==='string';
- if(value.interrupted)return value.game===null&&(value.interruption===null||(record(value.interruption)&&keys(value.interruption,['caseText'])&&textOrNull(value.interruption.caseText)));
- return value.interruption===null&&record(value.game)&&isGameSnapshot(value.game)&&value.game.status==='result';
+ return isCompletedOrInterruptedHistory(value,gameId);
 }
 async function read<T>(url:string,valid:(value:unknown)=>value is T,signal?:AbortSignal):Promise<Result<T>>{
  const reportLoss=identityLoss.capture();
