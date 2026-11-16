@@ -1,6 +1,7 @@
+import {tmpdir} from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { existsSync, realpathSync } from 'node:fs';
-import { resolve, relative, isAbsolute } from 'node:path';
+import { existsSync, realpathSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { resolve, relative, isAbsolute, join } from 'node:path';
 
 // 검토한 저장소 코드를 실행하는 측정 도구이며 샌드박스가 아니다.
 export function runCheck(check, cwd) {
@@ -22,7 +23,11 @@ export function runCheck(check, cwd) {
   const args=check.kind==='node-tests' ? ['--test','--test-reporter=tap',...check.files] : [...check.files,...(check.args??[])];
   const env={...process.env,NO_COLOR:'1'};
   delete env.NODE_TEST_CONTEXT;
-  const result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8',timeout:check.timeoutMs,killSignal:'SIGKILL',maxBuffer:8*1024*1024,env,detached:process.platform!=='win32'});
+  const leaseDirectory=check.kind==='playwright'?mkdtempSync(join(tmpdir(),'trip-browser-lease-')):null;
+  if(leaseDirectory){env.TRIP_HARNESS_OWNER=String(process.pid);env.TRIP_BROWSER_LEASE=join(leaseDirectory,'active');writeFileSync(env.TRIP_BROWSER_LEASE,'active');}
+  let result;
+  try {result=spawnSync(process.execPath,args,{cwd:root,encoding:'utf8',timeout:check.timeoutMs,killSignal:'SIGKILL',maxBuffer:8*1024*1024,env,detached:process.platform!=='win32'});}
+  finally {if(leaseDirectory)rmSync(leaseDirectory,{recursive:true,force:true});}
   if (process.platform!=='win32' && result.pid) {
     try { process.kill(-result.pid, 'SIGKILL'); } catch (error) { if(error.code!=='ESRCH') throw error; }
   }
