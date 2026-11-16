@@ -32,3 +32,4 @@
 - MVP-26: 실제 자식 프로세스 장애·재시작 내구성 회귀, 검증된 SQLite 온라인 백업과 덮어쓰기 없는 별도 경로 복원 도구.
 - MVP-27: 독립 다섯 브라우저 종합 여정과 별도 gameplay E2E gate, 무중복 집계·실패 trace/화면·요구사항별 검증 범위 문서.
 - MVP-28 부분: Chromium 모바일 근사·접근성 gate와 닉네임 오류 연결/포커스 수정. 물리 iPhone/Android 인수는 #63 차단으로 미완료.
+- MVP-29 부분: 같은 origin production 정적 React/API bootstrap, 정적 경로/DB 분리·실제 임시 process smoke와 검토용 배포 템플릿. 운영 적용은 #65 승인 대기.

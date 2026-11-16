@@ -38,7 +38,7 @@ const planned=[
  {id:'external-deployment',status:'not-configured',reason:'배포 티켓 범위'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-28 부분 모바일 근사·접근성 (실기기 blocked)',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'MVP-29 부분 production 준비 (실기기·운영 적용 blocked)',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);
