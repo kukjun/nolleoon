@@ -25,7 +25,7 @@ test('Cloudflare 조각은 기존 catch-all과 서비스 설정을 교체하지 
 });
 test('공개 템플릿에는 실제 사용자 경로·인증값·설치 실행 도구가 없다', () => {
  const names=readdirSync(new URL('../../deploy/templates/',import.meta.url));
- assert.deepEqual(names.sort(), ['cloudflared-ingress.example.yml','local.trip-court.example.plist','production.env.example']);
+ assert.deepEqual(names.sort(), ['cloudflared-ingress.example.yml','external-evidence.example.json','local.trip-court.example.plist','production.env.example']);
  for(const name of names){
   const content=read(name);
   assert.doesNotMatch(content, /\/Users\/|\/home\/|0\.0\.0\.0|\[::\]|localhost:3000|127\.0\.0\.1:3000|launchctl|sudo|credentials-file:|tunnel:|TUNNEL_TOKEN=/);
