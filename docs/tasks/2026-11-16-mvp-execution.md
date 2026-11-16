@@ -51,3 +51,10 @@
 - 초기 `node --test tests/unit/sessions.test.mjs`는 구현 전 모듈 부재(ERR_MODULE_NOT_FOUND)로 tests 1/pass 0/fail 1, 종료 코드 1. assertion 실행 전의 RED임을 구분한다.
 - 최종 깨끗한 소스 npm ci/native rebuild·전체 check 통과: self15/workspace5/docs6/unit4/API4/DB15/browser2와 lint/layers/build/types. 실제 main+Vite 개발 경로의 401→쿠키발급→복구 smoke 통과.
 - 독립 리뷰 승인. 쿠키 flags/동일·신규 브라우저/위조·만료·CSRF/서버 재시작을 확인. 실제 모바일·외부 HTTPS·게임별 권한·원격 CI는 미검증.
+
+## MVP-06 검증
+- #5는 PR #39 병합 후 CLOSED 확인.
+- 구현 전 브라우저 입력 탐색 timeout으로 expected0/unexpected1, 종료 코드1 RED 확인.
+- 모바일 디자인 시스템과 세션 셸 구현 후 깨끗한 소스 npm ci/native rebuild·전체 check 통과, 브라우저5 포함. 독립 코드·시각 리뷰 승인.
+- 390 모바일 홈, 320 갤러리·모달, 1440 데스크톱 스크린샷을 직접 확인. 입력 오류/비동기 실패/중복 방지/모달 반복·포커스/320x360 스크롤과 세션 회귀 검사.
+- 에뮬레이션이므로 실기기 키보드·노치·VoiceOver 합격으로 주장하지 않는다. 기존 ui 원본은 보존했다.
