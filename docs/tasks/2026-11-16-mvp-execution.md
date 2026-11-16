@@ -169,3 +169,11 @@
 - 독립 리뷰의 maintenance/touch 서로 다른 시각 문제는 증가 시계 RED 후 요청당 captured now로 통일했다. 예전 유예 fixture는 599999ms로 옮기고 새 600000ms 거부 회귀를 추가해 검증 의도를 보존했다.
 - 320px 퇴장 화면 직접 확인. 방장 공석은 정직하게 표시하며 랜덤 이양 #21·전원 퇴장 폐쇄 #22와 구분한다. 실제 10분 대기·실기기·외부/원격 CI는 주장하지 않는다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API43/DB30/browser54와 lint/layers/build/types. browser212.6초, skip/flaky/unexpected0. 소스·시간순서·퇴장 화면 독립 승인, 테스트 포트 정리 확인.
+
+## MVP-21 검증
+- #20은 PR #55 병합 후 CLOSED와 체크리스트 반영 확인.
+- 방장 퇴장 후 공석 RED에서 시작해 RandomSource 포트·crypto adapter와 트랜잭션 내 후보 선정, 만료 후 승계·공석 복귀를 구현했다. 유예 중에는 방장을 유지하며 피고/관전자도 연결 후보가 된다.
+- 공유 초안·역할·동결 명단·기존 표는 승계와 독립적이며 이전 방장 복귀는 권한을 탈환하지 않는다. 후보0·동시복귀·만료/개시 경합·rollback·재개방을 검사한다.
+- 독립 실제 HTTP 검토에서 끊긴 방장이 자신이 빠진 명단으로 시작 가능한 결함을 재현했다. 연결된 방장 포함 조건으로 201→409 RED/GREEN을 확인하고 heartbeat 복귀 후 4명 시작·기존 receipt 재확인 회귀를 보완했다. 잘못된 난수 반환 rollback도 검사했다.
+- 390px 새 방장 화면에서 초안 보존·설정 권한·별도 역할 표시를 직접 확인했다. 전원 퇴장 폐쇄는 #22, 실제 기기·외부 배포·원격 CI #36은 미완료다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API52/DB30/browser55와 lint/layers/build/types. 소스·방장 시작 경계·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.

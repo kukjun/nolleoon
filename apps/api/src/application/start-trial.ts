@@ -1,3 +1,4 @@
+import type {RandomSource} from './ports/random.js';
 import {maintainBeforeRequest} from './membership-lifecycle.js';
 import type {UnitOfWork,Repositories,RoomRecord} from './ports/storage.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
@@ -7,6 +8,7 @@ export function startConditions(r:Repositories,room:RoomRecord,now:number){
  const members=r.members.active(room.id);const connected=members.filter(m=>m.disconnectedAt==null&&(m.lastSeenAt??m.joinedAt)>now-15000);const defendants=connected.filter(m=>m.role==='defendant');const draft=r.drafts.find(room.id);const missing:string[]=[];
  if(r.games.hasActive(room.id))missing.push('이미 진행 중인 게임이 있어요.');
  else if(r.games.latest(room.id))missing.push('다음 게임 준비는 아직 지원하지 않아요.');
+ if(!connected.some(member=>member.id===room.hostMemberId))missing.push('방장이 연결된 상태로 재판에 참여해야 해요.');
  if(connected.length<3)missing.push('연결된 참가자가 피고를 포함해 3명 이상 필요해요.');
  if(defendants.length!==1)missing.push('연결된 피고 1명이 필요해요.');
  if(!draft?.caseText.trim())missing.push('저장된 사건을 작성해 주세요.');if(!draft?.penaltyText.trim())missing.push('저장된 벌칙을 작성해 주세요.');
@@ -14,14 +16,14 @@ export function startConditions(r:Repositories,room:RoomRecord,now:number){
  return {missing,connected,draft};
 }
 export class StartTrial {
- constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec){}
+ constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
  execute(actor:{id:string},code:string,input:unknown):string{
   if(!input||typeof input!=='object'||Array.isArray(input))throw new DomainFailure('INVALID_INPUT');const value=input as Record<string,unknown>;
   if(Object.keys(value).sort().join(',')!=='expectedDecisionVersion,expectedDraftVersion,expectedRoleRevision,requestId'||typeof value.requestId!=='string'||!/^[-a-zA-Z0-9_]{16,100}$/.test(value.requestId))throw new DomainFailure('INVALID_INPUT');
   for(const key of ['expectedDecisionVersion','expectedDraftVersion','expectedRoleRevision'])if(!Number.isSafeInteger(value[key])||Number(value[key])<0)throw new DomainFailure('INVALID_INPUT');
   const intent=JSON.stringify([value.expectedDraftVersion,value.expectedRoleRevision,value.expectedDecisionVersion]);const requestId=value.requestId;
   const now=this.clock.now();
-  maintainBeforeRequest(this.uow,now);
+  maintainBeforeRequest(this.uow,now,this.random);
   return this.uow.run(r=>{
    const room=r.rooms.findByInvite(code);if(!room)throw new DomainFailure('NOT_FOUND');
    const receipt=r.starts.find(room.id,requestId);if(receipt){if(receipt.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(receipt.intent!==intent)throw new DomainFailure('STATE_CONFLICT');return receipt.gameId;}

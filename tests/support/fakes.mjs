@@ -18,3 +18,5 @@ export class SequenceRandom {
     return value;
   }
 }
+// 테스트가 난수 자체를 검증하지 않을 때도 provider 의존성을 명시한다.
+export const firstCandidateRandom = {nextInt:()=>0};

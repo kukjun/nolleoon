@@ -1,3 +1,4 @@
+import type {RandomSource} from '../application/ports/random.js';
 import {SettleRounds} from '../application/settle-round.js';
 import {SettlementMonitor} from '../infrastructure/sessions/settlement-monitor.js';
 import {SubmitVote} from '../application/submit-vote.js';
@@ -14,7 +15,7 @@ import { BrowserSessions, type Clock } from '../application/browser-sessions.js'
 import { HealthController } from '../presentation/health.controller.js';
 import { SessionController, PUBLIC_ORIGIN } from '../presentation/session.controller.js';
 import { openSqlite, migrate, SqliteUnitOfWork } from '../infrastructure/sqlite/index.js';
-import { SecureTokens, SystemClock } from '../infrastructure/sessions/secure-tokens.js';
+import { SecureTokens, SystemClock, SecureRandom } from '../infrastructure/sessions/secure-tokens.js';
 const STORAGE = Symbol('STORAGE');
 class StorageResources {
   readonly db;
@@ -25,22 +26,23 @@ class StorageResources {
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
-export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; presenceMonitor?: boolean; settlementMonitor?: boolean }
+export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; random?: RandomSource; presenceMonitor?: boolean; settlementMonitor?: boolean }
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
+    const random=config.random??new SecureRandom();
     return {module:AppModule,controllers:[HealthController,SessionController,RoomsController],providers:[
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
       {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
-      {provide:SettleRounds,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SettleRounds(resources.uow,config.clock??new SystemClock())},
+      {provide:SettleRounds,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SettleRounds(resources.uow,config.clock??new SystemClock(),random)},
       {provide:SettlementMonitor,inject:[SettleRounds],useFactory:(rounds:SettleRounds)=>new SettlementMonitor(rounds,config.settlementMonitor??true)},
-      {provide:SubmitVote,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SubmitVote(resources.uow,config.clock??new SystemClock())},
-      {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock())},
-      {provide:StartTrial,inject:[STORAGE],useFactory:(resources:StorageResources)=>new StartTrial(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
-      {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
+      {provide:SubmitVote,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SubmitVote(resources.uow,config.clock??new SystemClock(),random)},
+      {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock(),random)},
+      {provide:StartTrial,inject:[STORAGE],useFactory:(resources:StorageResources)=>new StartTrial(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
+      {provide:Rooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Rooms(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
       {provide:BrowserSessions,inject:[STORAGE],useFactory:(resources:StorageResources)=>new BrowserSessions(resources.uow,config.clock??new SystemClock(),new SecureTokens())}
     ]};
   }

@@ -1,3 +1,4 @@
+import {firstCandidateRandom} from '../support/fakes.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {votingFixture} from '../support/voting-fixture.mjs';
@@ -45,7 +46,7 @@ for(const order of ['presence-first','settlement-first'])for(const timing of ['b
    const defendant=f.s.members.find(m=>m.role==='defendant').memberId;
    db.prepare('UPDATE room_members SET disconnected_at=? WHERE id=?').run(effective-600000,defendant);
    const clock={now:()=>deadline+10000};const uow=new SqliteUnitOfWork(db);
-   const presence=new Rooms(uow,clock,{});const settlement=new SettleRounds(uow,clock);
+   const presence=new Rooms(uow,clock,{},firstCandidateRandom);const settlement=new SettleRounds(uow,clock,firstCandidateRandom);
    for(const worker of order==='presence-first'?[presence,settlement]:[settlement,presence])worker.sweep();
    assert.equal(db.prepare('SELECT status FROM games WHERE id=?').get(gameId).status,'interrupted');
    const row=db.prepare('SELECT * FROM round_settlements WHERE game_id=?').get(gameId);
@@ -65,8 +66,8 @@ test('단절만으로 중단하지 않으며 제출자 퇴장 후에도 표와 �
   db=openSqlite(f.dbPath);const cohort=db.prepare('SELECT * FROM game_participants ORDER BY member_id').all();
   const member=opened.members.find(m=>m.nickname==='친구1').memberId;
   await f.post('leave',f.cookies[1],{expectedMemberId:member});
-  f.setNow(16000);new Rooms(new SqliteUnitOfWork(db),{now:()=>16000},{}).sweep();assert.equal(db.prepare('SELECT status FROM games').get().status,'voting');
-  f.setNow(opened.game.round.deadline);new SettleRounds(new SqliteUnitOfWork(db),{now:()=>opened.game.round.deadline}).sweep();
+  f.setNow(16000);new Rooms(new SqliteUnitOfWork(db),{now:()=>16000},{},firstCandidateRandom).sweep();assert.equal(db.prepare('SELECT status FROM games').get().status,'voting');
+  f.setNow(opened.game.round.deadline);new SettleRounds(new SqliteUnitOfWork(db),{now:()=>opened.game.round.deadline},firstCandidateRandom).sweep();
   const result=db.prepare('SELECT * FROM round_settlements').get();assert.equal(result.total,2);assert.equal(result.guilty,1);assert.equal(result.abstain,1);assert.equal(result.outcome,'guilty');assert.deepEqual(db.prepare('SELECT * FROM game_participants ORDER BY member_id').all(),cohort);assert.equal(db.prepare('SELECT COUNT(*) n FROM votes').get().n,1);
  }finally{db?.close();await f.close();}
 });
@@ -76,7 +77,7 @@ test('마감과 같은 시각의 명시적 피고 퇴장은 먼저 확정된 최
   const path=`games/${f.s.game.gameId}`;const opened=await(await f.post(`${path}/open-vote`,f.cookies[0],{roundNumber:1,expectedVersion:0,requestId:'deadline-leave-open'})).json();
   f.setNow(opened.game.round.deadline);const response=await f.post('leave',f.cookies[0],{expectedMemberId:opened.self.memberId});assert.equal(response.status,201);
   db=openSqlite(f.dbPath);assert.equal(db.prepare('SELECT status FROM games').get().status,'result');assert.equal(db.prepare('SELECT outcome FROM round_settlements').get().outcome,'no-verdict');assert.equal(db.prepare('SELECT host_member_id FROM rooms').get().host_member_id,null);
-  const remaining=await(await f.post('heartbeat',f.cookies[1],{})).json();assert.equal(remaining.game.status,'result');assert.ok(remaining.members.every(m=>!m.isHost));assert.equal(remaining.interrupted,false);
+  const remaining=await(await f.post('heartbeat',f.cookies[1],{})).json();assert.equal(remaining.game.status,'result');assert.equal(remaining.members.filter(m=>m.isHost).length,1);assert.equal(remaining.self.isHost,true);assert.equal(remaining.interrupted,false);
  }finally{db?.close();await f.close();}
 });
 
@@ -99,9 +100,9 @@ test('퇴장 쓰기 중 실패는 중단·방장공석까지 rollback하고 재�
   db=openSqlite(f.dbPath);const uow=new SqliteUnitOfWork(db);const member=f.s.self.memberId;
   const actor=db.prepare('SELECT session_id id FROM room_members WHERE id=?').get(member);
   const broken={run:work=>uow.run(r=>work({...r,members:{...r.members,exclude(){throw new Error('leave storage failure');}}}))};
-  assert.throws(()=>new Rooms(broken,{now:()=>1000},{}).leave(actor,f.s.inviteCode,member),/leave storage failure/);
+  assert.throws(()=>new Rooms(broken,{now:()=>1000},{},firstCandidateRandom).leave(actor,f.s.inviteCode,member),/leave storage failure/);
   assert.equal(db.prepare('SELECT status FROM games').get().status,'defense');assert.equal(db.prepare('SELECT host_member_id FROM rooms').get().host_member_id,member);assert.equal(db.prepare('SELECT left_at FROM room_members WHERE id=?').get(member).left_at,null);
-  db.close();db=openSqlite(f.dbPath);const rooms=new Rooms(new SqliteUnitOfWork(db),{now:()=>2000},{});
+  db.close();db=openSqlite(f.dbPath);const rooms=new Rooms(new SqliteUnitOfWork(db),{now:()=>2000},{},firstCandidateRandom);
   rooms.leave(actor,f.s.inviteCode,member);const version=db.prepare('SELECT version FROM rooms').get().version;rooms.leave(actor,f.s.inviteCode,member);assert.equal(db.prepare('SELECT version FROM rooms').get().version,version);assert.equal(db.prepare('SELECT status FROM games').get().status,'interrupted');
  }finally{db?.close();await f.close();}
 });
@@ -110,7 +111,7 @@ test('증가 시계에서도 요청 시작 시각 하나로 유예 판정·touch
  const f=await votingFixture();let db;try{
   db=openSqlite(f.dbPath);const member=f.s.self.memberId;const actor=db.prepare('SELECT session_id id FROM room_members WHERE id=?').get(member);
   db.prepare('UPDATE room_members SET disconnected_at=1000 WHERE id=?').run(member);
-  let time=600999;const rooms=new Rooms(new SqliteUnitOfWork(db),{now:()=>time++},{});
+  let time=600999;const rooms=new Rooms(new SqliteUnitOfWork(db),{now:()=>time++},{},firstCandidateRandom);
   rooms.heartbeat(actor,f.s.inviteCode);
   assert.equal(db.prepare('SELECT last_seen_at at FROM room_members WHERE id=?').get(member).at,600999);
   const start=time;rooms.leave(actor,f.s.inviteCode,member);assert.equal(db.prepare('SELECT left_at at FROM room_members WHERE id=?').get(member).at,start);
