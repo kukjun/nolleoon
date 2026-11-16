@@ -29,3 +29,5 @@ API에는 DB_PATH 절대 경로와 PUBLIC_ORIGIN을 반드시 지정한다. 안�
 - 실제 Chromium: loopback HTTP에서도 Secure/HttpOnly/Strict 쿠키를 유지했고 document.cookie에는 보이지 않음. 새로고침·재방문 복구, 독립 context 분리, 쿠키 삭제 후 안내를 확인한다. Playwright를 통해 쿠키를 읽는 것은 시험이며 앱 JS가 접근할 수 있다는 뜻이 아니다.
 - Firefox/WebKit/실제 iPhone·Android·HTTPS 외부 배포는 아직 검증하지 않았다. localhost 예외를 외부 HTTP에 일반화하지 않는다. 다인 게임 역할/투표/이력 권한은 후속 티켓이며 이 단계의 단순 인증을 해당 기능 완료로 보지 않는다.
 - 세션 대량 생성의 rate limit·종합 보안 회귀는 MVP-25 범위다. 쿠키를 탈취한 공격자나 악의적 같은-origin 스크립트까지 신원 도용을 막는다고 주장하지 않는다.
+
+MVP-07부터 오류 JSON은 [통합 BFF 고정 오류 계약](web-bff.md)을 따른다. 인증 실패는 SESSION_REQUIRED이며 성공의 authenticated:true 형태는 유지한다.
