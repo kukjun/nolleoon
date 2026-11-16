@@ -1,6 +1,6 @@
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
-export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; hostMemberId?: string | null }
-export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number; lastSeenAt?: number | null; disconnectedAt?: number | null }
+export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; roleRevision?: number; hostMemberId?: string | null }
+export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number; role?: 'defendant' | 'participant'; lastSeenAt?: number | null; disconnectedAt?: number | null }
 export interface GameRecord { id: string; roomId: string; status: 'draft' | 'defense' | 'voting' | 'final-defense' | 'result' | 'interrupted'; caseText: string; penaltyText: string; durationSeconds: number; version: number; createdAt: number }
 export interface ParticipantRecord { gameId: string; roomId: string; memberId: string; role: 'defendant' | 'participant' | 'observer'; eligible: boolean }
 export interface RoundRecord { gameId: string; number: 1 | 2; startedAt: number; deadline: number }
@@ -9,8 +9,8 @@ export interface DraftRecord { roomId: string; caseText: string; penaltyText: st
 export interface InsertRepository<T> { insert(record: T): void }
 export interface Repositories {
   sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
-  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; setHost(id: string, memberId: string): void; bumpVersion(id: string): void };
-  members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; touch(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
+  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; setHost(id: string, memberId: string): void; bumpVersion(id: string): void; bumpRoleRevision(id: string): void };
+  members: InsertRepository<MemberRecord> & { active(roomId: string): MemberRecord[]; touch(id: string, now: number): void; setRole(id: string, role: 'defendant' | 'participant'): void; exclude(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
   games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean };
   participants: InsertRepository<ParticipantRecord>;
   rounds: InsertRepository<RoundRecord>;

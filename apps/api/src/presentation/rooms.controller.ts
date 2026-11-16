@@ -14,6 +14,11 @@ export class RoomsController {
  create(@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.create(actor,this.nickname(request));}
  @Post(':code/join')
  join(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);return this.rooms.join(actor,code,this.nickname(request));}
+ private single(request:Request,key:string){assertWebCommand(request,this.origin);if(Object.keys(request.body).length!==1||!Object.hasOwn(request.body,key))throw new DomainFailure('INVALID_INPUT');return request.body[key] as unknown;}
+ @Post(':code/role')
+ role(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.changeRole(requestActor(request,this.sessions),code,this.single(request,'role'));}
+ @Post(':code/exclude')
+ exclude(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.excludeMember(requestActor(request,this.sessions),code,this.single(request,'memberId'));}
  @Post(':code/settings')
  settings(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);assertWebCommand(request,this.origin);return this.rooms.saveSettings(actor,code,request.body);}
  @Post(':code/heartbeat')

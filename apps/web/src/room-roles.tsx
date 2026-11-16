@@ -1,0 +1,15 @@
+import {useEffect,useRef,useState} from 'react';
+import type {RoomSnapshot} from '@trip-court/contracts';
+import {Button,ChoiceGroup,Modal} from './design/components';
+import {requestRoom} from './api/rooms-client';
+export function RoomRoles({room,onUpdated}:{room:RoomSnapshot;onUpdated:(snapshot:RoomSnapshot)=>void}){
+ const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [target,setTarget]=useState<{memberId:string;nickname:string}|null>(null);const lock=useRef(false);const alive=useRef(false);const pending=useRef<AbortController|null>(null);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;pending.current?.abort();};},[]);
+ async function act(command:{kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}){
+  if(lock.current||!room.rosterEditable)return;lock.current=true;setBusy(true);setError('');pending.current=new AbortController();const request=pending.current;const timer=setTimeout(()=>request.abort(),6000);
+  try{const result=await requestRoom(room.inviteCode,undefined,request.signal,false,undefined,command);if(!alive.current)return;if(result.ok){onUpdated(result.data);setTarget(null);}else setError(result.code==='STATE_CONFLICT'?'상태가 달라졌어요. 피고 자리나 참가자 연결 상태를 확인한 뒤 다시 시도해 주세요.':result.message);}finally{clearTimeout(timer);lock.current=false;if(alive.current)setBusy(false);}
+ }
+ const self=room.members.find(member=>member.memberId===room.self.memberId)!;
+ const disconnected=room.members.filter(member=>!member.connected&&member.memberId!==room.self.memberId);
+ return <section className="room-roles"><h3>이번 게임의 내 역할</h3><p className="field-hint">방장도 피고가 될 수 있어요. 역할은 직접 선택하며 피고는 한 명이에요.</p><fieldset className="role-fieldset" disabled={busy||!room.rosterEditable}><ChoiceGroup label="내 역할 선택" value={self.role} onChange={value=>void act({kind:'role',role:value as 'defendant'|'participant'})} options={[{value:'participant',label:'참가자',hint:'이야기를 듣고 판단해요.'},{value:'defendant',label:'피고',hint:'사건에 관한 내 이야기를 들려줘요.'}]}/></fieldset>{!room.rosterEditable&&<p className="field-hint">게임이 시작되어 역할과 참가자를 변경할 수 없어요.</p>}{busy&&<p role="status">서버에서 변경을 확인하고 있어요.</p>}{error&&!target&&<p role="alert" className="field-error">{error}</p>}{room.self.isHost&&room.rosterEditable&&disconnected.length>0&&<div className="disconnected-members"><h4>연결이 끊긴 참가자</h4>{disconnected.map(member=><Button key={member.memberId} variant="secondary" disabled={busy} onPress={()=>{setError('');setTarget({memberId:member.memberId,nickname:member.nickname});}}>{member.nickname} 제외하기</Button>)}</div>}<Modal open={Boolean(target)} title="참가자를 제외할까요?" onDismiss={()=>{if(!busy)setTarget(null);}}><p>{target?.nickname} 님을 방 참가자 목록에서 제외해요. 초대 링크로 다시 참여할 수 있어요.</p>{error&&<p role="alert" className="field-error">{error}</p>}<Button loading={busy} disabled={!room.rosterEditable} onPress={()=>target?act({kind:'exclude',memberId:target.memberId}):undefined}>참가자 제외 확인</Button><Button variant="secondary" disabled={busy} onPress={()=>setTarget(null)}>취소</Button></Modal></section>;
+}

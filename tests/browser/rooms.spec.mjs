@@ -8,7 +8,7 @@ for(const size of [3,5,6])test(`${size}개 독립 브라우저가 한 방에 참
   await host.getByLabel('닉네임').fill('방장');await host.getByRole('button',{name:'방 만들기',exact:true}).click();
   await expect(host.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();const url=host.url();
   for(let i=1;i<size;i++){await pages[i].goto(url);await pages[i].getByRole('button',{name:'이 브라우저로 시작'}).click();await pages[i].getByLabel('닉네임').fill(`참가자 ${i}`);await pages[i].getByRole('button',{name:'방 참여하기'}).click();await expect(pages[i].getByRole('heading',{name:'우리의 대기실'})).toBeVisible();}
-  await host.getByRole('button',{name:'참가자 새로고침'}).click();await expect(host.getByTestId('member')).toHaveCount(size);await expect(host.getByTestId('member').filter({hasText:'방장 · 나'})).toHaveCount(1);
+  await host.getByRole('button',{name:'참가자 새로고침'}).click();await expect(host.getByTestId('member')).toHaveCount(size);await expect(host.getByTestId('member').filter({hasText:'방장 · 참가자 · 나'})).toHaveCount(1);
   await pages[1].reload();await expect(pages[1].getByTestId('member')).toHaveCount(size);await expect(pages[1].getByText('나 · 참가자')).toBeVisible();
   if(size===6){await mkdir('artifacts/rooms',{recursive:true});await host.screenshot({path:'artifacts/rooms/room-mobile.png',fullPage:true});expect(await host.evaluate(()=>document.documentElement.scrollWidth<=globalThis.innerWidth)).toBe(true);}
  }finally{for(const context of contexts)await context.close();}
