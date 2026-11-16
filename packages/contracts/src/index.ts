@@ -18,3 +18,6 @@ export interface RoomSnapshot {roomId:string;preparationVersion:number;nextGame:
 export interface VoteReceipt {gameId:string;roundNumber:1|2;choice:'guilty'|'not-guilty'|'abstain';reason:string}
 export interface VoteResponse {snapshot:RoomSnapshot;receipt:VoteReceipt}
 export interface GameHistoryDetail {gameId:string;game:RoomSnapshot['game'];interrupted:boolean;interruption:{caseText:string|null}|null}
+export interface PersonalHistoryItem {gameId:string;state:'ongoing'|'completed'|'interrupted';caseText:string|null;outcome:'guilty'|'not-guilty'|'no-verdict'|null}
+export interface PersonalHistoryPage {items:PersonalHistoryItem[];nextCursor:string|null}
+export interface PersonalHistoryDetail extends GameHistoryDetail {ongoing:{caseText:string}|null}

@@ -54,7 +54,7 @@ function isPublishedRounds(value:unknown):boolean {
    &&typeof reason.reason==='string');
  });
 }
-function isGameSnapshot(value:unknown):boolean {
+export function isGameSnapshot(value:unknown):boolean {
  if(!record(value)||!keys(value,[
   'gameId','status','caseText','penaltyText','durationMinutes','self',
   'participantCount','voterCount','version','serverNow','round','defense','ownVote','settlement','publishedRounds'
