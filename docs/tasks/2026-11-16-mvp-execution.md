@@ -185,3 +185,11 @@
 - 종료 재시도 소유권·마지막 표/참여 경합·중간 저장 rollback/재개방을 검사한다. UI 시험에서 중복 React key로 생긴 버튼 중복을 발견해 분리했다.
 - 320px 실제 화면에서 종료·판결 없음·허용 사건만 표시되는 것을 직접 확인했다. 이력 목록·실기기·외부 배포·원격 CI는 후속/미완료다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit31/API63/DB32/browser58와 lint/layers/build/types. browser232.2초, failed/skipped/flaky0. 소스·종료 공개 경계·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.
+
+## MVP-23 검증
+- #22는 PR #57 병합 후 CLOSED와 체크리스트 반영 확인.
+- 다음 준비 endpoint 부재 RED 후 migration9 준비 세대·이전게임 marker·영속 receipt를 구현했다. 링크/멤버십 유지, 역할/피고/수락 재설정, 빈 초안과 기본3분이며 기존 게임 기록은 변경하지 않는다.
+- 증가하는 draft/role/penalty revision과 역할/제외의 세대 검사로 옛 명령·같은 피고/벌칙 수락 재사용을 차단한다. 옛 start/open/vote 재확인은 현재 snapshot과 원래 receipt를 구분하고 이전 기록은 독립 상세 DTO로 조회한다.
+- 실제 두 판·다른 피고·중복 클릭/응답 유실·지연된 옛 투표개시 응답을 검증했다. 390px 두 번째 결과 화면 직접 확인.
+- 신규 긴 시나리오 최초15초 초과와 신규3개32.5초 측정값을 기록했다. 직전 전체232.16초에 신규 시험을 더해 suite300초로 조정하고 기존 시험/assertion 제한은 유지했다. 전체 이력 목록·실기기·외부 배포·원격 CI는 미완료다.
+- 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit32/API69/DB33/browser61와 lint/layers/build/types. browser263.8초, failed/skipped/flaky0. 세대 격리·현재/이력 분리·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.

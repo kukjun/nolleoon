@@ -74,18 +74,19 @@ function isGameSnapshot(value:unknown):boolean {
  return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement)&&isPublishedRounds(value.publishedRounds);
 }
 export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
- if(!record(x)||!keys(x,['closed','interruption','interrupted','roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||typeof x.closed!=='boolean'||typeof x.interrupted!=='boolean'||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
+ if(!record(x)||!keys(x,['preparationVersion','nextGame','historyGameId','closed','interruption','interrupted','roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||typeof x.closed!=='boolean'||typeof x.interrupted!=='boolean'||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
  if(!record(x.draft)||!keys(x.draft,['version','caseText','penaltyText','durationMinutes'])||!Number.isSafeInteger(x.draft.version)||Number(x.draft.version)<0||typeof x.draft.caseText!=='string'||typeof x.draft.penaltyText!=='string'||!Number.isInteger(x.draft.durationMinutes)||Number(x.draft.durationMinutes)<1||Number(x.draft.durationMinutes)>10)return false;
  if(!record(x.start)||!keys(x.start,['canStart','missing'])||typeof x.start.canStart!=='boolean'||!Array.isArray(x.start.missing)||!x.start.missing.every(message=>typeof message==='string'))return false;
  if(x.game!==null&&!isGameSnapshot(x.game))return false;
  if(x.interruption!==null&&(!record(x.interruption)||!keys(x.interruption,['caseText'])||!(x.interruption.caseText===null||typeof x.interruption.caseText==='string')))return false;
+ if(!Number.isSafeInteger(x.preparationVersion)||Number(x.preparationVersion)<0||!(x.historyGameId===null||typeof x.historyGameId==='string')||!record(x.nextGame)||!keys(x.nextGame,['canPrepare','fromGameId'])||typeof x.nextGame.canPrepare!=='boolean'||!(x.nextGame.fromGameId===null||typeof x.nextGame.fromGameId==='string'))return false;
  const consent=x.consent;
  if(!record(consent)||!keys(consent,['penaltyRevision','roleRevision','decisionVersion','status','defendantMemberId','canDecide'])||typeof consent.status!=='string'||!['pending','accepted','rejected'].includes(consent.status)||typeof consent.canDecide!=='boolean'||!(consent.defendantMemberId===null||typeof consent.defendantMemberId==='string')||['penaltyRevision','roleRevision','decisionVersion'].some(key=>!Number.isSafeInteger(consent[key])||Number(consent[key])<0))return false;
  const self=x.self;
  if(x.closed)return x.members.length===0&&self.isHost===false;
  return x.members.length>0&&x.members.every(m=>record(m)&&keys(m,['memberId','nickname','isHost','connected','role'])&&typeof m.memberId==='string'&&typeof m.nickname==='string'&&typeof m.isHost==='boolean'&&typeof m.connected==='boolean'&&(m.role==='defendant'||m.role==='participant'))&&new Set(x.members.map(m=>m.memberId)).size===x.members.length&&x.members.filter(m=>m.isHost).length<=1&&x.members.some(m=>m.memberId===self.memberId&&m.isHost===self.isHost);
 }
-export type RoomCommand={kind:'close';expectedMemberId:string}|{kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
+export type RoomCommand={kind:'next-game';requestId:string;fromGameId:string;expectedPreparationVersion:number}|{kind:'close';expectedMemberId:string}|{kind:'role';expectedPreparationVersion:number;role:'defendant'|'participant'}|{kind:'exclude';expectedPreparationVersion:number;memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
 export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{kind:'vote'}>):RoomSnapshot|null {
  if(!record(data)||!keys(data,['snapshot','receipt'])||!isRoomSnapshot(data.snapshot)
   ||!record(data.receipt)||!keys(data.receipt,['gameId','roundNumber','choice','reason']))return null;
@@ -96,9 +97,10 @@ export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{k
 }
 function commandBody(command:RoomCommand){
  switch(command.kind){
+ case 'next-game':return {requestId:command.requestId,fromGameId:command.fromGameId,expectedPreparationVersion:command.expectedPreparationVersion};
  case 'close':return {expectedMemberId:command.expectedMemberId};
- case 'role':return {role:command.role};
- case 'exclude':return {memberId:command.memberId};
+ case 'role':return {role:command.role,expectedPreparationVersion:command.expectedPreparationVersion};
+ case 'exclude':return {memberId:command.memberId,expectedPreparationVersion:command.expectedPreparationVersion};
  case 'consent':return {penaltyRevision:command.penaltyRevision,roleRevision:command.roleRevision,expectedDecisionVersion:command.expectedDecisionVersion,decision:command.decision};
  case 'start':return {requestId:command.requestId,expectedDraftVersion:command.expectedDraftVersion,expectedRoleRevision:command.expectedRoleRevision,expectedDecisionVersion:command.expectedDecisionVersion};
  case 'defense':return {roundNumber:command.roundNumber,expectedVersion:command.expectedVersion,action:command.action,text:command.text};
@@ -115,7 +117,8 @@ export async function requestRoom(code:string|null,nickname?:string,signal?:Abor
   const data:unknown=await response.json();
   if(signal?.aborted)return {ok:false,code:'NETWORK_ERROR',message:'취소된 요청이에요.'};
   if(response.ok){
-   if(command?.kind==='vote'){const snapshot=verifiedVoteSnapshot(data,command);if(snapshot)return {ok:true,data:snapshot};}
+   if(command?.kind==='next-game'){const snapshot=verifiedNextGameSnapshot(data,command);if(snapshot)return {ok:true,data:snapshot};}
+   else if(command?.kind==='vote'){const snapshot=verifiedVoteSnapshot(data,command);if(snapshot)return {ok:true,data:snapshot};}
    else if(isRoomSnapshot(data))return {ok:true,data};
   }
   if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};}
@@ -134,4 +137,19 @@ export async function requestLeave(code:string,expectedMemberId:string,signal?:A
   }
   return {ok:false,code:'INVALID_RESPONSE',message:'나가기 결과를 확인하지 못했어요. 같은 요청을 다시 확인해 주세요.'};
  }catch{return {ok:false,code:'NETWORK_ERROR',message:'나가기 결과를 확인하지 못했어요. 연결 후 같은 요청을 다시 확인해 주세요.'};}
+}
+
+export function verifiedNextGameSnapshot(data:unknown,command:Extract<RoomCommand,{kind:'next-game'}>):RoomSnapshot|null {
+ if(!record(data)||!keys(data,['snapshot','receipt'])||!isRoomSnapshot(data.snapshot)||!record(data.receipt)||!keys(data.receipt,['fromGameId','preparationVersion']))return null;
+ return data.receipt.fromGameId===command.fromGameId&&data.receipt.preparationVersion===command.expectedPreparationVersion+1&&data.snapshot.preparationVersion===data.receipt.preparationVersion?data.snapshot:null;
+}
+
+export async function requestGameHistory(code:string,gameId:string,signal?:AbortSignal):Promise<{ok:true;data:import('@trip-court/contracts').GameHistoryDetail}|Exclude<RoomResult,{ok:true}>>{
+ const reportIdentityLoss=identityLoss.capture();
+ try{const response=await fetch(`/api/rooms/${encodeURIComponent(code)}/games/${encodeURIComponent(gameId)}`,{credentials:'same-origin',cache:'no-store',signal});const data:unknown=await response.json();
+  if(signal?.aborted)return {ok:false,code:'NETWORK_ERROR',message:'취소된 요청이에요.'};
+  if(response.ok&&record(data)&&keys(data,['gameId','game','interrupted','interruption'])&&data.gameId===gameId&&typeof data.interrupted==='boolean'&&(data.game===null||(record(data.game)&&isGameSnapshot(data.game)&&data.game.status==='result'))&&(data.interruption===null||(record(data.interruption)&&keys(data.interruption,['caseText'])&&(data.interruption.caseText===null||typeof data.interruption.caseText==='string'))))return {ok:true,data:data as unknown as import('@trip-court/contracts').GameHistoryDetail};
+  if(!response.ok&&record(data)&&record(data.error)&&typeof data.error.code==='string'&&(errorCodes as readonly string[]).includes(data.error.code)){const code=data.error.code as ErrorCode;if(code==='SESSION_REQUIRED')reportIdentityLoss();return {ok:false,code,message:errorMessages[code]};}
+  return {ok:false,code:'INVALID_RESPONSE',message:'이전 게임 기록을 확인하지 못했어요.'};
+ }catch{return {ok:false,code:'NETWORK_ERROR',message:'서버에 연결하지 못했어요. 다시 시도해 주세요.'};}
 }

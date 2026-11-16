@@ -1,6 +1,6 @@
 import type {TallyOutcome} from '../../domain/tally.js';
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
-export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; penaltyRevision?: number; roleRevision?: number; hostMemberId?: string | null }
+export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; penaltyRevision?: number; roleRevision?: number; hostMemberId?: string | null; preparationVersion?:number; preparedAfterGameId?:string|null }
 export interface MemberRecord { id: string; roomId: string; sessionId: string; nickname: string; nicknameKey: string; joinedAt: number; role?: 'defendant' | 'participant'; lastSeenAt?: number | null; disconnectedAt?: number | null }
 export interface GameRecord { id: string; roomId: string; status: 'draft' | 'defense' | 'voting' | 'final-defense' | 'result' | 'interrupted'; caseText: string; penaltyText: string; durationSeconds: number; version: number; createdAt: number }
 export interface ParticipantRecord { gameId: string; roomId: string; memberId: string; role: 'defendant' | 'participant' | 'observer'; eligible: boolean }
@@ -15,7 +15,9 @@ export interface OpenReceipt {gameId:string;requestId:string;actorSessionId:stri
 export interface SettlementRecord {gameId:string;roundNumber:1|2;outcome:TallyOutcome;guilty:number;notGuilty:number;abstain:number;total:number;closedAt:number;closedBy:'all-submitted'|'deadline'}
 export interface InterruptionRecord {gameId:string;cause:'defendant-left'|'room-closed'|'legacy-private';interruptedAt:number}
 export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:string|null}
+export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
 export interface Repositories {
+  nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
   interruptions:InsertRepository<InterruptionRecord>&{find(gameId:string):InterruptionRecord|undefined};
   closures:InsertRepository<ClosureRecord>&{find(roomId:string):ClosureRecord|undefined};
   settlements:InsertRepository<SettlementRecord> & {find(gameId:string,roundNumber:number):SettlementRecord|undefined};
@@ -24,7 +26,7 @@ export interface Repositories {
   starts:{find(roomId:string,requestId:string):StartReceipt|undefined;insert(record:StartReceipt):void};
   consents:{find(roomId:string):ConsentRecord|undefined;save(record:ConsentRecord):void};
   sessions: InsertRepository<SessionRecord> & { findByTokenHash(hash: string): SessionRecord | undefined; extendExpiry(id: string, expiresAt: number): void };
-  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; close(id:string):void; open(): RoomRecord[]; setHost(id: string, memberId: string | null): void; bumpVersion(id: string): void; bumpRoleRevision(id: string): void; bumpPenaltyRevision(id: string): void };
+  rooms: InsertRepository<RoomRecord> & { find(id: string): RoomRecord | undefined; findByInvite(code: string): RoomRecord | undefined; prepareNext(id:string,fromGameId:string):void; close(id:string):void; open(): RoomRecord[]; setHost(id: string, memberId: string | null): void; bumpVersion(id: string): void; bumpRoleRevision(id: string): void; bumpPenaltyRevision(id: string): void };
   members: InsertRepository<MemberRecord> & { find(id:string): (MemberRecord & {leftAt:number|null}) | undefined; active(roomId: string): MemberRecord[]; idsForSession(roomId:string,sessionId:string):string[]; touch(id: string, now: number): void; setRole(id: string, role: 'defendant' | 'participant'): void; exclude(id: string, now: number): void; detectDisconnected(now: number, silentMs: number): string[] };
   games: InsertRepository<GameRecord> & { hasActive(roomId: string): boolean; active(roomId:string):GameRecord|undefined; latest(roomId:string):GameRecord|undefined; find(id:string):GameRecord|undefined; update(record:GameRecord):void };
   participants: InsertRepository<ParticipantRecord> & { list(gameId:string):ParticipantRecord[] };
