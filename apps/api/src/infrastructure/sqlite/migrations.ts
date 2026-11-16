@@ -58,4 +58,7 @@ CREATE INDEX member_presence_sweep ON room_members(last_seen_at) WHERE left_at I
 ALTER TABLE rooms ADD COLUMN role_revision INTEGER NOT NULL DEFAULT 0 CHECK(role_revision>=0);
 ALTER TABLE room_members ADD COLUMN role TEXT NOT NULL DEFAULT 'participant' CHECK(role IN ('defendant','participant'));
 CREATE UNIQUE INDEX one_waiting_defendant ON room_members(room_id) WHERE role='defendant' AND left_at IS NULL;
+`},{version:4,name:'penalty-consent',sql:`
+ALTER TABLE rooms ADD COLUMN penalty_revision INTEGER NOT NULL DEFAULT 0 CHECK(penalty_revision>=0);
+CREATE TABLE penalty_consents (room_id TEXT PRIMARY KEY NOT NULL REFERENCES rooms(id),member_id TEXT NOT NULL,role_revision INTEGER NOT NULL CHECK(role_revision>=0),penalty_revision INTEGER NOT NULL CHECK(penalty_revision>=0),decision TEXT NOT NULL CHECK(decision IN ('accepted','rejected')),version INTEGER NOT NULL CHECK(version>0),FOREIGN KEY(room_id,member_id) REFERENCES room_members(room_id,id)) STRICT;
 `}];

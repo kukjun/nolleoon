@@ -19,6 +19,8 @@ export class RoomsController {
  role(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.changeRole(requestActor(request,this.sessions),code,this.single(request,'role'));}
  @Post(':code/exclude')
  exclude(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');return this.rooms.excludeMember(requestActor(request,this.sessions),code,this.single(request,'memberId'));}
+ @Post(':code/consent')
+ consent(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);assertWebCommand(request,this.origin);return this.rooms.decideConsent(actor,code,request.body);}
  @Post(':code/settings')
  settings(@Param('code') code:string,@Req() request:Request,@Res({passthrough:true}) response:Response):RoomSnapshot{response.setHeader('Cache-Control','no-store');const actor=requestActor(request,this.sessions);assertWebCommand(request,this.origin);return this.rooms.saveSettings(actor,code,request.body);}
  @Post(':code/heartbeat')

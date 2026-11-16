@@ -1,3 +1,4 @@
+import {consentStatus,validateConsent} from './penalty-consent.js';
 import type { UnitOfWork, Repositories, RoomRecord } from './ports/storage.js';
 import type { Clock, TokenCodec } from './browser-sessions.js';
 import { DomainFailure } from '../domain/failure.js';
@@ -57,6 +58,13 @@ export class Rooms {
    r.members.exclude(target.id,this.clock.now());if(target.role==='defendant'){r.rooms.bumpRoleRevision(room.id);room.roleRevision=(room.roleRevision??0)+1;}r.rooms.bumpVersion(room.id);room.version++;return this.snapshot(r,room,actor.id);
   });
  }
+ decideConsent(actor:{id:string},code:string,input:unknown){
+  const value=validateConsent(input);return this.uow.run(r=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);
+   if(!member||member.role!=='defendant')throw new DomainFailure('FORBIDDEN');const draft=r.drafts.find(room.id);const previous=r.consents.find(room.id);
+   if(r.games.hasActive(room.id)||!draft?.penaltyText.trim()||value.roleRevision!==(room.roleRevision??0)||value.penaltyRevision!==(room.penaltyRevision??0)||value.expectedDecisionVersion!==(previous?.version??0))throw new DomainFailure('STATE_CONFLICT');
+   r.consents.save({roomId:room.id,memberId:member.id,roleRevision:value.roleRevision,penaltyRevision:value.penaltyRevision,decision:value.decision,version:value.expectedDecisionVersion+1});r.rooms.bumpVersion(room.id);room.version++;return this.snapshot(r,room,actor.id);
+  });
+ }
  saveSettings(actor:{id:string},code:string,input:unknown){
   const draft=validateSettings(input);
   return this.uow.run(r=>{
@@ -64,6 +72,7 @@ export class Rooms {
    if(!self||room.hostMemberId!==self.id)throw new DomainFailure('FORBIDDEN');
    if(r.games.hasActive(room.id))throw new DomainFailure('STATE_CONFLICT');
    const current=r.drafts.find(room.id);if((current?.version??0)!==draft.expectedVersion)throw new DomainFailure('STATE_CONFLICT');
+   if((current?.penaltyText??'')!==draft.penaltyText){r.rooms.bumpPenaltyRevision(room.id);room.penaltyRevision=(room.penaltyRevision??0)+1;}
    r.drafts.save({roomId:room.id,caseText:draft.caseText,penaltyText:draft.penaltyText,durationSeconds:draft.durationMinutes*60,version:draft.expectedVersion+1});
    r.rooms.bumpVersion(room.id);room.version++;return this.snapshot(r,room,actor.id);
   });
@@ -79,6 +88,7 @@ export class Rooms {
   const members=r.members.active(room.id);const self=members.find(m=>m.sessionId===sessionId);
   if(!self)throw new DomainFailure('FORBIDDEN');
   const saved=r.drafts.find(room.id);const draft={version:saved?.version??0,caseText:saved?.caseText??'',penaltyText:saved?.penaltyText??'',durationMinutes:(saved?.durationSeconds??180)/60};
-  return {roomId:room.id,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
+  const defendant=members.find(m=>m.role==='defendant');const record=r.consents.find(room.id);const consent={penaltyRevision:room.penaltyRevision??0,roleRevision:room.roleRevision??0,decisionVersion:record?.version??0,status:consentStatus({memberId:defendant?.id??null,roleRevision:room.roleRevision??0,penaltyRevision:room.penaltyRevision??0,penaltyText:draft.penaltyText},record),defendantMemberId:defendant?.id??null,canDecide:self.id===defendant?.id&&Boolean(draft.penaltyText.trim())&&!r.games.hasActive(room.id)};
+  return {roomId:room.id,consent,roleRevision:room.roleRevision??0,rosterEditable:!r.games.hasActive(room.id),draft,version:room.version,inviteCode:room.inviteCode,self:{memberId:self.id,isHost:self.id===room.hostMemberId},members:members.map(m=>({memberId:m.id,nickname:m.nickname,role:m.role??'participant',connected:m.disconnectedAt==null,isHost:m.id===room.hostMemberId}))};
  }
 }
