@@ -1,8 +1,9 @@
+import {firstCandidateRandom} from '../support/fakes.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {openSqlite,migrate,migrations,SqliteUnitOfWork} from '../../apps/api/dist/infrastructure/sqlite/index.js';import {Rooms} from '../../apps/api/dist/application/rooms.js';import {SecureTokens} from '../../apps/api/dist/infrastructure/sessions/secure-tokens.js';
 test('대기 피고 unique·복귀와 제외 순서·피고제외 수락revision 무효화',()=>{
  const dir=mkdtempSync(join(tmpdir(),'trip-roles-'));const db=openSqlite(join(dir,'test.sqlite'));let now=1000;
- try{migrate(db);const uow=new SqliteUnitOfWork(db);uow.run(r=>{for(const id of ['h','g'])r.sessions.insert({id,tokenHash:id,createdAt:0,expiresAt:999999});});const rooms=new Rooms(uow,{now:()=>now},new SecureTokens());const room=rooms.create({id:'h'},'방장');const guest=rooms.join({id:'g'},room.inviteCode,'친구');const target=guest.self.memberId;
+ try{migrate(db);const uow=new SqliteUnitOfWork(db);uow.run(r=>{for(const id of ['h','g'])r.sessions.insert({id,tokenHash:id,createdAt:0,expiresAt:999999});});const rooms=new Rooms(uow,{now:()=>now},new SecureTokens(),firstCandidateRandom);const room=rooms.create({id:'h'},'방장');const guest=rooms.join({id:'g'},room.inviteCode,'친구');const target=guest.self.memberId;
  const claimed=rooms.changeRole({id:'g'},room.inviteCode,'defendant');assert.equal(rooms.changeRole({id:'g'},room.inviteCode,'defendant').roleRevision,claimed.roleRevision);
  assert.throws(()=>uow.run(r=>r.members.setRole(room.self.memberId,'defendant')),e=>e.code==='constraint');
  now=16000;rooms.sweep();rooms.heartbeat({id:'g'},room.inviteCode);assert.throws(()=>rooms.excludeMember({id:'h'},room.inviteCode,target),e=>e.code==='STATE_CONFLICT');

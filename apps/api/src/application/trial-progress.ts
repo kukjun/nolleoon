@@ -1,3 +1,4 @@
+import type {RandomSource} from './ports/random.js';
 import {maintainBeforeRequest} from './membership-lifecycle.js';
 import type { UnitOfWork, Repositories } from './ports/storage.js';
 import type { Clock } from './browser-sessions.js';
@@ -16,7 +17,7 @@ function input(value: unknown, keys: string[]) {
 }
 
 export class TrialProgress {
-  constructor(private readonly uow: UnitOfWork, private readonly clock: Clock) {}
+  constructor(private readonly uow: UnitOfWork, private readonly clock: Clock,private readonly random:RandomSource) {}
 
   private context(r: Repositories, actor: {id: string}, code: string, gameId: string) {
     const room = r.rooms.findByInvite(code);
@@ -54,7 +55,7 @@ export class TrialProgress {
     const action = data.action === 'submit' ? 'submitted' : 'skipped';
 
     const now=this.clock.now();
-    maintainBeforeRequest(this.uow,now);
+    maintainBeforeRequest(this.uow,now,this.random);
     this.uow.run(r => {
       const {room, game, member, participant} = this.context(r, actor, code, gameId);
       if (participant.role !== 'defendant') throw new DomainFailure('FORBIDDEN');
@@ -71,7 +72,7 @@ export class TrialProgress {
       throw new DomainFailure('INVALID_INPUT');
     }
     const now=this.clock.now();
-    maintainBeforeRequest(this.uow,now);
+    maintainBeforeRequest(this.uow,now,this.random);
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       if (member.id !== room.hostMemberId) throw new DomainFailure('FORBIDDEN');
@@ -93,7 +94,7 @@ export class TrialProgress {
     const roundNumber=data.roundNumber;
     const requestId = data.requestId;
     const now=this.clock.now();
-    maintainBeforeRequest(this.uow,now);
+    maintainBeforeRequest(this.uow,now,this.random);
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       const receipt = r.opens.find(gameId, requestId);

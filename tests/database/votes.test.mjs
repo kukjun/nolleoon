@@ -1,3 +1,4 @@
+import {firstCandidateRandom} from '../support/fakes.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {votingFixture} from '../support/voting-fixture.mjs';
@@ -13,9 +14,9 @@ test('실제 DB 투표 rollback·재시작 receipt·마감과 라운드 경계·
   const actor=members[1];const body={roundNumber:1,requestId:'db-submit-vote-0001',choice:'guilty',reason:'  실제 접수  '};
   const versions=()=>db.prepare('SELECT r.version AS room,g.version AS game FROM rooms r JOIN games g ON g.room_id=r.id').get();const initial=versions();
   const failing={run:work=>uow.run(r=>work({...r,votes:{...r.votes,insert(v){r.votes.insert(v);throw new Error('after insert failure');}}}))};
-  assert.throws(()=>new SubmitVote(failing,clock).execute(actor,f.s.inviteCode,gameId,body),/after insert failure/);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,0);
-  new SubmitVote(uow,clock).execute(actor,f.s.inviteCode,gameId,body);assert.deepEqual(versions(),initial);
-  db.close();db=openSqlite(f.dbPath);uow=new SqliteUnitOfWork(db);now=181000;const voter=new SubmitVote(uow,clock);
+  assert.throws(()=>new SubmitVote(failing,clock,firstCandidateRandom).execute(actor,f.s.inviteCode,gameId,body),/after insert failure/);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,0);
+  new SubmitVote(uow,clock,firstCandidateRandom).execute(actor,f.s.inviteCode,gameId,body);assert.deepEqual(versions(),initial);
+  db.close();db=openSqlite(f.dbPath);uow=new SqliteUnitOfWork(db);now=181000;const voter=new SubmitVote(uow,clock,firstCandidateRandom);
   voter.execute(actor,f.s.inviteCode,gameId,{...body,reason:'실제 접수'});assert.equal(db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,1);
   assert.throws(()=>voter.execute(members[2],f.s.inviteCode,gameId,{...body,requestId:'db-expired-vote-0001'}),e=>e.code==='DEADLINE_PASSED');
   now=2000;db.prepare('UPDATE rounds SET closed_at=1900 WHERE game_id=?').run(gameId);
@@ -25,7 +26,7 @@ test('실제 DB 투표 rollback·재시작 receipt·마감과 라운드 경계·
   db.prepare("UPDATE games SET status='voting' WHERE id=?").run(gameId);
   assert.throws(()=>voter.execute(members[2],f.s.inviteCode,gameId,{...body,requestId:'db-oldround-vote-0001'}),e=>e.code==='STATE_CONFLICT');
   assert.deepEqual(voter.execute(actor,f.s.inviteCode,gameId,body),{gameId,roundNumber:1,choice:'guilty',reason:'실제 접수'});
-  let boundary=181999;new SubmitVote(uow,{now:()=>boundary++}).execute(members[2],f.s.inviteCode,gameId,{...body,roundNumber:2,requestId:'db-second-vote-0001',choice:'abstain',reason:''});
+  let boundary=181999;new SubmitVote(uow,{now:()=>boundary++},firstCandidateRandom).execute(members[2],f.s.inviteCode,gameId,{...body,roundNumber:2,requestId:'db-second-vote-0001',choice:'abstain',reason:''});
   assert.equal(db.prepare('SELECT submitted_at AS at FROM votes WHERE round_number=2').get().at,181999);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,2);
   const replay=await f.post(`games/${gameId}/vote`,f.cookies[1],body);assert.equal(replay.status,201);

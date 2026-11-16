@@ -1,3 +1,4 @@
+import {firstCandidateRandom} from '../support/fakes.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
@@ -5,7 +6,7 @@ import {openSqlite,migrate,SqliteUnitOfWork} from '../../apps/api/dist/infrastru
 import {Rooms} from '../../apps/api/dist/application/rooms.js';import {SecureTokens} from '../../apps/api/dist/infrastructure/sessions/secure-tokens.js';
 test('서버 감지 시각부터 단절·멱등 sweep·heartbeat 복귀·퇴장자는 미복구',()=>{
  const dir=mkdtempSync(join(tmpdir(),'trip-presence-'));const db=openSqlite(join(dir,'test.sqlite'));let now=1000;
- try{migrate(db);const uow=new SqliteUnitOfWork(db);uow.run(r=>r.sessions.insert({id:'s',tokenHash:'h',createdAt:1,expiresAt:999999}));const rooms=new Rooms(uow,{now:()=>now},new SecureTokens());const first=rooms.create({id:'s'},'방장');
+ try{migrate(db);const uow=new SqliteUnitOfWork(db);uow.run(r=>r.sessions.insert({id:'s',tokenHash:'h',createdAt:1,expiresAt:999999}));const rooms=new Rooms(uow,{now:()=>now},new SecureTokens(),firstCandidateRandom);const first=rooms.create({id:'s'},'방장');
  assert.equal(first.members[0].connected,true);assert.equal(first.version,0);
  now=15999;rooms.sweep();assert.equal(rooms.read({id:'s'},first.inviteCode).members[0].connected,true);
  now=17000;rooms.sweep();const offline=rooms.read({id:'s'},first.inviteCode);assert.equal(offline.members[0].connected,false);assert.equal(offline.version,1);assert.equal(db.prepare('SELECT disconnected_at FROM room_members').get().disconnected_at,17000);

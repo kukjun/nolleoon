@@ -1,3 +1,5 @@
+import {assignVacantHost} from './host-transfer.js';
+import type {RandomSource} from './ports/random.js';
 import {maintainBeforeRequest,maintainRooms,leaveMember} from './membership-lifecycle.js';
 import {publishedRounds} from './published-rounds.js';
 import {startConditions} from './start-trial.js';
@@ -21,14 +23,14 @@ export function validateSettings(input:unknown):SettingsInput {
 }
 export const PRESENCE_SILENCE_MS=15000;
 export class Rooms {
- constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec){}
- private run<T>(work:(r:Repositories,now:number)=>T):T {const now=this.clock.now();maintainBeforeRequest(this.uow,now);return this.uow.run(r=>work(r,now));}
+ constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
+ private run<T>(work:(r:Repositories,now:number)=>T):T {const now=this.clock.now();maintainBeforeRequest(this.uow,now,this.random);return this.uow.run(r=>work(r,now));}
  leave(actor:{id:string},code:string,expectedMemberId:unknown){
   if(typeof expectedMemberId!=='string'||!expectedMemberId||expectedMemberId.length>100)throw new DomainFailure('INVALID_INPUT');
   return this.run((r,now)=>{
    const room=this.openRoom(r,code);const member=r.members.find(expectedMemberId);
    if(!member||member.roomId!==room.id||member.sessionId!==actor.id)throw new DomainFailure('FORBIDDEN');
-   if(member.leftAt==null)leaveMember(r,member,now);
+   if(member.leftAt==null){leaveMember(r,member,now);assignVacantHost(r,room.id,now,this.random);}
    return {left:true as const,memberId:member.id};
   });
  }
@@ -52,7 +54,7 @@ export class Rooms {
     r.rooms.bumpVersion(room.id);
     room.version++;
    }
-   this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);
+   if(assignVacantHost(r,room.id,now,this.random)){Object.assign(room,r.rooms.find(room.id));}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);
   });
  }
  changeRole(actor:{id:string},code:string,role:unknown){
@@ -90,8 +92,8 @@ export class Rooms {
    r.rooms.bumpVersion(room.id);room.version++;return this.snapshot(r,room,actor.id,now);
   });
  }
- sweep(){return this.uow.run(r=>maintainRooms(r,this.clock.now()));}
- heartbeat(actor:{id:string},code:string){return this.run((r,now)=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,now);if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);});}
+ sweep(){return this.uow.run(r=>maintainRooms(r,this.clock.now(),this.random));}
+ heartbeat(actor:{id:string},code:string){return this.run((r,now)=>{const room=this.openRoom(r,code);const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');r.members.touch(member.id,now);if(member.disconnectedAt!=null){r.rooms.bumpVersion(room.id);room.version++;}if(assignVacantHost(r,room.id,now,this.random)){Object.assign(room,r.rooms.find(room.id));}this.observe(r,room,actor.id);return this.snapshot(r,room,actor.id,now);});}
  read(actor:{id:string},code:string,gameId?:string){return this.run((r,now)=>this.snapshot(r,this.openRoom(r,code),actor.id,now,gameId));}
  private openRoom(r:Repositories,code:string){
   if(!/^[A-Za-z0-9_-]{43}$/.test(code))throw new DomainFailure('NOT_FOUND');

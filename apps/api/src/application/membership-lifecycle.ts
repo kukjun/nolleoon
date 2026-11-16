@@ -1,3 +1,5 @@
+import type {RandomSource} from './ports/random.js';
+import {assignVacantHost} from './host-transfer.js';
 import type {Repositories,MemberRecord,UnitOfWork} from './ports/storage.js';
 import {settleRound} from './round-settlement.js';
 export const DISCONNECT_GRACE_MS = 600000;
@@ -25,7 +27,7 @@ export function leaveMember(r:Repositories, member:MemberRecord, effectiveAt:num
 }
 
 // 두 monitor와 모든 요청 경계에서 동일하게 시간순으로 재생한다.
-export function maintainRooms(r:Repositories, now:number){
+export function maintainRooms(r:Repositories, now:number,random:RandomSource){
  let settled=0,expired=0;
  for(const room of r.rooms.open()){
   const due=r.members.active(room.id)
@@ -36,7 +38,8 @@ export function maintainRooms(r:Repositories, now:number){
   if(game&&settleRound(r,game.id,now))settled++;
  }
  for(const roomId of r.members.detectDisconnected(now,15000))r.rooms.bumpVersion(roomId);
+ for(const room of r.rooms.open())assignVacantHost(r,room.id,now,random);
  return {settled,expired};
 }
 // 실패하는 명령의 rollback이 이미 효력이 발생한 만료를 되돌리지 않게 먼저 커밋한다.
-export function maintainBeforeRequest(uow:UnitOfWork,now:number){uow.run(r=>maintainRooms(r,now));}
+export function maintainBeforeRequest(uow:UnitOfWork,now:number,random:RandomSource){uow.run(r=>maintainRooms(r,now,random));}

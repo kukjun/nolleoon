@@ -1,3 +1,4 @@
+import {firstCandidateRandom} from '../support/fakes.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {votingFixture} from '../support/voting-fixture.mjs';
 import {openSqlite,SqliteUnitOfWork} from '../../apps/api/dist/infrastructure/sqlite/index.js';
@@ -9,7 +10,7 @@ test('유예 중 같은 브라우저 복귀는 신원·고정 명단·접수·�
  f.setNow(16000);new SqliteUnitOfWork(db).run(r=>r.members.detectDisconnected(16000,15000));assert.equal(db.prepare('SELECT disconnected_at AS at FROM room_members WHERE id=?').get(memberId).at,16000);
  f.setNow(590000);const recovered=await(await f.post('heartbeat',f.cookies[1],{})).json();assert.equal(recovered.self.memberId,memberId);assert.equal(recovered.game.self.eligible,true);assert.deepEqual(recovered.game.ownVote,sent.receipt&&{roundNumber:1,choice:'guilty',reason:intent.reason});assert.equal(recovered.game.round.deadline,deadline);assert.equal(recovered.game.status,'voting');assert.deepEqual(db.prepare('SELECT * FROM game_participants ORDER BY member_id').all(),cohort);
  // 실제 감지 시각으로부터 599,999ms 후에도 동일 멤버십. 결과 상태 복귀도 별도 확인한다.
- db.prepare('UPDATE room_members SET disconnected_at=16000,last_seen_at=1000 WHERE id=?').run(memberId);f.setNow(615999);new SettleRounds(new SqliteUnitOfWork(db),{now:()=>615999}).sweep();
+ db.prepare('UPDATE room_members SET disconnected_at=16000,last_seen_at=1000 WHERE id=?').run(memberId);f.setNow(615999);new SettleRounds(new SqliteUnitOfWork(db),{now:()=>615999},firstCandidateRandom).sweep();
  const result=await(await f.post('heartbeat',f.cookies[1],{})).json();assert.equal(result.self.memberId,memberId);assert.equal(result.game.status,'result');assert.equal(result.game.round.deadline,deadline);assert.deepEqual(result.game.ownVote,recovered.game.ownVote);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM sessions').get().n,sessions);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,1);
  assert.equal((await f.post(`${path}/vote`,f.cookies[1],intent)).status,201);
  }finally{db?.close();await f.close();}});

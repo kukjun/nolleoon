@@ -1,3 +1,4 @@
+import type {RandomSource} from './ports/random.js';
 import {maintainBeforeRequest} from './membership-lifecycle.js';
 import {settleRound} from './settle-round.js';
 import type {UnitOfWork, VoteRecord} from './ports/storage.js';
@@ -19,11 +20,11 @@ function validate(value: unknown): VoteInput {
 }
 
 export class SubmitVote {
-  constructor(private readonly uow: UnitOfWork, private readonly clock: Clock) {}
+  constructor(private readonly uow: UnitOfWork, private readonly clock: Clock,private readonly random:RandomSource) {}
   execute(actor: {id:string}, code:string, gameId:string, value:unknown) {
     const input = validate(value);
     const now = this.clock.now();
-    maintainBeforeRequest(this.uow,now);
+    maintainBeforeRequest(this.uow,now,this.random);
   return this.uow.run(r => {
       const room = r.rooms.findByInvite(code);
       const game = r.games.find(gameId);
