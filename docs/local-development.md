@@ -1,0 +1,54 @@
+# 로컬 개발 기반 · MVP-02
+
+이 단계는 React 화면 뼈대와 Nest 통합 BFF의 HTTP 헬스만 제공한다. 방/게임/DB/세션은 구현하지 않았다. 기존 `ui/`는 참고 목업으로 보존하며 실제 앱과 혼동하지 않는다.
+
+## 환경과 설치
+
+Node 24.x, npm 11.x를 사용한다. 검증 환경은 Node 24.14.1 / npm 11.11.0이다. 저장소 루트에서 실행한다.
+
+```sh
+npm ci --ignore-scripts --no-audit --no-fund
+npm run test:workspace
+npm run check:layers
+npm run build
+npm run smoke:workspace
+```
+
+lockfile로 고정한 workspace 의존성만 설치한다. 설치 스크립트 없이 위 빌드/기동을 검증했다. 이 단계의 명령은 기존 미추적 하네스에 의존하지 않는다. 기존 `check`/`test:harness` 스크립트는 보존했으나 하네스 배포·연결은 MVP-03 범위다.
+
+## 직접 기동
+
+터미널 1:
+
+```sh
+API_PORT=3001 npm run start:api
+```
+
+터미널 2:
+
+```sh
+npm run dev:web
+```
+
+API는 `http://127.0.0.1:3001/api/health`, 개발 UI는 Vite가 출력한 loopback 주소(기본 포트 5173)로 접속한다. 포트 점유 시 strictPort 실패이며 자동으로 다른 포트로 변경하지 않는다. 필요하면 `npm run dev -w @trip-court/web -- --port 5174`처럼 다른 로컬 포트를 지정한다. 각 터미널의 Ctrl+C로 종료한다. 현재 UI는 기능 준비 안내만 표시하며 API 호출이나 게임 성공을 시연하지 않는다.
+
+`.env.example`에는 비밀 없는 값만 있다. 앱은 `.env`를 자동으로 읽지 않는다. 위처럼 환경변수를 지정하거나 루트에서 `node --env-file=.env.example apps/api/dist/main.js`로 실행한다. API_PORT 누락/빈값/범위 밖/소수는 시작 전에 오류로 종료한다. API_HOST는 생략 또는 `127.0.0.1`만 가능하다. 이 로컬 단계에서는 외부 바인딩·Tunnel·배포를 수행하지 않는다.
+
+## 구조와 검사
+
+- `apps/web`: React + TypeScript, Vite 정적 빌드.
+- `apps/api/src/presentation`: Nest controller가 화면 DTO를 구성하는 통합 BFF.
+- `apps/api/src/application`: use case. `domain`에 의존 가능.
+- `apps/api/src/domain`: 프레임워크 독립 타입/규칙.
+- `apps/api/src/composition`: Nest module/provider 조립. 생성 책임을 domain에 넣지 않는다.
+- `packages/contracts`: 외부 라이브러리 없는 공유 HTTP 타입, API가 사용. domain이 HTTP DTO에 의존하지 않는다.
+
+계층 검사는 TypeScript AST로 정적 import/export, import(), 타입 위치의 import(), require(), import-equals를 확인한다. domain/application의 삼중 슬래시 참조는 우회 의존성을 막기 위해 금지한다. domain은 domain 내부, application은 domain/application 내부만 의존한다. 동적 문자열 의존성도 거절한다. 파일 누락은 검사 실패다. 이 검사는 악의적 JS 실행을 막는 샌드박스가 아니며 별칭·새 로더를 추가할 때 검사를 확장한다.
+
+## 검증 범위와 버전 결정
+
+`smoke:workspace`는 먼저 빌드 산출물이 없으면 실패한다. 잘못된 환경으로 API가 실패하는지, 정상 API의 JSON, web 정적 HTML과 JS 번들의 HTTP 응답을 임시 loopback 포트에서 검사하고 자신이 띄운 프로세스를 종료한다. 실제 브라우저 렌더·다인 E2E·실기기·외부 접속을 검증하지 않는다.
+
+공식 npm registry 확인 후 React/react-dom 19.3.1, Nest 12.5.0, Vite 8.3.8을 고정했다. TypeScript 최신 7.0.2는 기존 compiler AST API를 제공하지 않아 구조 검사에서 실패했고, 검증한 안정 API가 있는 5.9.3으로 선택했다. Node 타입은 런타임에 맞춘 24.19.2다. 정확한 전이 의존성은 package-lock.json을 따른다.
+
+제품 테스트 전체 합격을 뜻하지 않는다. 초기 환경/구조 계약 5개와 빌드/HTTP smoke만 이 단계의 인수 증거다.
