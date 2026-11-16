@@ -193,3 +193,12 @@
 - 실제 두 판·다른 피고·중복 클릭/응답 유실·지연된 옛 투표개시 응답을 검증했다. 390px 두 번째 결과 화면 직접 확인.
 - 신규 긴 시나리오 최초15초 초과와 신규3개32.5초 측정값을 기록했다. 직전 전체232.16초에 신규 시험을 더해 suite300초로 조정하고 기존 시험/assertion 제한은 유지했다. 전체 이력 목록·실기기·외부 배포·원격 CI는 미완료다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit32/API69/DB33/browser61와 lint/layers/build/types. browser263.8초, failed/skipped/flaky0. 세대 격리·현재/이력 분리·화면 독립 승인 및 포트 정리 확인. 원격 CI #36 미실행.
+
+## MVP-24 검증
+- #23은 PR #58 병합 후 CLOSED와 체크리스트 반영 확인.
+- 기록 endpoint 부재 RED 후 실제 게임 참여자의 서버 필터·중복 멤버십 제거·20개 keyset 페이지·개별 상세를 연결했다. 후발 관전은 포함하며 종료 후 참가·동일닉네임·다른 신원은 과거 권한을 얻지 않는다.
+- private 중단은 목록 제목/snippet도 차단하고 진행 게임 상세에는 사건/상태만 제공한다. 완료 판결 null은 무판결로 날조하지 않고 기록 확인 필요로 표시하는 RED/GREEN을 보완했다.
+- 실제 API/SQLite 26개 페이지와 새 항목 삽입, 두 라운드 이유, cross-room/cursor, 닫힘/퇴장·신원 만료를 검사한다. 브라우저 두 게임·reload·다른 신원·늦은 응답을 검증하고 페이지 UI fixture는 실제 21게임 수행 증거와 구분한다.
+- 320px 개인 기록 화면 직접 확인. 쿠키 신원 정책과 서버 초기 무삭제/영구보관 비보장을 안내한다. migration 없음, 실제 기기·외부 배포·원격 CI는 미완료다.
+- 최초 clean 전체 검사는 browser63/64에서 기존 320px 결과 우선 배치 회귀가 실패했다(y<180 기대, 실제189). 새 개인 기록 버튼이 결과를 밀어낸 결함이며 assertion을 낮추지 않고 버튼 배치를 수정 후 재검증한다. timeout이 아니며 나머지 정적/unit/API/DB gate는 통과했다.
+- 수정 후 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit34/API76/DB33/browser64와 lint/layers/build/types. browser276.9초, failed/skipped/flaky0. 원래 y<180 유지, 최종 clone의 최신 안내문320px 캡처 독립 확인 및 포트 정리. 원격 CI #36 미실행.

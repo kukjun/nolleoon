@@ -1,3 +1,5 @@
+import {HistoryController} from '../presentation/history.controller.js';
+import {PersonalHistory} from '../application/personal-history.js';
 import {NextGame} from '../application/next-game.js';
 import type {RandomSource} from '../application/ports/random.js';
 import {SettleRounds} from '../application/settle-round.js';
@@ -32,7 +34,7 @@ export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();
-    return {module:AppModule,controllers:[HealthController,SessionController,RoomsController],providers:[
+    return {module:AppModule,controllers:[HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
@@ -40,6 +42,7 @@ export class AppModule {
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
       {provide:SettleRounds,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SettleRounds(resources.uow,config.clock??new SystemClock(),random)},
       {provide:SettlementMonitor,inject:[SettleRounds],useFactory:(rounds:SettleRounds)=>new SettlementMonitor(rounds,config.settlementMonitor??true)},
+      {provide:PersonalHistory,inject:[STORAGE,Rooms],useFactory:(resources:StorageResources,rooms:Rooms)=>new PersonalHistory(resources.uow,rooms,config.clock??new SystemClock(),random)},
       {provide:NextGame,inject:[STORAGE],useFactory:(resources:StorageResources)=>new NextGame(resources.uow,config.clock??new SystemClock(),random)},
       {provide:SubmitVote,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SubmitVote(resources.uow,config.clock??new SystemClock(),random)},
       {provide:TrialProgress,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TrialProgress(resources.uow,config.clock??new SystemClock(),random)},
