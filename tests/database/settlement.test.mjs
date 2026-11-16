@@ -19,7 +19,7 @@ test('마지막 표 이후 정산 실패는 표·결과·상태 전체 rollback,
  assert.throws(()=>new SubmitVote(failing,{now:()=>3000}).execute(f.members[2],f.s.inviteCode,f.gameId,vote('db-last-vote-0001')),/close failure/);
  assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM votes').get().n,1);assert.equal(f.db.prepare('SELECT COUNT(*) AS n FROM round_settlements').get().n,0);assert.equal(f.db.prepare('SELECT status FROM games').get().status,'voting');assert.equal(f.db.prepare('SELECT closed_at FROM rounds').get().closed_at,null);
  assert.throws(()=>new SubmitVote(uow,{now:()=>181000}).execute(f.members[2],f.s.inviteCode,f.gameId,vote('db-late-vote-0001')),e=>e.code==='DEADLINE_PASSED');
- assert.equal(new SettleRounds(uow,{now:()=>181000}).sweep(),1);assert.equal(f.db.prepare('SELECT abstain FROM round_settlements').get().abstain,1);
+ assert.equal(new SettleRounds(uow,{now:()=>181000}).sweep(),0);assert.equal(f.db.prepare('SELECT abstain FROM round_settlements').get().abstain,1);
  }finally{f.db.close();await f.close();}});
 test('마지막 표 선착순과 마감 worker 선착순 모두 단일 불변 결과를 남긴다',async()=>{
  for(const lastWins of [true,false]){const f=await fixture();let second;try{

@@ -10,7 +10,7 @@ test('선택적 피고변론·시간변경·동시개시·영속동일마감·�
  const body={roundNumber:1,expectedVersion:s.game.version,requestId:'first-vote-request-001'};const opened=await Promise.all([call('open-vote',body),call('open-vote',body)]);assert.deepEqual(opened.map(r=>r.status),[201,201]);s=await opened[0].json();assert.deepEqual((await opened[1].json()).game.round,s.game.round);assert.equal(s.game.round.deadline,61000);assert.equal(s.game.round.startedAt,1000);
  f.setNow(5000);assert.equal((await(await call('open-vote',body)).json()).game.round.deadline,61000);assert.equal((await call('open-vote',{...body,requestId:'different-vote-request'})).status,409);
  assert.equal((await call('defense',{roundNumber:1,expectedVersion:s.game.version,action:'submit',text:'늦게'})).status,409);assert.equal((await call('duration',{expectedVersion:s.game.version,durationMinutes:5})).status,409);
- f.setNow(61000);const ended=await(await fetch(f.url,{headers:{cookie:f.cookies[0]}})).json();assert.equal(ended.game.status,'voting');assert.equal(ended.game.serverNow,61000);
+ f.setNow(61000);const ended=await(await fetch(f.url,{headers:{cookie:f.cookies[0]}})).json();assert.equal(ended.game.status,'result');assert.equal(ended.game.settlement.outcome,'no-verdict');assert.equal(ended.game.serverNow,61000);
  }finally{await f.close();}});
 
 test('무응답 개시 허용·비방장금지·시간/변론과 개시 경합은 버전으로 직렬화한다',async()=>{const f=await fixture();try{const path=`games/${f.s.game.gameId}`;const call=(action,body,c=f.cookies[0])=>f.post(`${path}/${action}`,c,body);assert.equal(f.s.game.defense.status,'pending');assert.equal((await call('open-vote',{roundNumber:1,expectedVersion:0,requestId:'non-host-open-0001'},f.cookies[1])).status,403);

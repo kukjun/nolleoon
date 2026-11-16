@@ -9,7 +9,7 @@ test('서버 감지 시각부터 단절·멱등 sweep·heartbeat 복귀·퇴장�
  assert.equal(first.members[0].connected,true);assert.equal(first.version,0);
  now=15999;rooms.sweep();assert.equal(rooms.read({id:'s'},first.inviteCode).members[0].connected,true);
  now=17000;rooms.sweep();const offline=rooms.read({id:'s'},first.inviteCode);assert.equal(offline.members[0].connected,false);assert.equal(offline.version,1);assert.equal(db.prepare('SELECT disconnected_at FROM room_members').get().disconnected_at,17000);
- now=999999;rooms.sweep();assert.equal(rooms.read({id:'s'},first.inviteCode).version,1);assert.equal(db.prepare('SELECT left_at FROM room_members').get().left_at,null);
+ now=616999;rooms.sweep();assert.equal(rooms.read({id:'s'},first.inviteCode).version,1);assert.equal(db.prepare('SELECT left_at FROM room_members').get().left_at,null);
  const online=rooms.heartbeat({id:'s'},first.inviteCode);assert.equal(online.members[0].connected,true);assert.equal(online.version,2);assert.equal(rooms.heartbeat({id:'s'},first.inviteCode).version,2);
  db.prepare('UPDATE room_members SET left_at=?').run(now);assert.throws(()=>rooms.heartbeat({id:'s'},first.inviteCode),e=>e.code==='FORBIDDEN');assert.equal(db.prepare('SELECT left_at FROM room_members').get().left_at,now);
  }finally{db.close();rmSync(dir,{recursive:true,force:true});}

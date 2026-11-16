@@ -2,8 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {isRoomSnapshot,verifiedVoteSnapshot} from '../../apps/web/src/api/rooms-client.ts';
 test('방 DTO 런타임 검증은 개인 필드·잘못된 방장·중복 멤버를 거부한다',()=>{
- const room={start:{canStart:false,missing:[]},game:null,consent:{penaltyRevision:0,roleRevision:0,decisionVersion:0,status:'pending',defendantMemberId:null,canDecide:false},roleRevision:0,rosterEditable:true,draft:{version:0,caseText:'',penaltyText:'',durationMinutes:3},version:1,roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',role:'participant',nickname:'나',isHost:true,connected:true}]};
+ const room={interrupted:false,start:{canStart:false,missing:[]},game:null,consent:{penaltyRevision:0,roleRevision:0,decisionVersion:0,status:'pending',defendantMemberId:null,canDecide:false},roleRevision:0,rosterEditable:true,draft:{version:0,caseText:'',penaltyText:'',durationMinutes:3},version:1,roomId:'room',inviteCode:'code',self:{memberId:'one',isHost:true},members:[{memberId:'one',role:'participant',nickname:'나',isHost:true,connected:true}]};
  assert.equal(isRoomSnapshot(room),true);
+ assert.equal(isRoomSnapshot({...room,members:[...room.members,{...room.members[0],memberId:'two',nickname:'다른 방장'}]}),false);
+ assert.equal(isRoomSnapshot({...room,interrupted:undefined}),false);
+ assert.equal(isRoomSnapshot({...room,self:{memberId:'one',isHost:false},members:[{...room.members[0],isHost:false}]}),true);
  const game={publishedRounds:[],settlement:null,ownVote:null,version:0,serverNow:1000,round:null,defense:{roundNumber:1,status:'pending',text:null},gameId:'game',status:'defense',caseText:'사건',penaltyText:'벌칙',durationMinutes:3,self:{role:'observer',eligible:false},participantCount:5,voterCount:4};
  assert.equal(isRoomSnapshot({...room,game}),true);
  const published={number:1,counts:{guilty:1,notGuilty:1,abstain:0},reasons:[{choice:'guilty',reason:'공개 이유'}]};

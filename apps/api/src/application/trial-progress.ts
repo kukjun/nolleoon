@@ -1,3 +1,4 @@
+import {maintainBeforeRequest} from './membership-lifecycle.js';
 import type { UnitOfWork, Repositories } from './ports/storage.js';
 import type { Clock } from './browser-sessions.js';
 import { DomainFailure } from '../domain/failure.js';
@@ -52,6 +53,8 @@ export class TrialProgress {
     const text = data.text.trim();
     const action = data.action === 'submit' ? 'submitted' : 'skipped';
 
+    const now=this.clock.now();
+    maintainBeforeRequest(this.uow,now);
     this.uow.run(r => {
       const {room, game, member, participant} = this.context(r, actor, code, gameId);
       if (participant.role !== 'defendant') throw new DomainFailure('FORBIDDEN');
@@ -67,6 +70,8 @@ export class TrialProgress {
     if (!Number.isInteger(data.durationMinutes) || Number(data.durationMinutes) < 1 || Number(data.durationMinutes) > 10) {
       throw new DomainFailure('INVALID_INPUT');
     }
+    const now=this.clock.now();
+    maintainBeforeRequest(this.uow,now);
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       if (member.id !== room.hostMemberId) throw new DomainFailure('FORBIDDEN');
@@ -87,6 +92,8 @@ export class TrialProgress {
     if(data.roundNumber!==1&&data.roundNumber!==2)throw new DomainFailure('INVALID_INPUT');
     const roundNumber=data.roundNumber;
     const requestId = data.requestId;
+    const now=this.clock.now();
+    maintainBeforeRequest(this.uow,now);
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       const receipt = r.opens.find(gameId, requestId);
@@ -97,7 +104,6 @@ export class TrialProgress {
       }
       if (member.id !== room.hostMemberId) throw new DomainFailure('FORBIDDEN');
       this.editable(r, game, data.expectedVersion, roundNumber);
-      const now = this.clock.now();
       r.rounds.insert({gameId, number: roundNumber, startedAt: now, deadline: now + game.durationSeconds * 1000});
       r.games.update({...game, status: 'voting', version: game.version + 1});
       r.opens.insert({gameId, requestId, actorSessionId: actor.id, intent: data.expectedVersion as number, roundNumber});
