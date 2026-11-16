@@ -1,7 +1,6 @@
 # 결정 기록
 
-중요한 선택을 확정했을 때 배경, 고려한 대안, 결정, 검증 방법을 짧게 남긴다.
-미결정 사항은 제품·하네스 초안에서 관리한다.
+중요한 선택의 배경, 대안, 결정, 검증 방법을 기록한다. 제품 정책 원본은 [현재 규칙](../design/00-current-rules.md), 남은 결정은 [결정 대기](../design/02-open-questions.md)다.
 
-현재 확정: 개인 공개 저장소, Codex 중심 작업, 작은 여행 게임과 하네스 학습 목적.
-기술 스택과 세부 게임 규칙은 아직 미정이다.
+- [0001 개발 하네스](0001-harness-core.md)
+- [0002 MVP 기술 구조](0002-mvp-architecture.md): React/TypeScript, NestJS 통합 BFF, SQLite, Mac mini/Cloudflare Tunnel. 정확한 버전과 런타임 검증은 후속 구성 티켓에서 기록한다.

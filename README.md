@@ -4,8 +4,14 @@
 
 ## 현재 상태
 
-초기 문서만 준비했다. 앱, 테스트, CI, 배포는 아직 구현하지 않았다.
-기술 스택과 게임의 세부 규칙은 계획 단계에서 함께 결정한다.
+MVP 요구사항과 실행 이슈 32개를 승인하고 순차 구현 중이다.
+선택한 기술은 React/TypeScript + NestJS 내부 Web BFF + SQLite, 로컬 서버 + Cloudflare Tunnel이다.
+현재 저장소 문서·기존 UI 시연은 완성된 다중 사용자 제품이나 운영 배포가 아니다.
+
+- [최신 제품 규칙](docs/design/00-current-rules.md)
+- [MVP 범위·완료 기준](docs/mvp/scope-and-done.md)
+- [실행 이슈 매핑](docs/mvp/github-issues.md)
+- [GitHub 진행 상태](https://github.com/kukjun/trip-court/issues)
 
 ## 방향
 
