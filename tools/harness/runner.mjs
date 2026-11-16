@@ -8,7 +8,7 @@ export function runCheck(check, cwd) {
   const started = Date.now();
   const stop = (status, reason) => ({ id: check?.id ?? 'invalid', status, reason, testCount:null, durationMs:Date.now()-started });
   if (!check || !/^[a-z0-9-]+$/.test(check.id ?? '') || !['script','node-tests','playwright'].includes(check.kind)
-    || !Number.isInteger(check.timeoutMs) || check.timeoutMs<1 || check.timeoutMs>300000
+    || !Number.isInteger(check.timeoutMs) || check.timeoutMs<1 || check.timeoutMs>360000
     || !Array.isArray(check.files) || !check.files.length
     || (check.args !== undefined && (!Array.isArray(check.args) || check.args.some(a=>typeof a!=='string')))) return stop('failed','invalid check configuration');
   if (!existsSync(cwd)) return stop('blocked','missing working directory');

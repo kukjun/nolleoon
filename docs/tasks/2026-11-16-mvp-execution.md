@@ -253,3 +253,13 @@
 - 실제 네트워크 요청·추정 hostname 방문·운영 방 생성은 0회다. 빈 템플릿과 승인 후 절차만 추가하고 하네스 external-deployment를 BLOCKED로 명시한다.
 - 독립 소스 검토 통과. #30/#65는 OPEN 유지하고 PR은 Refs를 사용한다.
 - 부분 구현 최종 독립 clean-source check exit0: self22/workspace5/docs6/unit49/API96/DB47/feature65/E2E3/mobile-emulation3와 lint/layers/build/types. feature287.9초/E2E39.6초/mobile3.8초, failed/skipped/flaky0. 독립 승인·포트/소유 child 정리 확인. 실기기·외부 BLOCKED, 원격 CI #36 미실행, #30/#65 OPEN 유지.
+
+## MVP-31 부분 검토 · 독립 감사 결함 수정
+- #30 부분 PR #68 병합, 외부 #30/#65 OPEN 유지.
+- 독립 교차 모듈 감사에서 최초 방 조회/생성 무기한 pending을 실제 Chromium으로 재현해 추가 #67을 만들었다. 최초2건 및 실제 접수 후 NETWORK_ERROR 안내 RED 후 새5개 회귀를 구현했다.
+- 조회/생성/참여는6초 뒤 대기를 해제하고 닉네임을 보존한다. 자동 POST 재시도 없이 명시적 재시도만 제공하며, 이미 서버 처리됐을 수 있고 생성 재시도는 새 방을 만들 수 있음을 알린다. 생성 영속 멱등성을 추가한 것은 아니다.
+- 미리보기 이동/쿠키 소실/새 신원 뒤 옛 성공 응답이 화면을 바꾸지 않는 시험도 포함한다.
+- application rooms와 trial-controls는 서식만 정리하고 TypeScript5.9.3 emitted AST 동등성을 두 파일 모두 확인했다. helper/정책/호출 순서 변경 없음.
+- 기존 feature65 287.9초에 실제6초 timeout회귀가 추가돼 suite예산만300→360초로 조정했다. assertion/retries/개별 한계는 완화하지 않았다. 실제 전체 결과는 후속 clean 검증에 기록한다.
+- 최초 clean 전체 검사에서 feature는 실행 전 설정 오류로 실패했다. runner허용상한300초와 새360초 설정의 불일치였으며 browser실행시간0·개수null을 통과로 세지 않았다. 실제360초 설정 실행/360001거부 RED 후 runner상한을 일치시키고 자체 회귀를 추가했다. 나머지 gate 통과는 feature70 통과를 의미하지 않는다.
+- 수정 후 독립 clean-source check exit0: self23/workspace5/docs6/unit49/API96/DB47/feature70/E2E3/mobile-emulation3와 lint/layers/build/types. feature308.5초/E2E40.0초/mobile3.9초, failed/skipped/flaky0. 실제 feature가 기존300초를 초과했음을 확인. 독립 소스 재리뷰·두파일 AST동등성 재확인·포트/child 정리 승인. 원격CI/실기기/외부 인수는 미완료이며 #31 OPEN 유지.
