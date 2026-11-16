@@ -219,3 +219,11 @@
 - 백업을 새 DB 경로로 복원해 새 Nest 서버에서 원래 쿠키로 동일 이력을 HTTP 조회했다. 프로세스 장애는 전원손실 증거가 아니며 디스크 실제소진/디렉터리 metadata 내구성·자동 백업/암호화·운영 전환은 미실행이다.
 - migration/browser 신규 없음, 실제 기기·외부 배포·원격 CI는 후속/미완료다.
 - 최종 독립 clean-source 설치·전체 check exit0: self17/workspace5/docs6/unit39/API94/DB47/browser65와 lint/layers/build/types. API5.14초/DB0.485초/browser284.6초, failed/skipped/flaky0. 독립 승인 및 포트·소유 시험 child 정리 확인. 원격 CI #36 미실행.
+
+## MVP-27 검증
+- #26은 PR #61 병합 후 CLOSED와 체크리스트 반영 확인.
+- 별도 gameplay gate 부재·분리 계약 RED3 후 feature65와 @e2e3을 상호배타적으로 집계한다. retries0, feature300초·E2E150초, 신규 E2E에만 실패 trace를 적용하고 실기기/외부 gate는 미구성으로 유지한다.
+- 실제 UI에서 5인 일반판결→새 피고/방장 겸임→동률/최후변론/재동률 무죄→기록, 5→6인 관전/접수복구/임의승계/피고중단/전원퇴장, 3인 전원기권 기록을 연결했다. 추가 HTTP는 읽기 확인만 사용한다.
+- 최초 fixture는 생성 응답 전 URL을 읽어 1failed/1interrupted/1미실행, 다음 실행은 방장 화면 동기화 전 개시 CAS409로 2failed/1passed였다. trace로 시험 동기화 오류를 확인해 수정했으며 제품 보호·assertion을 완화하지 않았다.
+- 최종 targeted E2E3/3 39.8초. 320px 재동률 무죄·390px private 중단을 직접 확인했다. 실제10분·물리기기·외부 배포 증거로 확대하지 않는다. AGENTS는 검사 범위 사실 설명만 갱신했다.
+- 최종 독립 clean-source 설치·전체 check exit0: self20/workspace5/docs6/unit39/API94/DB47/feature-browser65/gameplay-e2e3와 lint/layers/build/types. feature288.2초/E2E39.4초, 두 gate failed/skipped/flaky0. 최종 중단 캡처·독립 승인·포트/child 정리 확인. mobile/external NOT CONFIGURED 및 원격 CI #36 미실행 유지.

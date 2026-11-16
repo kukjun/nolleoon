@@ -20,7 +20,8 @@ const checks=[
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
  {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:15000,dependsOn:'build'},
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
- {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json'],timeoutMs:300000,dependsOn:'build'}
+ {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e'],timeoutMs:300000,dependsOn:'build'},
+ {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'}
 ];
 const results=[];
 for(const check of checks) {
@@ -32,12 +33,11 @@ for(const check of checks) {
  } catch(error) { results.push({id:check.id,status:'blocked',reason:error.message,testCount:null}); }
 }
 const planned=[
- {id:'gameplay-e2e',status:'not-configured',reason:'핵심 5인 알파는 검증하며 전체 이탈·복구·다음 게임 E2E는 후속 티켓'},
  {id:'mobile-device',status:'not-configured',reason:'실제 모바일 기기 검증 후 기록'},
  {id:'external-deployment',status:'not-configured',reason:'배포 티켓 범위'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-26 보안 회귀·재시작 내구성 및 백업 복원',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'MVP-27 기능 회귀와 별도 다인 gameplay E2E',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);

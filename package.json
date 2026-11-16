@@ -19,8 +19,9 @@
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit && tsc -p apps/api/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "test:unit": "node tools/harness/discovery.mjs tests/unit",
     "test:integration": "node tools/harness/discovery.mjs tests/integration",
-    "test:browser": "playwright test --reporter=json",
-    "test:database": "node tools/harness/discovery.mjs tests/database"
+    "test:browser": "playwright test --reporter=json --grep-invert @e2e",
+    "test:database": "node tools/harness/discovery.mjs tests/database",
+    "test:e2e": "playwright test --reporter=json --grep @e2e"
   },
   "workspaces": [
     "apps/*",
