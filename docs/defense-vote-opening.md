@@ -6,9 +6,9 @@
 
 별도 `TrialProgress` 유스케이스가 게임 ID·현재 멤버십·게임 참여 역할과 낙관적 expectedVersion을 확인한다. 경로는 `/api/rooms/:code/games/:gameId/…`다. 옛 게임 요청이 다음 게임에 적용되지 않는다.
 
-- `defense`: `{expectedVersion, action: 'submit'|'skip', text}`. 피고 본인만 가능하다. 제출은 1~5,000 코드포인트의 비어 있지 않은 내용, skip은 빈 문자열이다. 줄바꿈/탭 외 제어문자는 거부한다.
+- `defense`: `{roundNumber: 1 | 2, expectedVersion, action: 'submit'|'skip', text}`. 피고 본인만 가능하다. 제출은 1~5,000 코드포인트의 비어 있지 않은 내용, skip은 빈 문자열이다. 줄바꿈/탭 외 제어문자는 거부한다.
 - `duration`: `{expectedVersion, durationMinutes}`. 방장만 첫 투표 전 1~10분 정수로 변경한다. 사건·벌칙·명단은 바꾸지 않는다. 같은 시간 저장은 no-op이다.
-- `open-vote`: `{expectedVersion, requestId}`. 방장만 변론 단계에서 시작한다. 변론 제출/skip은 시작 전제조건이 아니다.
+- `open-vote`: `{roundNumber: 1 | 2, expectedVersion, requestId}`. 방장만 변론 단계에서 시작한다. 변론 제출/skip은 시작 전제조건이 아니다.
 
 권한, 게임 상태, 버전, 첫 라운드 존재 여부를 한 transaction에서 재검사한다. 변론 제출과 개시, 시간 변경과 개시가 경합하면 하나만 이전 버전을 사용할 수 있다. 개시가 먼저면 늦은 변론은 충돌로 거절한다. 수정이 먼저면 방장은 최신 내용을 확인해 다시 개시한다. UI의 비활성 버튼은 권한 검사의 대체물이 아니다.
 
@@ -33,3 +33,5 @@ API 시험은 피고/방장 권한, 선택적 submit/skip, 무응답 개시, 시
 390px Chromium 화면의 `artifacts/trial/voting-mobile.png` 영역을 직접 확인했다. 무변론 개시 안내, 1차 서버 기준 마감, 남은 시간, 아직 투표 접수 화면이 없다는 설명이 가로 잘림 없이 읽힌다. 실제 기기 검증은 아니며 0초 대기 UI는 별도 응답 fixture로도 확인했다.
 
 방장 시간 입력은 저장된 값과 미저장 값을 구분한다. 다른 탭에서 시간을 저장하면 편집하지 않은 입력은 최신 값으로 갱신된다. 편집 중인 값은 유지하고, 저장 또는 명시적 취소 전에는 투표 개시를 막는다. 시간 입력에 숫자를 적기만 해도 서버 마감이 바뀐 것처럼 표시하지 않는다. 이 회귀 시험은 다른 탭 저장 후 5분이어야 할 입력이 3분에 남는 실패를 재현한 뒤 통과했다.
+
+#17부터 명시적 roundNumber가 필수이며 2차 흐름은 [최후 변론과 재투표](final-defense-revote.md)를 따른다. 위 #14 당시 화면 검증은 역사적 기록이다.

@@ -13,7 +13,8 @@ function isRound(value:unknown):boolean {
 }
 function isDefense(value:unknown):boolean {
  return record(value)
-  &&keys(value,['status','text'])
+  &&keys(value,['roundNumber','status','text'])
+  &&(value.roundNumber===1||value.roundNumber===2)
   &&typeof value.status==='string'
   &&['pending','submitted','skipped'].includes(value.status)
   &&(value.text===null||typeof value.text==='string');
@@ -37,10 +38,25 @@ function isSettlement(value:unknown):boolean {
  if(['guilty','notGuilty','abstain','total'].some(key=>!Number.isSafeInteger(value[key])||Number(value[key])<0))return false;
  return Number(value.guilty)+Number(value.notGuilty)+Number(value.abstain)===value.total;
 }
+function isPublishedRounds(value:unknown):boolean {
+ if(!Array.isArray(value)||value.length>2)return false;
+ const seen=new Set<number>();
+ return value.every(round=>{
+  if(!record(round)||!keys(round,['number','counts','reasons'])
+   ||!(round.number===1||round.number===2)||seen.has(round.number)
+   ||!record(round.counts)||!keys(round.counts,['guilty','notGuilty','abstain'])
+   ||['guilty','notGuilty','abstain'].some(key=>!Number.isSafeInteger((round.counts as Record<string,unknown>)[key])||Number((round.counts as Record<string,unknown>)[key])<0)
+   ||!Array.isArray(round.reasons))return false;
+  seen.add(round.number);
+  return round.reasons.every(reason=>record(reason)&&keys(reason,['choice','reason'])
+   &&typeof reason.choice==='string'&&['guilty','not-guilty','abstain'].includes(reason.choice)
+   &&typeof reason.reason==='string');
+ });
+}
 function isGameSnapshot(value:unknown):boolean {
  if(!record(value)||!keys(value,[
   'gameId','status','caseText','penaltyText','durationMinutes','self',
-  'participantCount','voterCount','version','serverNow','round','defense','ownVote','settlement'
+  'participantCount','voterCount','version','serverNow','round','defense','ownVote','settlement','publishedRounds'
  ]))return false;
  if(typeof value.gameId!=='string'||typeof value.status!=='string'
   ||!['defense','voting','final-defense','result','interrupted'].includes(value.status)
@@ -54,7 +70,7 @@ function isGameSnapshot(value:unknown):boolean {
  if(!record(self)||!keys(self,['role','eligible'])||typeof self.role!=='string'
   ||!['defendant','participant','observer'].includes(self.role)
   ||typeof self.eligible!=='boolean'||self.role!=='participant'&&self.eligible)return false;
- return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement);
+ return isRound(value.round)&&isDefense(value.defense)&&isOwnVote(value.ownVote)&&isSettlement(value.settlement)&&isPublishedRounds(value.publishedRounds);
 }
 export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
  if(!record(x)||!keys(x,['roomId','inviteCode','version','self','members','draft','roleRevision','rosterEditable','consent','start','game'])||!Number.isSafeInteger(x.roleRevision)||Number(x.roleRevision)<0||typeof x.rosterEditable!=='boolean'||!Number.isSafeInteger(x.version)||Number(x.version)<0||typeof x.roomId!=='string'||typeof x.inviteCode!=='string'||!record(x.self)||!keys(x.self,['memberId','isHost'])||typeof x.self.memberId!=='string'||typeof x.self.isHost!=='boolean'||!Array.isArray(x.members))return false;
@@ -66,7 +82,7 @@ export function isRoomSnapshot(x:unknown):x is RoomSnapshot {
  const self=x.self;
  return x.members.length>0&&x.members.every(m=>record(m)&&keys(m,['memberId','nickname','isHost','connected','role'])&&typeof m.memberId==='string'&&typeof m.nickname==='string'&&typeof m.isHost==='boolean'&&typeof m.connected==='boolean'&&(m.role==='defendant'||m.role==='participant'))&&new Set(x.members.map(m=>m.memberId)).size===x.members.length&&x.members.filter(m=>m.isHost).length===1&&x.members.some(m=>m.memberId===self.memberId&&m.isHost===self.isHost);
 }
-export type RoomCommand={kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
+export type RoomCommand={kind:'role';role:'defendant'|'participant'}|{kind:'exclude';memberId:string}|{kind:'consent';penaltyRevision:number;roleRevision:number;expectedDecisionVersion:number;decision:'accepted'|'rejected'}|{kind:'start';requestId:string;expectedDraftVersion:number;expectedRoleRevision:number;expectedDecisionVersion:number}|{kind:'defense';gameId:string;roundNumber:1|2;expectedVersion:number;action:'submit'|'skip';text:string}|{kind:'duration';gameId:string;expectedVersion:number;durationMinutes:number}|{kind:'open-vote';gameId:string;roundNumber:1|2;expectedVersion:number;requestId:string}|{kind:'vote';gameId:string;roundNumber:1|2;requestId:string;choice:'guilty'|'not-guilty'|'abstain';reason:string};
 export function verifiedVoteSnapshot(data:unknown,command:Extract<RoomCommand,{kind:'vote'}>):RoomSnapshot|null {
  if(!record(data)||!keys(data,['snapshot','receipt'])||!isRoomSnapshot(data.snapshot)
   ||!record(data.receipt)||!keys(data.receipt,['gameId','roundNumber','choice','reason']))return null;
@@ -81,10 +97,10 @@ function commandBody(command:RoomCommand){
  case 'exclude':return {memberId:command.memberId};
  case 'consent':return {penaltyRevision:command.penaltyRevision,roleRevision:command.roleRevision,expectedDecisionVersion:command.expectedDecisionVersion,decision:command.decision};
  case 'start':return {requestId:command.requestId,expectedDraftVersion:command.expectedDraftVersion,expectedRoleRevision:command.expectedRoleRevision,expectedDecisionVersion:command.expectedDecisionVersion};
- case 'defense':return {expectedVersion:command.expectedVersion,action:command.action,text:command.text};
+ case 'defense':return {roundNumber:command.roundNumber,expectedVersion:command.expectedVersion,action:command.action,text:command.text};
  case 'duration':return {expectedVersion:command.expectedVersion,durationMinutes:command.durationMinutes};
  case 'vote':return {roundNumber:command.roundNumber,requestId:command.requestId,choice:command.choice,reason:command.reason};
- case 'open-vote':return {expectedVersion:command.expectedVersion,requestId:command.requestId};
+ case 'open-vote':return {roundNumber:command.roundNumber,expectedVersion:command.expectedVersion,requestId:command.requestId};
  }
 }
 export async function requestRoom(code:string|null,nickname?:string,signal?:AbortSignal,heartbeat=false,settings?:{expectedVersion:number;caseText:string;penaltyText:string;durationMinutes:number},command?:RoomCommand):Promise<RoomResult>{

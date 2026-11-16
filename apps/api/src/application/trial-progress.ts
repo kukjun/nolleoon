@@ -29,14 +29,18 @@ export class TrialProgress {
     return {room, game, member, participant};
   }
 
-  private editable(r: Repositories, game: {id: string; status: string; version: number}, expected: unknown) {
-    if (game.status !== 'defense' || game.version !== expected || r.rounds.find(game.id, 1)) {
+  private editable(r: Repositories, game: {id: string; status: string; version: number}, expected: unknown, roundNumber:1|2) {
+    const phase=roundNumber===1?'defense':'final-defense';
+    const firstTie=roundNumber===1||r.settlements.find(game.id,1)?.outcome==='tie';
+    if (game.status !== phase || !firstTie || game.version !== expected || r.rounds.find(game.id, roundNumber)) {
       throw new DomainFailure('STATE_CONFLICT');
     }
   }
 
   defense(actor: {id: string}, code: string, gameId: string, value: unknown) {
-    const data = input(value, ['expectedVersion', 'action', 'text']);
+    const data = input(value, ['roundNumber','expectedVersion', 'action', 'text']);
+    if(data.roundNumber!==1&&data.roundNumber!==2)throw new DomainFailure('INVALID_INPUT');
+    const roundNumber=data.roundNumber;
     const validAction = data.action === 'submit' || data.action === 'skip';
     if (!validAction || typeof data.text !== 'string' || [...data.text].length > 5000) {
       throw new DomainFailure('INVALID_INPUT');
@@ -51,8 +55,8 @@ export class TrialProgress {
     this.uow.run(r => {
       const {room, game, member, participant} = this.context(r, actor, code, gameId);
       if (participant.role !== 'defendant') throw new DomainFailure('FORBIDDEN');
-      this.editable(r, game, data.expectedVersion);
-      r.defenses.save({gameId, roundNumber: 1, memberId: member.id, action, text});
+      this.editable(r, game, data.expectedVersion, roundNumber);
+      r.defenses.save({gameId, roundNumber, memberId: member.id, action, text});
       r.games.update({...game, version: game.version + 1});
       r.rooms.bumpVersion(room.id);
     });
@@ -66,7 +70,7 @@ export class TrialProgress {
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       if (member.id !== room.hostMemberId) throw new DomainFailure('FORBIDDEN');
-      this.editable(r, game, data.expectedVersion);
+      this.editable(r, game, data.expectedVersion, 1);
       const seconds = Number(data.durationMinutes) * 60;
       if (seconds !== game.durationSeconds) {
         r.games.update({...game, durationSeconds: seconds, version: game.version + 1});
@@ -76,25 +80,27 @@ export class TrialProgress {
   }
 
   open(actor: {id: string}, code: string, gameId: string, value: unknown) {
-    const data = input(value, ['expectedVersion', 'requestId']);
+    const data = input(value, ['roundNumber','expectedVersion', 'requestId']);
     if (typeof data.requestId !== 'string' || !/^[-a-zA-Z0-9_]{16,100}$/.test(data.requestId)) {
       throw new DomainFailure('INVALID_INPUT');
     }
+    if(data.roundNumber!==1&&data.roundNumber!==2)throw new DomainFailure('INVALID_INPUT');
+    const roundNumber=data.roundNumber;
     const requestId = data.requestId;
     this.uow.run(r => {
       const {room, game, member} = this.context(r, actor, code, gameId);
       const receipt = r.opens.find(gameId, requestId);
       if (receipt) {
         if (receipt.actorSessionId !== actor.id) throw new DomainFailure('FORBIDDEN');
-        if (receipt.intent !== data.expectedVersion) throw new DomainFailure('STATE_CONFLICT');
+        if (receipt.intent !== data.expectedVersion || receipt.roundNumber !== roundNumber) throw new DomainFailure('STATE_CONFLICT');
         return;
       }
       if (member.id !== room.hostMemberId) throw new DomainFailure('FORBIDDEN');
-      this.editable(r, game, data.expectedVersion);
+      this.editable(r, game, data.expectedVersion, roundNumber);
       const now = this.clock.now();
-      r.rounds.insert({gameId, number: 1, startedAt: now, deadline: now + game.durationSeconds * 1000});
+      r.rounds.insert({gameId, number: roundNumber, startedAt: now, deadline: now + game.durationSeconds * 1000});
       r.games.update({...game, status: 'voting', version: game.version + 1});
-      r.opens.insert({gameId, requestId, actorSessionId: actor.id, intent: data.expectedVersion as number, roundNumber: 1});
+      r.opens.insert({gameId, requestId, actorSessionId: actor.id, intent: data.expectedVersion as number, roundNumber});
       r.rooms.bumpVersion(room.id);
     });
   }

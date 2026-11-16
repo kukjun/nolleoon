@@ -3,7 +3,7 @@ import {votingFixture} from '../support/voting-fixture.mjs';
 import {openSqlite,migrate,SqliteUnitOfWork} from '../../apps/api/dist/infrastructure/sqlite/index.js';
 import {SubmitVote} from '../../apps/api/dist/application/submit-vote.js';
 import {SettleRounds} from '../../apps/api/dist/application/settle-round.js';
-async function fixture(count=3){const f=await votingFixture(0,count);await f.post(`games/${f.s.game.gameId}/open-vote`,f.cookies[0],{expectedVersion:0,requestId:'db-settle-open-0001'});const db=openSqlite(f.dbPath);const members=db.prepare('SELECT session_id AS id,id AS memberId FROM room_members ORDER BY joined_at,rowid').all();return {...f,db,members,gameId:f.s.game.gameId};}
+async function fixture(count=3){const f=await votingFixture(0,count);await f.post(`games/${f.s.game.gameId}/open-vote`,f.cookies[0],{roundNumber:1,expectedVersion:0,requestId:'db-settle-open-0001'});const db=openSqlite(f.dbPath);const members=db.prepare('SELECT session_id AS id,id AS memberId FROM room_members ORDER BY joined_at,rowid').all();return {...f,db,members,gameId:f.s.game.gameId};}
 const vote=(key)=>({roundNumber:1,requestId:key,choice:'guilty',reason:'이유'});
 test('G1 N0 A3·퇴장해도 고정 표 총수·중복 worker·재시작 불변',async()=>{const f=await fixture(5);let db=f.db;try{
  let uow=new SqliteUnitOfWork(db);new SubmitVote(uow,{now:()=>2000}).execute(f.members[1],f.s.inviteCode,f.gameId,vote('db-tally-vote-0001'));

@@ -7,7 +7,7 @@ import {SubmitVote} from '../../apps/api/dist/application/submit-vote.js';
 test('실제 DB 투표 rollback·재시작 receipt·마감과 라운드 경계·공용 버전 불변',async()=>{
  const f=await votingFixture();let db;
  try {
-  await f.post(`games/${f.s.game.gameId}/open-vote`,f.cookies[0],{expectedVersion:0,requestId:'db-vote-opening-0001'});
+  await f.post(`games/${f.s.game.gameId}/open-vote`,f.cookies[0],{roundNumber:1,expectedVersion:0,requestId:'db-vote-opening-0001'});
   db=openSqlite(f.dbPath);let now=2000;const clock={now:()=>now};let uow=new SqliteUnitOfWork(db);
   const gameId=f.s.game.gameId;const members=db.prepare('SELECT session_id AS id,id AS memberId FROM room_members ORDER BY joined_at,rowid').all();
   const actor=members[1];const body={roundNumber:1,requestId:'db-submit-vote-0001',choice:'guilty',reason:'  실제 접수  '};

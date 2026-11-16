@@ -1,3 +1,4 @@
+import {acceptedVotes} from './accepted-votes.js';
 import {tallyOutcome} from '../domain/tally.js';
 import type {Repositories,UnitOfWork} from './ports/storage.js';
 import type {Clock} from './browser-sessions.js';
@@ -8,8 +9,7 @@ export function settleRound(r:Repositories,gameId:string,now:number){
   if(!game||game.status!=='voting')return;
   const round=r.rounds.find(gameId,2)??r.rounds.find(gameId,1);
   if(!round||round.closedAt!=null||r.settlements.find(gameId,round.number))return;
-  const electorate=new Set(r.participants.list(gameId).filter(p=>p.eligible).map(p=>p.memberId));
-  const votes=r.votes.list(gameId,round.number).filter(v=>electorate.has(v.memberId)&&v.submittedAt<round.deadline);
+  const {electorate,votes}=acceptedVotes(r,round);
   const allSubmitted=votes.length===electorate.size;
   if(!allSubmitted&&now<round.deadline)return;
   const guilty=votes.filter(v=>v.choice==='guilty').length;

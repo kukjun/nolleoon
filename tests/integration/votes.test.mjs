@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {votingFixture} from '../support/voting-fixture.mjs';
-async function opened(){const f=await votingFixture();const path=`games/${f.s.game.gameId}`;const res=await f.post(`${path}/open-vote`,f.cookies[0],{expectedVersion:0,requestId:'votes-open-request'});assert.equal(res.status,201);return {...f,path};}
+async function opened(){const f=await votingFixture();const path=`games/${f.s.game.gameId}`;const res=await f.post(`${path}/open-vote`,f.cookies[0],{roundNumber:1,expectedVersion:0,requestId:'votes-open-request'});assert.equal(res.status,201);return {...f,path};}
 const vote={roundNumber:1,requestId:'submit-vote-request-001',choice:'guilty',reason:'약속을 지키지 않았어요'};
 test('투표 권한·입력·한 표·동일 의도 재시도·본인만 공개',async()=>{const f=await opened();try{
  const call=(body=vote,c=f.cookies[1])=>f.post(`${f.path}/vote`,c,body);
