@@ -2,6 +2,12 @@
 
 현재 구현된 게임 기능과 자동 회귀 검증은 **최종 MVP 인수 완료가 아니다**. 로컬 합성 데이터 검증, 실기기, 외부 운영, 사용자 승인을 각각 구분한다.
 
+## 현재 구분 · 2026-11-17 UTC 기록 기준
+
+기존 MVP 릴리스는 도메인과 운영 서비스 적용 승인을 받아 배포되었고, 외부 단일 브라우저 생성·재접속 및 재시작 후 접속 확인 기록이 있다. [운영 적용 기록](https://github.com/kukjun/trip-court/issues/65#issuecomment-6934331435)을 따른다. **PARTY 확장은 아직 운영에 배포하지 않았다.** 기존 MVP 배포 사실은 PARTY 후보 commit의 외부 배포·인수 통과를 뜻하지 않는다.
+
+실제 iPhone Safari·Android Chrome, 외부 5인 전체 게임, 원격 CI와 최종 인수 근거는 미완료다. 아래 MVP-32 미완료 표는 사전 준비 당시의 이력이며, 특히 #65의 “승인된 운영 설정 적용 미실행”은 이후 적용으로 해소된 부분이다. 이 문서 변경을 위해 운영 시스템을 새로 검사하거나 설정을 변경하지 않았다.
+
 ## 안내 모음
 
 - [사용 안내](user-guide.md), [로컬 개발](local-development.md)
@@ -10,7 +16,7 @@
 - [재시작·내구성](durability.md), [SQLite 백업·복구](sqlite-backup.md)
 - [운영 적용 준비](deployment-preparation.md), [외부 인수](external-acceptance.md), [독립 검토](independent-review.md)
 
-## 남은 인수 조건
+## 당시 남은 인수 조건 · 2026-11-16 MVP-32 기록
 
 | 구분 | 미완료 이유 |
 |---|---|
@@ -39,10 +45,16 @@ node tools/deployment/acceptance-evidence.mjs /absolute/path/to/evidence.json
 
 `deploy/templates/acceptance-evidence.example.json`은 미완료 빈 양식이다. 정상 릴리스의 증거가 아니며 기본 결과는 blocked다. 이 명령은 네트워크·배포·GitHub·사용자 승인 시스템에 접근하지 않는다.
 
-필수 gate ID: `lint`, `layers`, `build`, `typecheck`, `unit`, `api`, `database`, `durability-backup-restore`, `browser-feature`, `gameplay-e2e`, `mobile-emulation`, `independent-review`, `physical-ios`, `physical-android`, `external-deployment`, `remote-ci`.
+필수 gate ID: `lint`, `layers`, `build`, `typecheck`, `unit`, `api`, `database`, `durability-backup-restore`, `browser-feature`, `gameplay-e2e`, `party-browser`, `party-e2e`, `mobile-emulation`, `independent-review`, `physical-ios`, `physical-android`, `external-deployment`, `remote-ci`.
 
 모든 gate와 사용자 인수는 동일한 `expectedCommit`을 가리켜야 한다. source는 같은 commit이며 dirty=false여야 한다. `window.notBefore`(소스 동결)부터 `window.notAfter`(검토 시각)까지의 UTC ISO 시각만 허용하며, 역전·잘못된 시각·현재보다 미래인 window/증거는 거절한다. 임의의 24시간 만료 규칙은 없다. 동일 불변 RC의 오래된 근거가 유효할 수 있지만, 단말·배포 환경 변화로 인한 낡은 근거인지는 사람이 별도로 판단한다.
 
 시험 gate는 실제 통과 수가 0보다 크고 실패·skip·todo·flaky·cancel이 0이어야 한다. 빌드·리뷰처럼 시험 수가 없는 gate는 별도로 구분한다. 실기기 gate에는 `context.kind=physical`, `platform=ios`와 `browser=safari` 또는 `platform=android`와 `browser=chrome`, 비어 있지 않은 `browserVersion`·`osVersion`을 함께 기록한다. 이 문자열만으로 실제 장비나 버전을 인증하는 것은 아니다. 에뮬레이션으로 실기기를 대체하거나 외부 gate에 loopback/LAN/example 주소를 넣을 수 없다. 누락·중복 gate, 다른 RC, 미해결 blocker, 사용자 인수 누락을 완료로 인정하지 않는다.
 
 출력은 `blocked`, `incomplete`, `ready-for-human-review` 중 하나이며 **항상 `verified:false`**다. 종료 코드 0도 형식이 검토 가능한 상태라는 뜻이지 release PASS가 아니다. 파일이 주장하는 commit·clean 상태·승인자·장비·네트워크·보고서의 진위와 접근 권한, evidenceRef의 실재를 인증하지 않는다. 실제 권한 및 독립 검토를 대신하는 우회 도구로 사용하지 않는다.
+
+
+### Party 기능·여정 증거
+기존 재판/MVP 증거만으로 Party 확장의 인수를 준비 완료로 표시하지 않는다. 하네스의 `party-browser`(개별 기능 회귀) 및 `party-e2e`(실제 앱 여정)를 각각 필수 인수 gate로 요구한다. 두 gate 모두 같은 동결 commit, 동결 창 안의 관측 시각, 증거 참조와 0보다 큰 통과 수가 필요하며 실패·skip·todo·flaky·취소는 0이어야 한다. 전체 필수 gate는 18개다.
+
+오프라인 검사 성공은 여전히 `ready-for-human-review`, `verified:false`다. 합성 테스트 자료는 실제 실행 증거가 아니며 실기기 Safari/Chrome, 외부 배포, 원격 CI, 독립 리뷰 및 사용자 인수 요건은 그대로 유지한다. 빈 인수 템플릿을 통과 증거로 채우거나 기존 blocker를 제거하지 않는다.

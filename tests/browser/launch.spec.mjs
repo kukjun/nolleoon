@@ -3,5 +3,5 @@ test('Chromium이 빌드한 React 뼈대를 렌더한다', async ({page}) => {
  await page.goto('/');
  await expect(page).toHaveTitle('Trip Court');
  await expect(page.getByRole('heading',{name:'Trip Court',exact:true})).toBeVisible();
- await expect(page.getByText('방을 만들고 친구들을 초대해요. 사건과 벌칙을 정하고 재판을 시작할 수 있어요.')).toBeVisible();
+ await expect(page.getByText('친구들과 한 방에 모여요. 팀 나누기, 제비뽑기, 우리끼리 재판까지. 오늘의 한 판을 골라요.')).toBeVisible();
 });

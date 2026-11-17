@@ -49,3 +49,17 @@ test('실기기 gate는 플랫폼별 브라우저와 비어 있지 않은 브라
   }
  }
 });
+
+test('MVP-only evidence cannot satisfy Party feature and journey acceptance',()=>{
+ const x=complete();x.gates=x.gates.filter(g=>!['party-browser','party-e2e'].includes(g.id));const result=audit(x);
+ assert.equal(result.status,'incomplete');assert.deepEqual(result.missing,['party-browser','party-e2e']);assert.equal(result.verified,false);
+});
+test('both Party gates require real nonzero clean counts and matching frozen source',()=>{
+ for(const id of ['party-browser','party-e2e']){
+  assert.ok(requiredGates.includes(id));
+  for(const mutate of [g=>delete g.counts,g=>{g.counts.total=0;g.counts.passed=0;},...['failed','skipped','todo','flaky','cancelled'].map(key=>g=>{g.counts[key]=1;}),g=>{g.counts.total=2;},g=>{g.counts.passed=-1;},g=>{g.counts.total=1.5;},g=>{g.commit='b'.repeat(40);},g=>{g.status='not-run';},g=>{g.evidenceRef='';},g=>{g.observedAt='2026-11-15T00:00:00.000Z';}]){
+   const x=complete();mutate(x.gates.find(g=>g.id===id));const result=audit(x);assert.equal(result.status,'incomplete');assert.ok(result.missing.includes(id));assert.equal(result.verified,false);
+  }
+ }
+ const result=audit(complete());assert.equal(result.status,'ready-for-human-review');assert.equal(result.acceptedCount,18);assert.equal(result.verified,false);
+});

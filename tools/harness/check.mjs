@@ -22,7 +22,9 @@ const checks=[
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
  {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e|@mobile'],timeoutMs:360000,dependsOn:'build'},
  {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'},
- {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'}
+ {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'},
+ {id:'party-browser',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--config=playwright.party.config.mjs','--reporter=json','--grep-invert','@party-e2e'],timeoutMs:180000,dependsOn:'build'},
+ {id:'party-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--config=playwright.party.config.mjs','--reporter=json','--grep','@party-e2e'],timeoutMs:180000,dependsOn:'build'}
 ];
 const results=[];
 for(const check of checks) {
@@ -35,10 +37,10 @@ for(const check of checks) {
 }
 const planned=[
  {id:'mobile-device',status:'blocked',reason:'물리 iPhone은 offline/unavailable, Android 기기 접근 미확보. 에뮬레이션으로 대체 불가'},
- {id:'external-deployment',status:'blocked',reason:'실제 배포 승인·적용 #65 대기. 로컬 검사로 외부 5인 인수 대체 불가'}
+ {id:'external-deployment',status:'blocked',reason:'기존 서비스 배포와 운영 승인은 완료됐지만 새 PARTY 릴리스의 외부 다인 인수는 미완료. 로컬 검사로 대체 불가'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
- scope:'MVP-32 RC 인수 준비 (실기기·운영·CI·최종 승인 미완료)',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
+ scope:'PARTY-22 다중 게임 회귀 (신규 릴리스 실기기·외부 인수·CI·최종 승인 미완료)',productValidation:'partial',status:results.every(r=>r.status==='passed')?'passed':'failed',results,planned};
 const dir=resolve(root,'artifacts/harness',startedAt.replace(/[:.]/g,'-')+'-'+process.pid);
 mkdirSync(dir,{recursive:true});writeFileSync(resolve(dir,'report.json'),JSON.stringify(report,null,2)+'\n');
 for(const r of results)console.log(`${r.status.toUpperCase()} ${r.id}${r.testCount!==null?` (${r.testCount} tests)`:''}${r.reason?': '+r.reason:''}`);

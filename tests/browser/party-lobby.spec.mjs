@@ -1,0 +1,6 @@
+import {test,expect} from '@playwright/test';
+test('real room lobby shows participant stage and host action without editable setup tower',async({page,browser})=>{
+ await page.setViewportSize({width:320,height:844});await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('무대 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();
+ await expect(page.getByLabel('우리 방 캐릭터 무대')).toBeVisible();await expect(page.getByLabel('사건',{exact:true})).toBeHidden();await expect(page.getByRole('button',{name:'같이 할 게임 고르기',exact:true})).toBeVisible();
+ const context=await browser.newContext();try{const guest=await context.newPage();await guest.goto(page.url());await guest.getByRole('button',{name:'이 브라우저로 시작'}).click();await guest.getByLabel('닉네임').fill('함께온 친구');await guest.getByRole('button',{name:'방 참여하기'}).click();await expect(page.getByLabel('우리 방 캐릭터 무대')).toContainText('함께온 친구');await expect(guest.getByRole('button',{name:'선택된 게임 준비 보기'})).toBeVisible();await expect(guest.getByRole('button',{name:'같이 할 게임 고르기',exact:true})).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);await page.screenshot({path:'artifacts/party-ui/lobby-320.png',fullPage:true});}finally{await context.close();}
+});
