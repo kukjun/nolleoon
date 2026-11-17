@@ -2,8 +2,9 @@ import {useEffect,useRef,useState} from 'react';
 import type {RoomSnapshot} from '@trip-court/contracts';
 import {Button,Input,Status} from './design/components';
 import {requestRoom} from './api/rooms-client';
-export function GameSettings({room,onSaved}:{room:RoomSnapshot;onSaved:(room:RoomSnapshot)=>void}){
+export function GameSettings({room,onSaved,onEditing}:{room:RoomSnapshot;onSaved:(room:RoomSnapshot)=>void;onEditing?:(value:boolean)=>void}){
  const [draft,setDraft]=useState(room.draft);const [dirty,setDirty]=useState(false);const [saving,setSaving]=useState(false);const [error,setError]=useState('');const [saved,setSaved]=useState(false);const lock=useRef(false);const alive=useRef(false);const pending=useRef<AbortController|null>(null);
+ useEffect(()=>{onEditing?.(dirty||saving);},[dirty,saving,onEditing]);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;pending.current?.abort();};},[]);
  useEffect(()=>{if(!dirty&&!saving)setDraft(room.draft);},[room.draft.version,dirty,saving]);
  function edit(values:Partial<typeof draft>){setDraft(previous=>({...previous,...values}));setDirty(true);setSaved(false);setError('');}
