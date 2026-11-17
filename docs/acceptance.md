@@ -2,6 +2,12 @@
 
 현재 구현된 게임 기능과 자동 회귀 검증은 **최종 MVP 인수 완료가 아니다**. 로컬 합성 데이터 검증, 실기기, 외부 운영, 사용자 승인을 각각 구분한다.
 
+## 현재 구분 · 2026-11-17 UTC 기록 기준
+
+기존 MVP 릴리스는 도메인과 운영 서비스 적용 승인을 받아 배포되었고, 외부 단일 브라우저 생성·재접속 및 재시작 후 접속 확인 기록이 있다. [운영 적용 기록](https://github.com/kukjun/trip-court/issues/65#issuecomment-6934331435)을 따른다. **PARTY 확장은 아직 운영에 배포하지 않았다.** 기존 MVP 배포 사실은 PARTY 후보 commit의 외부 배포·인수 통과를 뜻하지 않는다.
+
+실제 iPhone Safari·Android Chrome, 외부 5인 전체 게임, 원격 CI와 최종 인수 근거는 미완료다. 아래 MVP-32 미완료 표는 사전 준비 당시의 이력이며, 특히 #65의 “승인된 운영 설정 적용 미실행”은 이후 적용으로 해소된 부분이다. 이 문서 변경을 위해 운영 시스템을 새로 검사하거나 설정을 변경하지 않았다.
+
 ## 안내 모음
 
 - [사용 안내](user-guide.md), [로컬 개발](local-development.md)
@@ -10,7 +16,7 @@
 - [재시작·내구성](durability.md), [SQLite 백업·복구](sqlite-backup.md)
 - [운영 적용 준비](deployment-preparation.md), [외부 인수](external-acceptance.md), [독립 검토](independent-review.md)
 
-## 남은 인수 조건
+## 당시 남은 인수 조건 · 2026-11-16 MVP-32 기록
 
 | 구분 | 미완료 이유 |
 |---|---|
