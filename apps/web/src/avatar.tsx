@@ -11,12 +11,12 @@ const AvatarContext=createContext<Record<string,AvatarProfile>>({});
 export function AvatarProvider({code,children}:{code:string;children:ReactNode}){
  const [members,setMembers]=useState<{code:string;avatars:Record<string,AvatarProfile>}>({code,avatars:{}});const generation=useRef(0);
  useEffect(()=>{
-  const ticket=++generation.current;let timer:ReturnType<typeof setTimeout>|undefined;let request:AbortController|undefined;
+  const ticket=++generation.current;let terminal=false;let timer:ReturnType<typeof setTimeout>|undefined;let request:AbortController|undefined;
   async function refresh(){
-   clearTimeout(timer);request?.abort();if(document.visibilityState==='hidden')return;
+   clearTimeout(timer);request?.abort();if(terminal||document.visibilityState==='hidden')return;
    const next=new AbortController();request=next;const timeout=setTimeout(()=>next.abort(),6000);
-   try{const result=await requestRoomAvatars(code,next.signal);if(ticket!==generation.current||request!==next)return;if(result.ok)setMembers({code,avatars:Object.fromEntries(result.data.members.map(m=>[m.memberId,m.avatar]))});else if(result.code==='FORBIDDEN'||result.code==='SESSION_REQUIRED')setMembers({code,avatars:{}});}
-   finally{clearTimeout(timeout);if(ticket===generation.current&&request===next)timer=setTimeout(()=>void refresh(),5000);}
+   try{const result=await requestRoomAvatars(code,next.signal);if(ticket!==generation.current||request!==next)return;if(result.ok)setMembers({code,avatars:Object.fromEntries(result.data.members.map(m=>[m.memberId,m.avatar]))});else if(['FORBIDDEN','SESSION_REQUIRED','ROOM_CLOSED','NOT_FOUND'].includes(result.code)){terminal=true;setMembers({code,avatars:{}});}}
+   finally{clearTimeout(timeout);if(!terminal&&ticket===generation.current&&request===next)timer=setTimeout(()=>void refresh(),5000);}
   }
   void refresh();document.addEventListener('visibilitychange',refresh);window.addEventListener('focus',refresh);window.addEventListener('avatar-updated',refresh);
   return()=>{generation.current++;clearTimeout(timer);request?.abort();document.removeEventListener('visibilitychange',refresh);window.removeEventListener('focus',refresh);window.removeEventListener('avatar-updated',refresh);};
