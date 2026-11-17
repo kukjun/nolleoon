@@ -3,7 +3,7 @@ import {test,expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 async function create(page){await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('연결 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();await openRoster(page);}
 test('연결 실패 동안 마지막 화면을 보존하고 온라인 복귀 때 자동 회복한다',async({page,context})=>{
- await create(page);await context.setOffline(true);await page.evaluate(()=>globalThis.window.dispatchEvent(new globalThis.Event('focus')));await expect(page.getByRole('alert')).toContainText('다시 연결 중');await expect(page.getByTestId('member')).toHaveCount(1);
+ await create(page);await context.setOffline(true);await page.evaluate(()=>globalThis.window.dispatchEvent(new globalThis.Event('focus')));await expect(page.locator('[role=alert][data-reconnecting=true]')).toContainText('다시 연결 중');await expect(page.getByTestId('member')).toHaveCount(1);
  await page.setViewportSize({width:390,height:844});await mkdir('artifacts/presence',{recursive:true});await page.screenshot({path:'artifacts/presence/reconnecting-mobile.png',fullPage:true});
  await context.setOffline(false);await expect(page.getByRole('alert')).toHaveCount(0);await expect(page.getByTestId('member')).toContainText('연결됨');
 });
