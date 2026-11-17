@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import type {RoomSnapshot} from '@trip-court/contracts';
 import {Button} from './design/components';
 import './design/party-layout.css';
-export function PartyLobby({room,reconnecting,onPrepare,renderAvatar}:{room:RoomSnapshot;reconnecting:boolean;onPrepare:()=>void;renderAvatar?:(member:RoomSnapshot['members'][number])=>ReactNode}){
+export function PartyLobby({room,reconnecting,onPrepare,renderAvatar,actionLabel}:{room:RoomSnapshot;reconnecting:boolean;onPrepare:()=>void;actionLabel?:string;renderAvatar?:(member:RoomSnapshot['members'][number])=>ReactNode}){
  const self=room.members.find(member=>member.memberId===room.self.memberId);
  const others=room.members.filter(member=>member.memberId!==room.self.memberId);
  const featured=self?[self,...others]:others;
@@ -16,6 +16,6 @@ export function PartyLobby({room,reconnecting,onPrepare,renderAvatar}:{room:Room
    {featured.length>6&&<span className="party-stage-overflow">친구 {featured.length-6}명 더 함께해요</span>}
   </div>
   {!room.self.isHost&&<p className="field-hint">방장이 게임을 준비해요. 내 역할은 직접 선택할 수 있어요.</p>}
-  <div className="party-primary"><Button onPress={onPrepare}>{room.self.isHost?'재판 준비하기':'내 역할 준비하기'}</Button></div>
+  <div className="party-primary"><Button onPress={onPrepare}>{actionLabel??(room.self.isHost?'재판 준비하기':'내 역할 준비하기')}</Button></div>
  </section>;
 }
