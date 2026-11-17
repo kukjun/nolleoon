@@ -1,3 +1,4 @@
+import type {PartyRepository} from './party.js';
 import type {TallyOutcome} from '../../domain/tally.js';
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
 export interface RoomRecord { id: string; inviteCode: string; status: 'open' | 'closed'; version: number; createdAt: number; penaltyRevision?: number; roleRevision?: number; hostMemberId?: string | null; preparationVersion?:number; preparedAfterGameId?:string|null }
@@ -19,6 +20,7 @@ export interface NextReceipt {roomId:string;requestId:string;actorSessionId:stri
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
   avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};
+  party:PartyRepository;
   nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
   interruptions:InsertRepository<InterruptionRecord>&{find(gameId:string):InterruptionRecord|undefined};
   closures:InsertRepository<ClosureRecord>&{find(roomId:string):ClosureRecord|undefined};

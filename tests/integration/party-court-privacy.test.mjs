@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {setup} from '../support/party-fixture.mjs';import {openSqlite} from '../../apps/api/dist/infrastructure/sqlite/index.js';
+for(const cause of ['defendant-left','legacy-private','room-closed'])test(`party adapter는 ${cause} 중단 재판의 명단·역할·게임참조를 다시 공개하지 않는다`,async()=>{const f=await setup(3);const db=openSqlite(f.dbPath);try{
+ const member=f.created.self.memberId;db.prepare("INSERT INTO games VALUES ('private-court',?,'interrupted','비공개 사건','비공개 벌칙',180,0,1000)").run(f.created.roomId);db.prepare('INSERT INTO game_participants VALUES (?,?,?,?,?)').run('private-court',f.created.roomId,member,'defendant',0);db.prepare('INSERT INTO game_interruptions VALUES (?,?,?)').run('private-court',cause,1001);
+ const legacy=await(await fetch(`${f.url}/api/rooms/${f.created.inviteCode}`,{headers:{cookie:f.cookies[0]}})).json();assert.equal(legacy.game,null);
+ const response=await fetch(f.path,{headers:{cookie:f.cookies[0]}});assert.equal(response.status,200);const party=await response.json();assert.equal(party.run,null);assert.equal(JSON.stringify(party).includes('private-court'),false);assert.equal(JSON.stringify(party).includes('비공개'),false);
+ }finally{db.close();await f.close();}});

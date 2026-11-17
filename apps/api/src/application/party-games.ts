@@ -1,0 +1,51 @@
+import {DomainFailure} from '../domain/failure.js';
+import type {Clock,TokenCodec} from './browser-sessions.js';
+import type {UnitOfWork,Repositories,RoomRecord,MemberRecord} from './ports/storage.js';
+import type {RandomSource} from './ports/random.js';
+import type {SelectionRecord,RunRecord} from './ports/party.js';
+import {maintainBeforeRequest} from './membership-lifecycle.js';
+
+export function exactBody(input:unknown,keys:string[]):Record<string,unknown>{
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).sort().join(',')!==[...keys].sort().join(','))throw new DomainFailure('INVALID_INPUT');
+ return input as Record<string,unknown>;
+}
+function version(value:unknown):number{if(!Number.isSafeInteger(value)||Number(value)<0)throw new DomainFailure('INVALID_INPUT');return value as number;}
+function integer(value:unknown,min:number):number{if(!Number.isSafeInteger(value)||Number(value)<min||Number(value)>10000)throw new DomainFailure('INVALID_INPUT');return value as number;}
+function penalty(value:unknown):string{if(typeof value!=='string'||[...value].length>500||/[\p{Cc}\p{Cf}]/u.test(value.replace(/[\n\r\t]/g,'')))throw new DomainFailure('INVALID_INPUT');return value.trim();}
+function roomByCode(r:Repositories,code:string):RoomRecord{const room=r.rooms.findByInvite(code);if(!room)throw new DomainFailure('NOT_FOUND');return room;}
+function currentMember(r:Repositories,room:RoomRecord,actor:{id:string}):MemberRecord{const member=r.members.active(room.id).find(m=>m.sessionId===actor.id);if(!member)throw new DomainFailure('FORBIDDEN');return member;}
+function hostMember(r:Repositories,room:RoomRecord,actor:{id:string}):MemberRecord{if(room.status!=='open')throw new DomainFailure('ROOM_CLOSED');const member=currentMember(r,room,actor);if(member.id!==room.hostMemberId)throw new DomainFailure('FORBIDDEN');return member;}
+function selection(r:Repositories,room:RoomRecord):SelectionRecord{const s=r.party.selection(room.id);if(!s)throw new DomainFailure('STATE_CONFLICT');return s;}
+function prepared(r:Repositories,room:RoomRecord,s:SelectionRecord):void{const latest=r.party.latest(room.id);if(latest&&(latest.status==='active'||latest.id!==s.preparedAfterRunId))throw new DomainFailure('STATE_CONFLICT');}
+export class PartyGames {
+ constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
+ private run<T>(work:(r:Repositories,now:number)=>T):T{const now=this.clock.now();maintainBeforeRequest(this.uow,now,this.random);return this.uow.run(r=>work(r,now));}
+ select(actor:{id:string},code:string,input:unknown){
+  const body=exactBody(input,['expectedVersion','type','teamCount','winnerCount','penaltyText']);
+  const expected=version(body.expectedVersion),teamCount=integer(body.teamCount,2),winnerCount=integer(body.winnerCount,1),penaltyText=penalty(body.penaltyText);
+  if(body.type!=='team'&&body.type!=='draw'&&body.type!=='trial')throw new DomainFailure('INVALID_INPUT');const type=body.type;
+  return this.run(r=>{const room=roomByCode(r,code);hostMember(r,room,actor);const s=selection(r,room);prepared(r,room,s);if(s.version!==expected)throw new DomainFailure('STATE_CONFLICT');
+   if(type!==s.type)r.party.resetCourtPreparation(room.id);
+   r.party.saveSelection({...s,type,version:s.version+1,teamCount,winnerCount,penaltyText:type==='draw'?penaltyText:''});r.rooms.bumpVersion(room.id);
+   return this.snapshot(r,roomByCode(r,code),actor);
+  });
+ }
+ read(actor:{id:string},code:string){return this.run(r=>{const room=roomByCode(r,code);currentMember(r,room,actor);return this.snapshot(r,room,actor);});}
+ private snapshot(r:Repositories,room:RoomRecord,actor:{id:string}){
+  const self=currentMember(r,room,actor),s=selection(r,room),latest=r.party.latest(room.id);
+  const hasHistory=latest&&r.party.participants(latest.id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id);
+  const accessible=latest&&(latest.status==='active'||hasHistory);
+  const run=accessible&&latest.id!==s.preparedAfterRunId?this.projectRun(r,latest,actor):null;
+  return {roomId:room.id,inviteCode:room.inviteCode,version:room.version,selection:{type:s.type,version:s.version,teamCount:s.teamCount,winnerCount:s.winnerCount,penaltyText:latest&&latest.id!==s.preparedAfterRunId&&!hasHistory?'':s.penaltyText},run,self:{memberId:self.id,isHost:room.hostMemberId===self.id},blockedPolicy:run?.blockedPolicy??null};
+ }
+ private projectRun(r:Repositories,run:RunRecord,actor:{id:string}){
+  // Interrupted trial disclosure stays exclusively in the legacy policy-aware adapter.
+  if(run.type==='trial'&&run.status==='interrupted')return null;
+  const all=r.party.participants(run.id),own=all.filter(p=>r.members.find(p.memberId)?.sessionId===actor.id);
+  const eligible=own.some(p=>p.eligible),reveals=r.party.reveals(run.id),settings=JSON.parse(run.settingsJson) as {teamCount?:number;winnerCount?:number;penaltyText?:string};
+  const blocked=run.type==='draw'&&run.status!=='completed'&&all.some(p=>p.eligible&&r.members.find(p.memberId)?.leftAt!==null);
+  const canSee=run.type==='trial'?own.length>0:eligible;
+  const result=canSee?(run.type==='trial'?{kind:'trial' as const,legacyGameId:run.id}:run.type==='team'?{kind:'team' as const,assignments:r.party.allocations(run.id).map(a=>({memberId:a.memberId,team:a.team!}))}:run.status==='interrupted'?null:{kind:'draw' as const,revealed:r.party.allocations(run.id).filter(a=>reveals.includes(a.memberId)).map(a=>({memberId:a.memberId,winner:a.winning!}))}):null;
+  return {runId:run.id,type:run.type,status:run.status,version:run.version,participants:all.map(p=>({memberId:p.memberId,nickname:p.nickname,eligible:p.eligible})),self:{eligible,revealed:own.some(p=>reveals.includes(p.memberId))},settings:{teamCount:settings.teamCount??2,winnerCount:settings.winnerCount??1,penaltyText:canSee?settings.penaltyText??'':''},result,blockedPolicy:blocked?'unrevealed-member-left' as const:null};
+ }
+}
