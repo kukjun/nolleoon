@@ -48,6 +48,24 @@ export class PartyGames {
    return {action:'start' as const,runId,requestId:id};
   });
  }
+ reveal(actor:{id:string},code:string,runId:string,input:unknown){
+  const body=exactBody(input,['requestId']),id=requestId(body.requestId);
+  return this.run((r,now)=>{const room=roomByCode(r,code),old=r.party.receipt(room.id,id);
+   if(old){if(old.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(old.action!=='reveal'||old.runId!==runId)throw new DomainFailure('STATE_CONFLICT');return {action:'reveal' as const,runId,requestId:id};}
+   if(room.status!=='open')throw new DomainFailure('ROOM_CLOSED');const member=currentMember(r,room,actor),run=r.party.run(runId);
+   if(!run||run.roomId!==room.id)throw new DomainFailure('NOT_FOUND');if(run.type!=='draw')throw new DomainFailure('STATE_CONFLICT');
+   const participant=r.party.participants(runId).find(p=>p.memberId===member.id&&p.eligible);if(!participant)throw new DomainFailure('FORBIDDEN');
+   const revealed=r.party.reveals(runId);
+   if(!revealed.includes(member.id)){
+    if(run.status!=='active'||r.party.latest(room.id)?.id!==runId)throw new DomainFailure('STATE_CONFLICT');
+    r.party.reveal(runId,member.id,now);
+    const complete=revealed.length+1===r.party.participants(runId).filter(p=>p.eligible).length;
+    r.party.updateRun(runId,complete?'completed':'active');r.rooms.bumpVersion(room.id);
+   }
+   r.party.addReceipt({roomId:room.id,requestId:id,actorSessionId:actor.id,action:'reveal',intent:runId,runId});
+   return {action:'reveal' as const,runId,requestId:id};
+  });
+ }
  read(actor:{id:string},code:string){return this.run(r=>{const room=roomByCode(r,code);currentMember(r,room,actor);return this.snapshot(r,room,actor);});}
  private snapshot(r:Repositories,room:RoomRecord,actor:{id:string}){
   const self=currentMember(r,room,actor),s=selection(r,room),latest=r.party.latest(room.id);
