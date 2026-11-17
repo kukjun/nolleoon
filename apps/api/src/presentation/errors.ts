@@ -11,7 +11,7 @@ export function presentError(error:unknown):{status:number;body:ErrorResponse} {
  else if(error instanceof DomainFailure)code=error.code;
  else if(error instanceof StorageError)code=error.code==='busy'?'TEMPORARILY_UNAVAILABLE':error.code==='constraint'?'STATE_CONFLICT':'INTERNAL_ERROR';
  else if(error instanceof HttpException) {
-  const status=error.getStatus();code=status===429?'RATE_LIMITED':status===413?'PAYLOAD_TOO_LARGE':status===401?'SESSION_REQUIRED':status===403?'FORBIDDEN':status===404?'NOT_FOUND':status===409?'STATE_CONFLICT':status>=400&&status<500?'INVALID_INPUT':'INTERNAL_ERROR';
+  const status=error.getStatus();code=status===503?'TEMPORARILY_UNAVAILABLE':status===429?'RATE_LIMITED':status===413?'PAYLOAD_TOO_LARGE':status===401?'SESSION_REQUIRED':status===403?'FORBIDDEN':status===404?'NOT_FOUND':status===409?'STATE_CONFLICT':status>=400&&status<500?'INVALID_INPUT':'INTERNAL_ERROR';
  }
  return {status:statuses[code],body:{error:{code,message:errorMessages[code]}}};
 }

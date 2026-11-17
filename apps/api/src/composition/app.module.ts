@@ -1,3 +1,4 @@
+import {SharpAvatarProcessor} from '../infrastructure/images/avatar-processor.js';
 import {Avatars} from '../application/avatars.js';
 import {AvatarController} from '../presentation/avatar.controller.js';
 import {RequestGuard} from '../presentation/request-guard.js';
@@ -39,7 +40,7 @@ export class AppModule {
     const random=config.random??new SecureRandom();
     return {module:AppModule,controllers:[AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:APP_GUARD,inject:[BrowserSessions],useFactory:(sessions:BrowserSessions)=>new RequestGuard(sessions,config.clock??new SystemClock())},
-      {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow)},
+      {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow,new SharpAvatarProcessor())},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},

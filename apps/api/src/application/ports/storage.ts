@@ -18,7 +18,7 @@ export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:s
 export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
-  avatars:{find(sessionId:string):AvatarRecord|undefined;save(record:AvatarRecord):void};
+  avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};
   nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
   interruptions:InsertRepository<InterruptionRecord>&{find(gameId:string):InterruptionRecord|undefined};
   closures:InsertRepository<ClosureRecord>&{find(roomId:string):ClosureRecord|undefined};
