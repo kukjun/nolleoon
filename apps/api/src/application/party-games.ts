@@ -1,4 +1,4 @@
-import {balancedTeams} from '../domain/party-allocation.js';
+import {balancedTeams,allocateLots} from '../domain/party-allocation.js';
 import {DomainFailure} from '../domain/failure.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
 import type {UnitOfWork,Repositories,RoomRecord,MemberRecord} from './ports/storage.js';
@@ -36,13 +36,14 @@ export class PartyGames {
   const body=exactBody(input,['requestId','expectedSelectionVersion']);const id=requestId(body.requestId),expected=version(body.expectedSelectionVersion),intent=JSON.stringify([expected]);
   return this.run((r,now)=>{const room=roomByCode(r,code);const previous=r.party.receipt(room.id,id);
    if(previous){if(previous.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(previous.action!=='start'||previous.intent!==intent)throw new DomainFailure('STATE_CONFLICT');return {action:'start' as const,runId:previous.runId,requestId:id};}
-   const host=hostMember(r,room,actor),s=selection(r,room);prepared(r,room,s);if(s.version!==expected||s.type!=='team')throw new DomainFailure('STATE_CONFLICT');
+   const host=hostMember(r,room,actor),s=selection(r,room);prepared(r,room,s);if(s.version!==expected||s.type==='trial')throw new DomainFailure('STATE_CONFLICT');
    const members=r.members.active(room.id).filter(m=>m.disconnectedAt==null&&(m.lastSeenAt??m.joinedAt)>now-15000);
-   if(members.length<2||!members.some(m=>m.id===host.id)||s.teamCount>members.length)throw new DomainFailure('STATE_CONFLICT');
-   const allocations=balancedTeams(members.map(m=>m.id),s.teamCount,this.random),runId=this.tokens.id();
-   r.party.insertRun({id:runId,roomId:room.id,type:'team',status:'completed',version:0,settingsJson:JSON.stringify({teamCount:s.teamCount,winnerCount:1,penaltyText:''}),createdAt:now});
+   if(members.length<2||!members.some(m=>m.id===host.id)||(s.type==='team'?s.teamCount>members.length:s.winnerCount>members.length||!s.penaltyText.trim()))throw new DomainFailure('STATE_CONFLICT');
+   const allocations=s.type==='team'?balancedTeams(members.map(m=>m.id),s.teamCount,this.random).map(a=>({...a,winning:null})):allocateLots(members.map(m=>m.id),s.winnerCount,this.random).map(a=>({...a,team:null}));
+   const runId=this.tokens.id();
+   r.party.insertRun({id:runId,roomId:room.id,type:s.type,status:s.type==='team'?'completed':'active',version:0,settingsJson:JSON.stringify({teamCount:s.teamCount,winnerCount:s.winnerCount,penaltyText:s.type==='draw'?s.penaltyText:''}),createdAt:now});
    for(const member of members)r.party.addParticipant({runId,roomId:room.id,memberId:member.id,nickname:member.nickname,eligible:true});
-   for(const allocation of allocations)r.party.addAllocation({runId,memberId:allocation.memberId,team:allocation.team,winning:null});
+   for(const allocation of allocations)r.party.addAllocation({runId,memberId:allocation.memberId,team:allocation.team,winning:allocation.winning});
    r.party.addReceipt({roomId:room.id,requestId:id,actorSessionId:actor.id,action:'start',intent,runId});r.rooms.bumpVersion(room.id);
    return {action:'start' as const,runId,requestId:id};
   });
