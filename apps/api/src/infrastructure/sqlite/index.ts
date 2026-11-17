@@ -1,3 +1,4 @@
+import type {SelectionRecord,RunRecord,RunParticipant,Allocation,PartyRequest} from '../../application/ports/party.js';
 import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { isAbsolute } from 'node:path';
@@ -55,7 +56,30 @@ export class SqliteUnitOfWork implements UnitOfWork {
     const find=<TRecord>(sql:string,...params:(string|number)[]):TRecord|undefined=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');return this.db.prepare(sql).get(...params) as TRecord|undefined;};
     const all=<TRecord>(sql:string,...params:(string|number)[]):TRecord[]=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');return this.db.prepare(sql).all(...params) as TRecord[];};
     const gameColumns='id,room_id AS roomId,status,case_text AS caseText,penalty_text AS penaltyText,duration_seconds AS durationSeconds,version,created_at AS createdAt';
+    const runColumns='id,room_id AS roomId,type,status,version,settings_json AS settingsJson,created_at AS createdAt';
     const repositories:Repositories={
+      party:{
+        selection:roomId=>find<SelectionRecord>('SELECT room_id AS roomId,type,version,team_count AS teamCount,winner_count AS winnerCount,penalty_text AS penaltyText,prepared_after_run_id AS preparedAfterRunId FROM party_selections WHERE room_id=?',roomId),
+        saveSelection:r=>execute('UPDATE party_selections SET type=@type,version=@version,team_count=@teamCount,winner_count=@winnerCount,penalty_text=@penaltyText,prepared_after_run_id=@preparedAfterRunId WHERE room_id=@roomId',r),
+        run:id=>find<RunRecord>(`SELECT ${runColumns} FROM game_runs WHERE id=?`,id),
+        latest:roomId=>find<RunRecord>(`SELECT ${runColumns} FROM game_runs WHERE room_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1`,roomId),
+        insertRun:r=>execute('INSERT INTO game_runs VALUES (@id,@roomId,@type,@status,@version,@settingsJson,@createdAt)',r),
+        updateRun:(id,status)=>execute('UPDATE game_runs SET status=@status,version=version+1 WHERE id=@id',{id,status}),
+        participants:runId=>all<RunParticipant>('SELECT run_id AS runId,room_id AS roomId,member_id AS memberId,nickname,eligible FROM run_participants WHERE run_id=? ORDER BY member_id',runId).map(r=>({...r,eligible:Boolean(r.eligible)})),
+        addParticipant:r=>execute('INSERT INTO run_participants VALUES (@runId,@roomId,@memberId,@nickname,@eligible)',{...r,eligible:r.eligible?1:0}),
+        allocations:runId=>all<Allocation>('SELECT run_id AS runId,member_id AS memberId,team,winning FROM run_allocations WHERE run_id=? ORDER BY member_id',runId).map(r=>({...r,winning:r.winning===null?null:Boolean(r.winning)})),
+        addAllocation:r=>execute('INSERT INTO run_allocations VALUES (@runId,@memberId,@team,@winning)',{...r,winning:r.winning===null?null:r.winning?1:0}),
+        reveals:runId=>all<{memberId:string}>('SELECT member_id AS memberId FROM run_reveals WHERE run_id=? ORDER BY member_id',runId).map(r=>r.memberId),
+        reveal:(runId,memberId,now)=>execute('INSERT INTO run_reveals VALUES (@runId,@memberId,@now)',{runId,memberId,now}),
+        receipt:(roomId,requestId)=>find<PartyRequest>('SELECT room_id AS roomId,request_id AS requestId,actor_session_id AS actorSessionId,action,intent,run_id AS runId FROM party_receipts WHERE room_id=? AND request_id=?',roomId,requestId),
+        addReceipt:r=>execute('INSERT INTO party_receipts VALUES (@roomId,@requestId,@actorSessionId,@action,@intent,@runId)',r),
+        history:(sessionId,before,limit)=>all<RunRecord>(`SELECT ${runColumns} FROM game_runs g WHERE EXISTS(SELECT 1 FROM run_participants p JOIN room_members m ON m.id=p.member_id WHERE p.run_id=g.id AND m.session_id=?) AND (?=0 OR g.created_at<? OR (g.created_at=? AND g.id<?)) ORDER BY g.created_at DESC,g.id DESC LIMIT ?`,sessionId,before?1:0,before?.createdAt??0,before?.createdAt??0,before?.id??'',limit),
+        resetCourtPreparation:roomId=>{
+          execute('UPDATE rooms SET preparation_version=preparation_version+1,role_revision=role_revision+1,penalty_revision=penalty_revision+1,prepared_after_game_id=(SELECT id FROM games WHERE room_id=@roomId ORDER BY created_at DESC,rowid DESC LIMIT 1) WHERE id=@roomId',{roomId});
+          execute("UPDATE room_members SET role='participant' WHERE room_id=@roomId AND left_at IS NULL",{roomId});
+          execute("UPDATE drafts SET case_text='',penalty_text='',duration_seconds=180,version=version+1 WHERE room_id=@roomId",{roomId});
+        }
+      },
       nextPreparations:{find:(roomId,requestId)=>find<NextReceipt>('SELECT room_id AS roomId,request_id AS requestId,actor_session_id AS actorSessionId,from_game_id AS fromGameId,expected_preparation_version AS expectedPreparationVersion,preparation_version AS preparationVersion FROM next_preparation_receipts WHERE room_id=? AND request_id=?',roomId,requestId),insert:r=>execute('INSERT INTO next_preparation_receipts VALUES (@roomId,@requestId,@actorSessionId,@fromGameId,@expectedPreparationVersion,@preparationVersion)',r)},
       interruptions:{find:id=>find<InterruptionRecord>('SELECT game_id AS gameId,cause,interrupted_at AS interruptedAt FROM game_interruptions WHERE game_id=?',id),insert:r=>execute('INSERT INTO game_interruptions(game_id,cause,interrupted_at) VALUES (@gameId,@cause,@interruptedAt)',r)},
       closures:{find:id=>find<ClosureRecord>('SELECT room_id AS roomId,closed_at AS closedAt,closed_by_member_id AS closedByMemberId FROM room_closures WHERE room_id=?',id),insert:r=>execute('INSERT INTO room_closures(room_id,closed_at,closed_by_member_id) VALUES (@roomId,@closedAt,@closedByMemberId)',r)},
