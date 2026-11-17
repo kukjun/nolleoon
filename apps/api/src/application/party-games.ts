@@ -39,6 +39,8 @@ export class PartyGames {
   return {roomId:room.id,inviteCode:room.inviteCode,version:room.version,selection:{type:s.type,version:s.version,teamCount:s.teamCount,winnerCount:s.winnerCount,penaltyText:latest&&latest.id!==s.preparedAfterRunId&&!hasHistory?'':s.penaltyText},run,self:{memberId:self.id,isHost:room.hostMemberId===self.id},blockedPolicy:run?.blockedPolicy??null};
  }
  private projectRun(r:Repositories,run:RunRecord,actor:{id:string}){
+  // Interrupted trial disclosure stays exclusively in the legacy policy-aware adapter.
+  if(run.type==='trial'&&run.status==='interrupted')return null;
   const all=r.party.participants(run.id),own=all.filter(p=>r.members.find(p.memberId)?.sessionId===actor.id);
   const eligible=own.some(p=>p.eligible),reveals=r.party.reveals(run.id),settings=JSON.parse(run.settingsJson) as {teamCount?:number;winnerCount?:number;penaltyText?:string};
   const blocked=run.type==='draw'&&run.status!=='completed'&&all.some(p=>p.eligible&&r.members.find(p.memberId)?.leftAt!==null);
