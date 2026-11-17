@@ -57,3 +57,22 @@ test('chunked oversized stream, encoded body and missing origin are rejected wit
  const image=await fetch(`${f.url}${saved.imageUrl}`,{headers:{cookie}});assert.equal(image.status,200);
  }finally{await f.close();}
 });
+test('closing a room revokes avatar-map and future-photo access without revoking own profile or other open rooms',async()=>{
+ const f=await apiFixture();try{
+ const owner=await session(f),friend=await session(f);
+ const create=async nickname=>(await fetch(`${f.url}/api/rooms`,cmd(f,owner,{nickname}))).json();
+ const closed=await create('owner');const active=await create('owner-new');
+ for(const room of [closed,active])assert.equal((await fetch(`${f.url}/api/rooms/${room.inviteCode}/join`,cmd(f,friend,{nickname:'friend'}))).status,201);
+ const first=await sharp({create:{width:10,height:10,channels:3,background:'blue'}}).png().toBuffer();
+ assert.equal((await upload(f,owner,first)).status,200);
+ const oldMap=await (await fetch(`${f.url}/api/rooms/${closed.inviteCode}/avatars`,{headers:{cookie:friend}})).json();const oldImageUrl=oldMap.members.find(m=>m.memberId===closed.self.memberId).avatar.imageUrl;
+ assert.equal((await fetch(`${f.url}${oldImageUrl}`,{headers:{cookie:friend}})).status,200);
+ assert.equal((await fetch(`${f.url}/api/rooms/${closed.inviteCode}/close`,cmd(f,owner,{expectedMemberId:closed.self.memberId}))).status,201);
+ const changed=await sharp({create:{width:10,height:10,channels:3,background:'red'}}).png().toBuffer();const replacement=await upload(f,owner,changed,1);assert.equal(replacement.status,200);const current=await replacement.json();
+ const denied=await Promise.all([fetch(`${f.url}/api/rooms/${closed.inviteCode}/avatars`,{headers:{cookie:friend}}),fetch(`${f.url}${oldImageUrl}`,{headers:{cookie:friend}})]);
+ assert.deepEqual(denied.map(r=>r.status),[410,410]);for(const response of denied)assert.equal((await response.json()).error.code,'ROOM_CLOSED');
+ assert.equal((await fetch(`${f.url}${current.imageUrl}`,{headers:{cookie:owner}})).status,200);
+ const openMap=await fetch(`${f.url}/api/rooms/${active.inviteCode}/avatars`,{headers:{cookie:friend}});assert.equal(openMap.status,200);
+ const openImage=(await openMap.json()).members.find(m=>m.memberId===active.self.memberId).avatar;assert.equal(openImage.revision,2);assert.equal((await fetch(`${f.url}${openImage.imageUrl}`,{headers:{cookie:friend}})).status,200);
+ }finally{await f.close();}
+});

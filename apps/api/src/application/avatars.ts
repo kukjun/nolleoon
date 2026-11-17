@@ -32,6 +32,7 @@ export class Avatars {
   const room=r.rooms.findByInvite(code);if(!room)throw new DomainFailure('NOT_FOUND');
   const members=r.members.active(room.id);
   if(!members.some(m=>m.sessionId===actor.id))throw new DomainFailure('FORBIDDEN');
+  if(room.status!=='open')throw new DomainFailure('ROOM_CLOSED');
   return members;
  }
  roomProfiles(actor:{id:string},code:string){return this.uow.run(r=>({members:this.room(r,actor,code).map(m=>({memberId:m.id,avatar:this.view(this.profile(r,m.sessionId),`/api/rooms/${code}/avatars/${m.id}/image`)}))}));}
