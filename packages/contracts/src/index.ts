@@ -21,3 +21,4 @@ export interface GameHistoryDetail {gameId:string;game:RoomSnapshot['game'];inte
 export interface PersonalHistoryItem {gameId:string;state:'ongoing'|'completed'|'interrupted';caseText:string|null;outcome:'guilty'|'not-guilty'|'no-verdict'|null}
 export interface PersonalHistoryPage {items:PersonalHistoryItem[];nextCursor:string|null}
 export interface PersonalHistoryDetail extends GameHistoryDetail {ongoing:{caseText:string}|null}
+export type {PartyGameType,PartySelection,PartyParticipant,PartyResult,PartyRun,PartySnapshot,PartyReceipt,PartyCommandResponse,PartyHistory} from './party.js';
