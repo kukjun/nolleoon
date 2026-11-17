@@ -1,3 +1,4 @@
+import { refreshRoster } from '../support/room-disclosures.mjs';
 import {test,expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 async function create(page){await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('설정 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();}
@@ -9,7 +10,7 @@ test('방장만 설정을 저장하고 참가자는 읽으며 새로고침에도
 });
 test('두 방장 탭에서 충돌해도 작성 중인 내용은 유지하며 명시적으로 최신 설정을 불러온다',async({page,context})=>{
  await create(page);const second=await context.newPage();await second.goto(page.url());await expect(second.getByLabel('사건',{exact:true})).toBeVisible();await second.getByLabel('사건',{exact:true}).fill('내 작성 중 내용');await page.getByLabel('사건',{exact:true}).fill('다른 탭이 저장한 내용');await page.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(page.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();
- await second.getByRole('button',{name:'참가자 새로고침'}).click();await expect(second.getByText('다른 화면에서 새 설정이 저장됐어요. 작성 중인 내용은 유지하고 있어요.')).toBeVisible();await expect(second.getByLabel('사건',{exact:true})).toHaveValue('내 작성 중 내용');await second.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(second.getByRole('alert')).toContainText('다른 화면에서 설정이 변경');await expect(second.getByLabel('사건',{exact:true})).toHaveValue('내 작성 중 내용');await expect(second.getByText('설정을 저장했어요.',{exact:true})).toHaveCount(0);
+ await refreshRoster(second, 'click');await expect(second.getByText('다른 화면에서 새 설정이 저장됐어요. 작성 중인 내용은 유지하고 있어요.')).toBeVisible();await expect(second.getByLabel('사건',{exact:true})).toHaveValue('내 작성 중 내용');await second.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(second.getByRole('alert')).toContainText('다른 화면에서 설정이 변경');await expect(second.getByLabel('사건',{exact:true})).toHaveValue('내 작성 중 내용');await expect(second.getByText('설정을 저장했어요.',{exact:true})).toHaveCount(0);
  await second.getByRole('button',{name:'작성 내용 버리고 최신 설정 불러오기'}).click();await expect(second.getByLabel('사건',{exact:true})).toHaveValue('다른 탭이 저장한 내용');await second.close();
 });
 test('저장 요청 실패는 미저장 상태와 입력을 보존한다',async({page})=>{
@@ -18,6 +19,6 @@ test('저장 요청 실패는 미저장 상태와 입력을 보존한다',async(
 test('저장 뒤 도착한 이전 heartbeat는 저장된 설정을 되돌리지 않는다',async({page})=>{
  await create(page);let old;
  await page.route('**/heartbeat',async route=>{if(!old){const response=await route.fetch();old=await response.json();await route.fulfill({response,json:old});}else await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(old)});});
- await page.getByRole('button',{name:'참가자 새로고침'}).click();await expect.poll(()=>Boolean(old)).toBe(true);
- await page.getByLabel('사건',{exact:true}).fill('새 버전 보존');await page.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(page.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();await page.getByRole('button',{name:'참가자 새로고침'}).click();await expect(page.getByLabel('사건',{exact:true})).toHaveValue('새 버전 보존');
+ await refreshRoster(page, 'click');await expect.poll(()=>Boolean(old)).toBe(true);
+ await page.getByLabel('사건',{exact:true}).fill('새 버전 보존');await page.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(page.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();await refreshRoster(page, 'click');await expect(page.getByLabel('사건',{exact:true})).toHaveValue('새 버전 보존');
 });

@@ -1,3 +1,4 @@
+import {casePreview} from './case-preview';
 import {useEffect,useRef,useState} from 'react';
 import type {RoomSnapshot} from '@trip-court/contracts';
 import {Button,Status} from './design/components';
@@ -17,5 +18,5 @@ export function GameStart({room,onUpdated}:{room:RoomSnapshot;onUpdated:(snapsho
 }
 export function StartedGame({room}:{room:RoomSnapshot}){
  const game=room.game;if(!game)return null;
- return <section className="started-game"><h3>{game.status==='result'?'재판 결과':game.status==='final-defense'?'최후 변론 대기':'재판이 시작됐어요'}</h3><Status>현재 단계 · {game.status==='defense'?'변론':game.status==='voting'?'투표':game.status==='final-defense'?'최후 변론':game.status==='result'?'결과':'중단'}</Status><p data-testid="game-role">내 게임 역할 · {game.self.role==='defendant'?'피고':game.self.role==='observer'?'관전자':'참가자'}</p><p>{game.self.eligible?'이번 게임의 투표 대상이에요.':'이번 게임에서는 투표하지 않아요.'}</p><dl><dt>사건</dt><dd>{game.caseText}</dd><dt>벌칙</dt><dd>{game.penaltyText}</dd><dt>설정된 제한 시간</dt><dd>{game.durationMinutes}분</dd></dl><p className="field-hint">현재 게임 참여 {game.participantCount}명 · 투표 대상 {game.voterCount}명</p>{(game.status==='defense'||game.status==='final-defense'||game.status==='voting')&&<p className="field-hint">시작 시 사건·벌칙과 투표 대상을 고정했어요. 각 라운드에서 투표를 한 번만 제출할 수 있어요.</p>}</section>;
+ return <section className="started-game"><h3>{game.status==='result'?'재판 결과':game.status==='final-defense'?'최후 변론 대기':game.status==='voting'?'사건을 확인하고 판단해요':'재판이 시작됐어요'}</h3><p data-testid="game-role">내 게임 역할 · {game.self.role==='defendant'?'피고':game.self.role==='observer'?'관전자':'참가자'}</p><p className="case-preview">{casePreview(game.caseText)}</p><details className="trial-details"><summary>사건·벌칙 자세히 보기</summary><div className="room-extra-content"><Status>현재 단계 · {game.status==='defense'?'변론':game.status==='voting'?'투표':game.status==='final-defense'?'최후 변론':game.status==='result'?'결과':'중단'}</Status><p>{game.self.eligible?'이번 게임의 투표 대상이에요.':'이번 게임에서는 투표하지 않아요.'}</p><dl><dt>사건</dt><dd>{game.caseText}</dd><dt>벌칙</dt><dd>{game.penaltyText}</dd><dt>설정된 제한 시간</dt><dd>{game.durationMinutes}분</dd></dl><p className="field-hint">현재 게임 참여 {game.participantCount}명 · 투표 대상 {game.voterCount}명</p><p className="field-hint">시작 시 사건·벌칙과 투표 대상을 고정했어요. 각 라운드에서 투표를 한 번만 제출할 수 있어요.</p></div></details></section>;
 }

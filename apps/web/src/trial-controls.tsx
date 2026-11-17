@@ -116,28 +116,34 @@ export function TrialControls({
   return (
     <section className="trial-controls">
       {game.status === 'final-defense' && <SettlementPanel game={game} />}
-      <PublishedRounds game={game} />
-      <h3>
-        {game.status === 'voting'
-          ? '투표 시간'
-          : game.status === 'final-defense'
-            ? '최후 변론과 2차 투표 준비'
-            : '변론과 투표 준비'}
-      </h3>
-      {game.defense.status === 'submitted' ? (
-        <>
-          <h4>피고의 변론</h4>
-          <p className="defense-text">{game.defense.text}</p>
-        </>
-      ) : game.defense.status === 'skipped' ? (
-        <p>피고가 변론을 건너뛰었어요.</p>
-      ) : (
-        <p>
-          {inDefense
-            ? '피고의 변론을 기다리고 있어요. 변론은 선택 사항이에요.'
-            : '변론 없이 투표를 시작했어요.'}
-        </p>
+      {game.status === 'voting' && game.publishedRounds.length > 0 ? (
+        <details className="trial-details">
+          <summary>이전 라운드 결과·이유</summary>
+          <PublishedRounds game={game} />
+        </details>
+      ) : <PublishedRounds game={game} />}
+      {game.status !== 'voting' && (
+        <h3>{game.status === 'final-defense'
+          ? '최후 변론과 2차 투표 준비'
+          : '변론과 투표 준비'}</h3>
       )}
+      <details className="defense-disclosure trial-details" open={inDefense}>
+        <summary>변론 확인</summary>
+        {game.defense.status === 'submitted' ? (
+          <>
+            <h4>피고의 변론</h4>
+            <p className="defense-text">{game.defense.text}</p>
+          </>
+        ) : game.defense.status === 'skipped' ? (
+          <p>피고가 변론을 건너뛰었어요.</p>
+        ) : (
+          <p>
+            {inDefense
+              ? '피고의 변론을 기다리고 있어요. 변론은 선택 사항이에요.'
+              : '변론 없이 투표를 시작했어요.'}
+          </p>
+        )}
+      </details>
       {inDefense && game.self.role === 'defendant' && game.defense.status === 'pending' && (
         <>
           <label className="settings-field">

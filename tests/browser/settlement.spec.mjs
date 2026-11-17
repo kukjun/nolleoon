@@ -1,9 +1,10 @@
+import { refreshRoster } from '../support/room-disclosures.mjs';
 import {test,expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 async function ready(page,browser){
  await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('투표 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await page.getByLabel('사건',{exact:true}).fill('단체 사진 사건');await page.getByLabel('벌칙',{exact:true}).fill('간식 준비');await page.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(page.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();await page.getByRole('radio',{name:/^피고/}).click();await page.getByRole('button',{name:'이 벌칙에 동의',exact:true}).click();await expect(page.getByText('피고가 이 벌칙에 동의했어요.',{exact:true})).toBeVisible();const guests=[];
  for(let i=0;i<2;i++){const context=await browser.newContext();const guest=await context.newPage();await guest.goto(page.url());await guest.getByRole('button',{name:'이 브라우저로 시작'}).click();await guest.getByLabel('닉네임').fill(`투표 친구${i}`);await guest.getByRole('button',{name:'방 참여하기'}).click();guests.push({context,page:guest});}
- await page.getByRole('button',{name:'참가자 새로고침'}).click();await page.getByRole('button',{name:'재판 시작',exact:true}).click();await page.getByRole('button',{name:'다 같이 투표 시작'}).click();for(const guest of guests)await expect(guest.page.getByRole('button',{name:'투표 제출',exact:true})).toBeVisible();return guests;
+ await refreshRoster(page, 'click');await page.getByRole('button',{name:'재판 시작',exact:true}).click();await page.getByRole('button',{name:'다 같이 투표 시작'}).click();for(const guest of guests)await expect(guest.page.getByRole('button',{name:'투표 제출',exact:true})).toBeVisible();return guests;
 }
 async function vote(page,choice){await page.getByRole('radio',{name:choice,exact:true}).click();if(choice!=='기권')await page.getByLabel('투표 이유',{exact:true}).fill('내가 본 상황을 바탕으로 판단했어요.');await page.getByRole('button',{name:'투표 제출',exact:true}).click();}
 test('투표 대상자 전원이 제출하면 서버 결과가 자동으로 표시된다',async({page,browser})=>{
