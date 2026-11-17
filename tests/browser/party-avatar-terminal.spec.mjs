@@ -1,0 +1,12 @@
+import {test,expect} from '@playwright/test';
+for(const terminal of ['ROOM_CLOSED','NOT_FOUND'])test(`avatar provider clears private photo and stops polling after ${terminal}`,async({page})=>{
+ await page.route('**/api/avatar',route=>route.fulfill({json:{kind:'preset',presetId:'preset-07',revision:3,imageUrl:null}}));
+ await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('아바타 회귀');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByLabel('우리 방 캐릭터 무대')).toBeVisible();
+ const code=new URL(page.url()).searchParams.get('room');const snapshot=await(await page.request.get(`/api/rooms/${code}`)).json();const memberId=snapshot.self.memberId;const photo=`/api/rooms/${code}/avatars/${memberId}/image?v=1`;let state='photo';let reads=0;
+ await page.route(`**/api/rooms/${code}/avatars/${memberId}/image*`,route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=','base64')}));
+ await page.route(`**/api/rooms/${code}/avatars`,route=>{reads++;return route.fulfill(state==='terminal'?{status:terminal==='ROOM_CLOSED'?410:404,json:{error:{code:terminal}}}:{json:{members:[{memberId,avatar:state==='photo'?{kind:'image',presetId:null,revision:1,imageUrl:photo}:{kind:'preset',presetId:'preset-05',revision:2,imageUrl:null}}]}});});
+ await page.clock.install();await page.reload();const portrait=page.getByLabel('우리 방 캐릭터 무대').locator('.avatar img');await expect(portrait).toHaveAttribute('src',photo);
+ state='terminal';await page.evaluate(()=>globalThis.dispatchEvent(new globalThis.Event('focus')));await expect(portrait).not.toHaveAttribute('src',photo);await expect(portrait).toHaveAttribute('src',/preset-01/);const stopped=reads;
+ await page.clock.runFor(12000);await page.evaluate(()=>{globalThis.dispatchEvent(new globalThis.Event('focus'));globalThis.dispatchEvent(new globalThis.Event('avatar-updated'));document.dispatchEvent(new globalThis.Event('visibilitychange'));});await page.clock.runFor(1000);expect(reads).toBe(stopped);
+ state='fresh';await page.reload();await expect(page.getByLabel('우리 방 캐릭터 무대').locator('.avatar img')).toHaveAttribute('src',/preset-05/);expect(reads).toBeGreaterThan(stopped);await page.goto('/');await expect(page.locator('.avatar-identity')).toContainText('강아지');
+});
