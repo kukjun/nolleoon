@@ -22,7 +22,9 @@ const checks=[
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
  {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e|@mobile'],timeoutMs:360000,dependsOn:'build'},
  {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'},
- {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'}
+ {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'},
+ {id:'party-browser',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--config=playwright.party.config.mjs','--reporter=json','--grep-invert','@party-e2e'],timeoutMs:180000,dependsOn:'build'},
+ {id:'party-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--config=playwright.party.config.mjs','--reporter=json','--grep','@party-e2e'],timeoutMs:180000,dependsOn:'build'}
 ];
 const results=[];
 for(const check of checks) {
