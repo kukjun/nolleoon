@@ -1,3 +1,5 @@
+import {Avatars} from '../application/avatars.js';
+import {AvatarController} from '../presentation/avatar.controller.js';
 import {RequestGuard} from '../presentation/request-guard.js';
 import {HistoryController} from '../presentation/history.controller.js';
 import {PersonalHistory} from '../application/personal-history.js';
@@ -35,8 +37,9 @@ export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();
-    return {module:AppModule,controllers:[HistoryController,HealthController,SessionController,RoomsController],providers:[
+    return {module:AppModule,controllers:[AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:APP_GUARD,inject:[BrowserSessions],useFactory:(sessions:BrowserSessions)=>new RequestGuard(sessions,config.clock??new SystemClock())},
+      {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow)},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},

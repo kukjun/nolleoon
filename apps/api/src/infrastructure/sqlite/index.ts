@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { migrations, type Migration } from './migrations.js';
-import { StorageError, type UnitOfWork, type NextReceipt, type InterruptionRecord, type ClosureRecord, type Repositories, type SettlementRecord, type RoomRecord, type MemberRecord, type ConsentRecord, type GameRecord, type ParticipantRecord, type StartReceipt, type DefenseRecord, type OpenReceipt, type RoundRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
+import { StorageError, type AvatarRecord, type UnitOfWork, type NextReceipt, type InterruptionRecord, type ClosureRecord, type Repositories, type SettlementRecord, type RoomRecord, type MemberRecord, type ConsentRecord, type GameRecord, type ParticipantRecord, type StartReceipt, type DefenseRecord, type OpenReceipt, type RoundRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
 export { StorageError } from '../../application/ports/storage.js';
 
 export function openSqlite(path: string, options: {busyTimeoutMs?: number} = {}): Database.Database {
@@ -56,6 +56,7 @@ export class SqliteUnitOfWork implements UnitOfWork {
     const all=<TRecord>(sql:string,...params:(string|number)[]):TRecord[]=>{if(!active)throw new Error('종료된 트랜잭션 저장소입니다.');return this.db.prepare(sql).all(...params) as TRecord[];};
     const gameColumns='id,room_id AS roomId,status,case_text AS caseText,penalty_text AS penaltyText,duration_seconds AS durationSeconds,version,created_at AS createdAt';
     const repositories:Repositories={
+      avatars:{find:id=>find<AvatarRecord>('SELECT session_id AS sessionId,preset_id AS presetId,revision,image_bytes AS imageBytes FROM avatar_profiles WHERE session_id=?',id),save:r=>execute('INSERT INTO avatar_profiles(session_id,preset_id,revision,image_bytes) VALUES (@sessionId,@presetId,@revision,@imageBytes) ON CONFLICT(session_id) DO UPDATE SET preset_id=excluded.preset_id,revision=excluded.revision,image_bytes=excluded.image_bytes',r)},
       nextPreparations:{find:(roomId,requestId)=>find<NextReceipt>('SELECT room_id AS roomId,request_id AS requestId,actor_session_id AS actorSessionId,from_game_id AS fromGameId,expected_preparation_version AS expectedPreparationVersion,preparation_version AS preparationVersion FROM next_preparation_receipts WHERE room_id=? AND request_id=?',roomId,requestId),insert:r=>execute('INSERT INTO next_preparation_receipts VALUES (@roomId,@requestId,@actorSessionId,@fromGameId,@expectedPreparationVersion,@preparationVersion)',r)},
       interruptions:{find:id=>find<InterruptionRecord>('SELECT game_id AS gameId,cause,interrupted_at AS interruptedAt FROM game_interruptions WHERE game_id=?',id),insert:r=>execute('INSERT INTO game_interruptions(game_id,cause,interrupted_at) VALUES (@gameId,@cause,@interruptedAt)',r)},
       closures:{find:id=>find<ClosureRecord>('SELECT room_id AS roomId,closed_at AS closedAt,closed_by_member_id AS closedByMemberId FROM room_closures WHERE room_id=?',id),insert:r=>execute('INSERT INTO room_closures(room_id,closed_at,closed_by_member_id) VALUES (@roomId,@closedAt,@closedByMemberId)',r)},
