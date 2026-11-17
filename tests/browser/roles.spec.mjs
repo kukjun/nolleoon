@@ -1,3 +1,4 @@
+import { refreshRoster } from '../support/room-disclosures.mjs';
 import {test,expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
 async function create(page){await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('역할 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();}
@@ -19,5 +20,5 @@ test('방장은 연결이 끊긴 참가자를 제외하고 다른 탭 재참여 
  }finally{await context.close();}
 });
 test('고정된 명단 계약에서는 역할 입력을 잠근다 (응답 fixture)',async({page})=>{
- await create(page);await page.route('**/heartbeat',async route=>{const response=await route.fetch();const data=await response.json();data.version+=100;data.rosterEditable=false;await route.fulfill({response,json:data});});await page.getByRole('button',{name:'참가자 새로고침'}).click();await expect(page.getByRole('radio',{name:/^피고/})).toBeDisabled();await expect(page.getByRole('radio',{name:/^참가자/})).toBeDisabled();await expect(page.getByText('게임이 시작되어 역할과 참가자를 변경할 수 없어요.')).toBeVisible();
+ await create(page);await page.route('**/heartbeat',async route=>{const response=await route.fetch();const data=await response.json();data.version+=100;data.rosterEditable=false;await route.fulfill({response,json:data});});await refreshRoster(page, 'click');await expect(page.getByRole('radio',{name:/^피고/})).toBeDisabled();await expect(page.getByRole('radio',{name:/^참가자/})).toBeDisabled();await expect(page.getByText('게임이 시작되어 역할과 참가자를 변경할 수 없어요.')).toBeVisible();
 });

@@ -1,3 +1,4 @@
+import { refreshRoster } from '../support/room-disclosures.mjs';
 import {test,expect} from '@playwright/test';
 test.use({trace:'retain-on-failure'});
 
@@ -5,7 +6,7 @@ test.use({trace:'retain-on-failure'});
 async function join(browser,url,nickname){
  const context=await browser.newContext({viewport:{width:390,height:844}});
  const page=await context.newPage();
- try{await page.goto(url);await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill(nickname);await page.getByRole('button',{name:'방 참여하기'}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();return {context,page,nickname};}catch(error){await context.close();throw error;}
+ try{await page.goto(url);await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill(nickname);await page.getByRole('button',{name:'방 참여하기'}).click();await expect(page.getByRole('heading',{name:/^(우리의 대기실|변론 중|투표 중|최후 변론)$/})).toBeVisible();return {context,page,nickname};}catch(error){await context.close();throw error;}
 }
 async function room(browser,count=5){
  const actors=[];
@@ -13,7 +14,7 @@ async function room(browser,count=5){
   const context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage();actors.push({context,page,nickname:'종합 방장'});
   await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('종합 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();
   for(let i=1;i<count;i++)actors.push(await join(browser,page.url(),`종합 친구 ${i}`));
-  await page.getByRole('button',{name:'참가자 새로고침'}).click();await expect(page.getByTestId('member')).toHaveCount(count);
+  await refreshRoster(page, 'click');await expect(page.getByTestId('member')).toHaveCount(count);
   return actors;
  }catch(error){await dispose(actors);throw error;}
 }
@@ -22,7 +23,7 @@ async function snapshot(page){const code=new URL(page.url()).searchParams.get('r
 async function start(actors,defendantIndex,caseText){
  const host=actors[0].page;const defendant=actors[defendantIndex].page;
  await host.getByLabel('사건',{exact:true}).fill(caseText);await host.getByLabel('벌칙',{exact:true}).fill('다음 간식 준비');await host.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(host.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();
- await defendant.getByRole('radio',{name:/^피고/}).click();await defendant.getByRole('button',{name:'이 벌칙에 동의',exact:true}).click();await expect(defendant.getByText('피고가 이 벌칙에 동의했어요.',{exact:true})).toBeVisible();await host.getByRole('button',{name:'참가자 새로고침'}).click();await host.getByRole('button',{name:'재판 시작',exact:true}).click();
+ await defendant.getByRole('radio',{name:/^피고/}).click();await defendant.getByRole('button',{name:'이 벌칙에 동의',exact:true}).click();await expect(defendant.getByText('피고가 이 벌칙에 동의했어요.',{exact:true})).toBeVisible();await refreshRoster(host, 'click');await host.getByRole('button',{name:'재판 시작',exact:true}).click();
  await defendant.getByLabel('내 변론',{exact:true}).fill(`${caseText}에 대한 첫 변론`);await defendant.getByRole('button',{name:'변론 제출',exact:true}).click();await expect(defendant.locator('.defense-text')).toHaveText(`${caseText}에 대한 첫 변론`);await expect(host.locator('.defense-text')).toHaveText(`${caseText}에 대한 첫 변론`);await host.getByRole('button',{name:'다 같이 투표 시작'}).click();
  for(const [index,actor]of actors.entries())if(index!==defendantIndex)await expect(actor.page.getByRole('button',{name:'투표 제출',exact:true})).toBeVisible();
  return actors.filter((_,index)=>index!==defendantIndex);
@@ -55,7 +56,7 @@ test('@e2e 다섯 명에서 여섯 명: 오프라인 복구·관전·임의 방�
  test.setTimeout(90000);const actors=await room(browser);let observer,outsider;
  try{
   const host=actors[0].page;await start(actors,1,'중단 전 비공개 사건');const guest=actors[2];await cast(guest,'유죄','연결이 끊겨도 보존될 접수');await expect(guest.page.getByText('내 투표가 접수됐어요.')).toBeVisible();const deadline=await guest.page.getByTestId('vote-deadline').getAttribute('data-deadline');await guest.context.setOffline(true);await guest.page.evaluate(()=>globalThis.window.dispatchEvent(new globalThis.Event('focus')));await expect(guest.page.getByRole('alert')).toContainText('다시 연결 중');await expect(guest.page.getByText('내 투표가 접수됐어요.')).toBeVisible();await guest.context.setOffline(false);await guest.page.reload();await expect(guest.page.getByText('내 투표가 접수됐어요.')).toBeVisible();await expect(guest.page.getByTestId('vote-deadline')).toHaveAttribute('data-deadline',deadline);
-  observer=await join(browser,host.url(),'여섯 번째 관전자');await expect(observer.page.getByTestId('game-role')).toHaveText('내 게임 역할 · 관전자');await expect(observer.page.getByRole('button',{name:'투표 제출',exact:true})).toHaveCount(0);const before=(await snapshot(host)).data;const defendantId=before.members.find(member=>member.role==='defendant').memberId;await leave(actors[0]);const remaining=[...actors.slice(1),observer];const views=await Promise.all(remaining.map(actor=>snapshot(actor.page)));const hostId=views[0].data.members.find(member=>member.isHost).memberId;expect(views[0].data.members.filter(member=>member.isHost)).toHaveLength(1);expect(hostId).not.toBe(before.self.memberId);expect(views[0].data.members.find(member=>member.memberId===defendantId).role).toBe('defendant');const successor=remaining[views.findIndex(view=>view.data.self.isHost)];await successor.page.getByRole('button',{name:'참가자 새로고침'}).click();await expect(successor.page.getByText('나 · 방장',{exact:true})).toBeVisible();
+  observer=await join(browser,host.url(),'여섯 번째 관전자');await expect(observer.page.getByTestId('game-role')).toHaveText('내 게임 역할 · 관전자');await expect(observer.page.getByRole('button',{name:'투표 제출',exact:true})).toHaveCount(0);const before=(await snapshot(host)).data;const defendantId=before.members.find(member=>member.role==='defendant').memberId;await leave(actors[0]);const remaining=[...actors.slice(1),observer];const views=await Promise.all(remaining.map(actor=>snapshot(actor.page)));const hostId=views[0].data.members.find(member=>member.isHost).memberId;expect(views[0].data.members.filter(member=>member.isHost)).toHaveLength(1);expect(hostId).not.toBe(before.self.memberId);expect(views[0].data.members.find(member=>member.memberId===defendantId).role).toBe('defendant');const successor=remaining[views.findIndex(view=>view.data.self.isHost)];await refreshRoster(successor.page, 'click');await expect(successor.page.getByText('나 · 방장',{exact:true})).toBeVisible();
   await leave(actors[1]);for(const actor of [actors[2],actors[3],actors[4],observer]){await expect(actor.page.getByRole('heading',{name:'재판이 중단됐어요'})).toBeVisible();await expect(actor.page.getByText('중단 전 비공개 사건',{exact:true})).toHaveCount(0);await expect(actor.page.getByText('연결이 끊겨도 보존될 접수',{exact:true})).toHaveCount(0);expect((await snapshot(actor.page)).data.game).toBeNull();}
   await guest.page.screenshot({path:'artifacts/screenshots/e2e-private-interruption-390.png',fullPage:true});const url=host.url();for(const actor of [actors[2],actors[3],actors[4],observer])await leave(actor);
   outsider=await browser.newContext();const fresh=await outsider.newPage();await fresh.goto(url);await fresh.getByRole('button',{name:'이 브라우저로 시작'}).click();await expect(fresh.getByRole('alert')).toContainText('이미 닫힌 방');await expect(fresh.getByLabel('닉네임')).toHaveCount(0);await expect(fresh.getByText('중단 전 비공개 사건',{exact:true})).toHaveCount(0);
