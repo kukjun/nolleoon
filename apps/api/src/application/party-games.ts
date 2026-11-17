@@ -1,3 +1,4 @@
+import {balancedTeams} from '../domain/party-allocation.js';
 import {DomainFailure} from '../domain/failure.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
 import type {UnitOfWork,Repositories,RoomRecord,MemberRecord} from './ports/storage.js';
@@ -17,6 +18,7 @@ function currentMember(r:Repositories,room:RoomRecord,actor:{id:string}):MemberR
 function hostMember(r:Repositories,room:RoomRecord,actor:{id:string}):MemberRecord{if(room.status!=='open')throw new DomainFailure('ROOM_CLOSED');const member=currentMember(r,room,actor);if(member.id!==room.hostMemberId)throw new DomainFailure('FORBIDDEN');return member;}
 function selection(r:Repositories,room:RoomRecord):SelectionRecord{const s=r.party.selection(room.id);if(!s)throw new DomainFailure('STATE_CONFLICT');return s;}
 function prepared(r:Repositories,room:RoomRecord,s:SelectionRecord):void{const latest=r.party.latest(room.id);if(latest&&(latest.status==='active'||latest.id!==s.preparedAfterRunId))throw new DomainFailure('STATE_CONFLICT');}
+function requestId(value:unknown):string{if(typeof value!=='string'||!/^[-a-zA-Z0-9_]{16,100}$/.test(value))throw new DomainFailure('INVALID_INPUT');return value;}
 export class PartyGames {
  constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
  private run<T>(work:(r:Repositories,now:number)=>T):T{const now=this.clock.now();maintainBeforeRequest(this.uow,now,this.random);return this.uow.run(r=>work(r,now));}
@@ -28,6 +30,21 @@ export class PartyGames {
    if(type!==s.type)r.party.resetCourtPreparation(room.id);
    r.party.saveSelection({...s,type,version:s.version+1,teamCount,winnerCount,penaltyText:type==='draw'?penaltyText:''});r.rooms.bumpVersion(room.id);
    return this.snapshot(r,roomByCode(r,code),actor);
+  });
+ }
+ start(actor:{id:string},code:string,input:unknown){
+  const body=exactBody(input,['requestId','expectedSelectionVersion']);const id=requestId(body.requestId),expected=version(body.expectedSelectionVersion),intent=JSON.stringify([expected]);
+  return this.run((r,now)=>{const room=roomByCode(r,code);const previous=r.party.receipt(room.id,id);
+   if(previous){if(previous.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(previous.action!=='start'||previous.intent!==intent)throw new DomainFailure('STATE_CONFLICT');return {action:'start' as const,runId:previous.runId,requestId:id};}
+   const host=hostMember(r,room,actor),s=selection(r,room);prepared(r,room,s);if(s.version!==expected||s.type!=='team')throw new DomainFailure('STATE_CONFLICT');
+   const members=r.members.active(room.id).filter(m=>m.disconnectedAt==null&&(m.lastSeenAt??m.joinedAt)>now-15000);
+   if(members.length<2||!members.some(m=>m.id===host.id)||s.teamCount>members.length)throw new DomainFailure('STATE_CONFLICT');
+   const allocations=balancedTeams(members.map(m=>m.id),s.teamCount,this.random),runId=this.tokens.id();
+   r.party.insertRun({id:runId,roomId:room.id,type:'team',status:'completed',version:0,settingsJson:JSON.stringify({teamCount:s.teamCount,winnerCount:1,penaltyText:''}),createdAt:now});
+   for(const member of members)r.party.addParticipant({runId,roomId:room.id,memberId:member.id,nickname:member.nickname,eligible:true});
+   for(const allocation of allocations)r.party.addAllocation({runId,memberId:allocation.memberId,team:allocation.team,winning:null});
+   r.party.addReceipt({roomId:room.id,requestId:id,actorSessionId:actor.id,action:'start',intent,runId});r.rooms.bumpVersion(room.id);
+   return {action:'start' as const,runId,requestId:id};
   });
  }
  read(actor:{id:string},code:string){return this.run(r=>{const room=roomByCode(r,code);currentMember(r,room,actor);return this.snapshot(r,room,actor);});}
