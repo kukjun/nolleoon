@@ -1,0 +1,24 @@
+/* Social room visual vocabulary. Scoped to .party-app until individual screens migrate. */
+.party-app {
+ --party-paper: #f5f5f0;
+ --party-surface: #ffffff;
+ --party-ink: #202b3a;
+ --party-muted: #596574;
+ --party-accent: #2455e8;
+ --party-on-accent: #ffffff;
+ --party-stage: #e1e8fb;
+ --party-stage-floor: #cad5f3;
+ --party-line: #dce1e6;
+ --party-positive: #176642;
+ --party-warning: #785000;
+ --party-tap: 48px;
+ --party-radius: 24px;
+ --party-space: 8px;
+ --party-page-width: 460px;
+ --party-dock-height: 112px;
+ color:var(--party-ink);background:var(--party-paper);
+}
+.party-app button,.party-app a[role=button]{min-height:var(--party-tap)}
+.party-app button:focus-visible,.party-app input:focus-visible,.party-app textarea:focus-visible,.party-app select:focus-visible,.party-app summary:focus-visible{outline:3px solid var(--party-accent);outline-offset:3px}
+.party-app [hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.party-app *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
