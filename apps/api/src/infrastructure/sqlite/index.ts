@@ -3,7 +3,7 @@ import Database from 'better-sqlite3';
 import { createHash } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { migrations, type Migration } from './migrations.js';
-import { StorageError, type UnitOfWork, type NextReceipt, type InterruptionRecord, type ClosureRecord, type Repositories, type SettlementRecord, type RoomRecord, type MemberRecord, type ConsentRecord, type GameRecord, type ParticipantRecord, type StartReceipt, type DefenseRecord, type OpenReceipt, type RoundRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
+import { StorageError, type AvatarRecord, type UnitOfWork, type NextReceipt, type InterruptionRecord, type ClosureRecord, type Repositories, type SettlementRecord, type RoomRecord, type MemberRecord, type ConsentRecord, type GameRecord, type ParticipantRecord, type StartReceipt, type DefenseRecord, type OpenReceipt, type RoundRecord, type VoteRecord, type DraftRecord, type SessionRecord } from '../../application/ports/storage.js';
 export { StorageError } from '../../application/ports/storage.js';
 
 export function openSqlite(path: string, options: {busyTimeoutMs?: number} = {}): Database.Database {
@@ -58,6 +58,7 @@ export class SqliteUnitOfWork implements UnitOfWork {
     const gameColumns='id,room_id AS roomId,status,case_text AS caseText,penalty_text AS penaltyText,duration_seconds AS durationSeconds,version,created_at AS createdAt';
     const runColumns='id,room_id AS roomId,type,status,version,settings_json AS settingsJson,created_at AS createdAt';
     const repositories:Repositories={
+      avatars:{find:(id,includeImage=true)=>find<AvatarRecord>(`SELECT session_id AS sessionId,preset_id AS presetId,revision,${includeImage?'image_bytes':'NULL'} AS imageBytes FROM avatar_profiles WHERE session_id=?`,id),totalImageBytes:()=>find<{bytes:number}>('SELECT COALESCE(SUM(length(image_bytes)),0) AS bytes FROM avatar_profiles')!.bytes,save:r=>execute('INSERT INTO avatar_profiles(session_id,preset_id,revision,image_bytes) VALUES (@sessionId,@presetId,@revision,@imageBytes) ON CONFLICT(session_id) DO UPDATE SET preset_id=excluded.preset_id,revision=excluded.revision,image_bytes=excluded.image_bytes',r)},
       party:{
         selection:roomId=>find<SelectionRecord>('SELECT room_id AS roomId,type,version,team_count AS teamCount,winner_count AS winnerCount,penalty_text AS penaltyText,prepared_after_run_id AS preparedAfterRunId FROM party_selections WHERE room_id=?',roomId),
         saveSelection:r=>execute('UPDATE party_selections SET type=@type,version=@version,team_count=@teamCount,winner_count=@winnerCount,penalty_text=@penaltyText,prepared_after_run_id=@preparedAfterRunId WHERE room_id=@roomId',r),

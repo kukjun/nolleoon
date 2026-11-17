@@ -17,7 +17,9 @@ export interface SettlementRecord {gameId:string;roundNumber:1|2;outcome:TallyOu
 export interface InterruptionRecord {gameId:string;cause:'defendant-left'|'room-closed'|'legacy-private';interruptedAt:number}
 export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:string|null}
 export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
+export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
+  avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};
   party:PartyRepository;
   nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
   interruptions:InsertRepository<InterruptionRecord>&{find(gameId:string):InterruptionRecord|undefined};
