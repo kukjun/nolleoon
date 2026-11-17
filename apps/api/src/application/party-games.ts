@@ -69,19 +69,22 @@ export class PartyGames {
  read(actor:{id:string},code:string){return this.run(r=>{const room=roomByCode(r,code);currentMember(r,room,actor);return this.snapshot(r,room,actor);});}
  private snapshot(r:Repositories,room:RoomRecord,actor:{id:string}){
   const self=currentMember(r,room,actor),s=selection(r,room),latest=r.party.latest(room.id);
+  if(latest?.status==='active'&&latest.type!=='trial'&&!r.party.participants(latest.id).some(p=>p.memberId===self.id))r.party.addParticipant({runId:latest.id,roomId:room.id,memberId:self.id,nickname:self.nickname,eligible:false});
   const hasHistory=latest&&r.party.participants(latest.id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id);
   const accessible=latest&&(latest.status==='active'||hasHistory);
   const run=accessible&&latest.id!==s.preparedAfterRunId?this.projectRun(r,latest,actor):null;
   return {roomId:room.id,inviteCode:room.inviteCode,version:room.version,selection:{type:s.type,version:s.version,teamCount:s.teamCount,winnerCount:s.winnerCount,penaltyText:latest&&latest.id!==s.preparedAfterRunId&&!hasHistory?'':s.penaltyText},run,self:{memberId:self.id,isHost:room.hostMemberId===self.id},blockedPolicy:run?.blockedPolicy??null};
  }
- private projectRun(r:Repositories,run:RunRecord,actor:{id:string}){
+ private projectRun(r:Repositories,run:RunRecord,actor:{id:string},historical=false){
   // Interrupted trial disclosure stays exclusively in the legacy policy-aware adapter.
   if(run.type==='trial'&&run.status==='interrupted')return null;
   const all=r.party.participants(run.id),own=all.filter(p=>r.members.find(p.memberId)?.sessionId===actor.id);
-  const eligible=own.some(p=>p.eligible),reveals=r.party.reveals(run.id),settings=JSON.parse(run.settingsJson) as {teamCount?:number;winnerCount?:number;penaltyText?:string};
-  const blocked=run.type==='draw'&&run.status!=='completed'&&all.some(p=>p.eligible&&r.members.find(p.memberId)?.leftAt!==null);
-  const canSee=run.type==='trial'?own.length>0:eligible;
+  const current=r.members.active(run.roomId).find(m=>m.sessionId===actor.id);
+  const subject=historical?own:own.filter(p=>p.memberId===current?.id);
+  const eligible=subject.some(p=>p.eligible),reveals=r.party.reveals(run.id),settings=JSON.parse(run.settingsJson) as {teamCount?:number;winnerCount?:number;penaltyText?:string};
+  const blocked=run.type==='draw'&&run.status!=='completed'&&(run.status==='interrupted'||all.some(p=>p.eligible&&r.members.find(p.memberId)?.leftAt!==null&&!reveals.includes(p.memberId)));
+  const canSee=run.type==='trial'?subject.length>0:eligible;
   const result=canSee?(run.type==='trial'?{kind:'trial' as const,legacyGameId:run.id}:run.type==='team'?{kind:'team' as const,assignments:r.party.allocations(run.id).map(a=>({memberId:a.memberId,team:a.team!}))}:run.status==='interrupted'?null:{kind:'draw' as const,revealed:r.party.allocations(run.id).filter(a=>reveals.includes(a.memberId)).map(a=>({memberId:a.memberId,winner:a.winning!}))}):null;
-  return {runId:run.id,type:run.type,status:run.status,version:run.version,participants:all.map(p=>({memberId:p.memberId,nickname:p.nickname,eligible:p.eligible})),self:{eligible,revealed:own.some(p=>reveals.includes(p.memberId))},settings:{teamCount:settings.teamCount??2,winnerCount:settings.winnerCount??1,penaltyText:canSee?settings.penaltyText??'':''},result,blockedPolicy:blocked?'unrevealed-member-left' as const:null};
+  return {runId:run.id,type:run.type,status:run.status,version:run.version,participants:all.filter(p=>run.type==='trial'||p.eligible).map(p=>({memberId:p.memberId,nickname:p.nickname,eligible:p.eligible})),self:{eligible,revealed:subject.some(p=>reveals.includes(p.memberId))},settings:{teamCount:settings.teamCount??2,winnerCount:settings.winnerCount??1,penaltyText:canSee?settings.penaltyText??'':''},result,blockedPolicy:blocked?'unrevealed-member-left' as const:null};
  }
 }
