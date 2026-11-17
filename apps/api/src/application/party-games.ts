@@ -19,6 +19,7 @@ function hostMember(r:Repositories,room:RoomRecord,actor:{id:string}):MemberReco
 function selection(r:Repositories,room:RoomRecord):SelectionRecord{const s=r.party.selection(room.id);if(!s)throw new DomainFailure('STATE_CONFLICT');return s;}
 function prepared(r:Repositories,room:RoomRecord,s:SelectionRecord):void{const latest=r.party.latest(room.id);if(latest&&(latest.status==='active'||latest.id!==s.preparedAfterRunId))throw new DomainFailure('STATE_CONFLICT');}
 function requestId(value:unknown):string{if(typeof value!=='string'||!/^[-a-zA-Z0-9_]{16,100}$/.test(value))throw new DomainFailure('INVALID_INPUT');return value;}
+function identifier(value:unknown):string{if(typeof value!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(value))throw new DomainFailure('INVALID_INPUT');return value;}
 export class PartyGames {
  constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly tokens:TokenCodec,private readonly random:RandomSource){}
  private run<T>(work:(r:Repositories,now:number)=>T):T{const now=this.clock.now();maintainBeforeRequest(this.uow,now,this.random);return this.uow.run(r=>work(r,now));}
@@ -65,6 +66,37 @@ export class PartyGames {
    r.party.addReceipt({roomId:room.id,requestId:id,actorSessionId:actor.id,action:'reveal',intent:runId,runId});
    return {action:'reveal' as const,runId,requestId:id};
   });
+ }
+ next(actor:{id:string},code:string,input:unknown){
+  const body=exactBody(input,['requestId','fromRunId','expectedSelectionVersion']);
+  const id=requestId(body.requestId),from=identifier(body.fromRunId),expected=version(body.expectedSelectionVersion),intent=JSON.stringify([from,expected]);
+  return this.run(r=>{
+   const room=roomByCode(r,code),old=r.party.receipt(room.id,id);
+   if(old){if(old.actorSessionId!==actor.id)throw new DomainFailure('FORBIDDEN');if(old.action!=='next'||old.intent!==intent)throw new DomainFailure('STATE_CONFLICT');return {action:'next' as const,runId:old.runId,requestId:id};}
+   hostMember(r,room,actor);const s=selection(r,room),latest=r.party.latest(room.id);
+   if(!latest||latest.id!==from||latest.status==='active'||s.version!==expected||s.preparedAfterRunId===from)throw new DomainFailure('STATE_CONFLICT');
+   if(latest.type==='draw'&&r.party.participants(from).filter(p=>p.eligible).some(p=>!r.party.reveals(from).includes(p.memberId)))throw new DomainFailure('STATE_CONFLICT');
+   r.party.resetCourtPreparation(room.id);
+   r.party.saveSelection({...s,version:s.version+1,teamCount:2,winnerCount:1,penaltyText:'',preparedAfterRunId:from});
+   r.party.addReceipt({roomId:room.id,requestId:id,actorSessionId:actor.id,action:'next',intent,runId:from});r.rooms.bumpVersion(room.id);
+   return {action:'next' as const,runId:from,requestId:id};
+  });
+ }
+ history(actor:{id:string},cursor?:unknown){
+  const id=cursor===undefined?undefined:identifier(cursor);
+  return this.run(r=>{
+   const anchor=id?this.authorizedRun(r,actor,id):undefined;
+   const rows=r.party.history(actor.id,anchor?{createdAt:anchor.createdAt,id:anchor.id}:null,21),page=rows.slice(0,20);
+   return {items:page.map(run=>({runId:run.id,roomCode:r.rooms.find(run.roomId)!.inviteCode,type:run.type,status:run.status})),nextCursor:rows.length>20?page.at(-1)!.id:null};
+  });
+ }
+ detail(actor:{id:string},code:string,value:unknown){
+  const id=identifier(value);
+  return this.run(r=>{const room=roomByCode(r,code),run=this.authorizedRun(r,actor,id);if(run.roomId!==room.id)throw new DomainFailure('NOT_FOUND');const view=this.projectRun(r,run,actor,true);if(!view)throw new DomainFailure('FORBIDDEN');return view;});
+ }
+ private authorizedRun(r:Repositories,actor:{id:string},id:string):RunRecord{
+  const run=r.party.run(id);if(!run)throw new DomainFailure('NOT_FOUND');
+  if(!r.party.participants(id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id))throw new DomainFailure('FORBIDDEN');return run;
  }
  read(actor:{id:string},code:string){return this.run(r=>{const room=roomByCode(r,code);currentMember(r,room,actor);return this.snapshot(r,room,actor);});}
  private snapshot(r:Repositories,room:RoomRecord,actor:{id:string}){
