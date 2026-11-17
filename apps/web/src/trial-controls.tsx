@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RoomSnapshot } from '@trip-court/contracts';
-import { Button, Input, Timer } from './design/components';
+import { Button, Input, Timer, Modal } from './design/components';
 import { requestRoom, type RoomCommand } from './api/rooms-client';
 import { PublishedRounds } from './published-rounds';
 import { SettlementPanel } from './settlement-panel';
@@ -14,6 +14,8 @@ export function TrialControls({
   onUpdated: (room: RoomSnapshot) => void;
 }) {
   const game = room.game!;
+  const [contextOpen,setContextOpen]=useState(false);
+  const [roundsOpen,setRoundsOpen]=useState(false);
   const [text, setText] = useState('');
   const [duration, setDuration] = useState(game.durationMinutes);
   const [durationDirty, setDurationDirty] = useState(false);
@@ -116,34 +118,13 @@ export function TrialControls({
   return (
     <section className="trial-controls">
       {game.status === 'final-defense' && <SettlementPanel game={game} />}
-      {game.status === 'voting' && game.publishedRounds.length > 0 ? (
-        <details className="trial-details">
-          <summary>이전 라운드 결과·이유</summary>
-          <PublishedRounds game={game} />
-        </details>
-      ) : <PublishedRounds game={game} />}
+      {game.publishedRounds.length>0&&<><Button variant="quiet" onPress={()=>setRoundsOpen(true)}>이전 라운드 결과·이유</Button><Modal open={roundsOpen} title="이전 라운드 결과·이유" onDismiss={()=>setRoundsOpen(false)}><PublishedRounds game={game}/></Modal></>}
       {game.status !== 'voting' && (
         <h3>{game.status === 'final-defense'
           ? '최후 변론과 2차 투표 준비'
           : '변론과 투표 준비'}</h3>
       )}
-      <details className="defense-disclosure trial-details" open={inDefense}>
-        <summary>변론 확인</summary>
-        {game.defense.status === 'submitted' ? (
-          <>
-            <h4>피고의 변론</h4>
-            <p className="defense-text">{game.defense.text}</p>
-          </>
-        ) : game.defense.status === 'skipped' ? (
-          <p>피고가 변론을 건너뛰었어요.</p>
-        ) : (
-          <p>
-            {inDefense
-              ? '피고의 변론을 기다리고 있어요. 변론은 선택 사항이에요.'
-              : '변론 없이 투표를 시작했어요.'}
-          </p>
-        )}
-      </details>
+      {inDefense?<section className="defense-summary">{game.defense.status==='submitted'?<><h4>피고의 변론</h4><p className="defense-text">{game.defense.text}</p></>:<p>{game.defense.status==='skipped'?'피고가 변론을 건너뛰었어요.':inDefense?'피고의 변론을 기다리고 있어요. 변론은 선택 사항이에요.':'변론 없이 투표를 시작했어요.'}</p>}</section>:<><Button variant="quiet" onPress={()=>setContextOpen(true)}>변론 확인</Button><Modal open={contextOpen} title="변론 확인" onDismiss={()=>setContextOpen(false)}>{game.defense.status==='submitted'?<><h4>피고의 변론</h4><p className="defense-text">{game.defense.text}</p></>:<p>{game.defense.status==='skipped'?'피고가 변론을 건너뛰었어요.':inDefense?'피고의 변론을 기다리고 있어요. 변론은 선택 사항이에요.':'변론 없이 투표를 시작했어요.'}</p>}</Modal></>}
       {inDefense && game.self.role === 'defendant' && game.defense.status === 'pending' && (
         <>
           <label className="settings-field">
@@ -193,7 +174,7 @@ export function TrialControls({
       {inDefense && room.self.isHost && (
         <>
           {game.status === 'defense' && game.round === null && (
-            <>
+            <details className="trial-details"><summary>투표 시간 {game.durationMinutes}분 · 조정</summary>
               <Input
                 label="투표 제한 시간 (분)"
                 type="number"
@@ -237,7 +218,7 @@ export function TrialControls({
               >
                 투표 시간 저장
               </Button>
-            </>
+            </details>
           )}
           <p className="field-hint">
             피고의 응답이 없어도 방장이 투표를 시작할 수 있어요. 모두 같은 서버 마감 시간을
