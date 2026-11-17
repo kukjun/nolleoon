@@ -1,0 +1,36 @@
+import {useEffect,useId,useRef,useState} from 'react';
+import {Button,Modal} from './design/components';
+import {Avatar} from './avatar';
+import {avatarPresets,presetLabel} from './avatar-presets';
+import {defaultAvatar,requestAvatar,validateAvatarFile,type AvatarProfile} from './api/avatar-client';
+import {cropAvatar} from './avatar-crop';
+export function AvatarPicker({onBusyChange,onSaved}:{onBusyChange?:(busy:boolean)=>void;onSaved?:(avatar:AvatarProfile)=>void}){
+ const [edited,setEdited]=useState(false);const [saved,setSaved]=useState(defaultAvatar);const [choice,setChoice]=useState('preset-01');const [open,setOpen]=useState(false);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [file,setFile]=useState<File|null>(null);const [preview,setPreview]=useState('');const [zoom,setZoom]=useState(1);const [x,setX]=useState(0.5);const [y,setY]=useState(0.5);const [cropping,setCropping]=useState(false);const prepared=useRef<File|null>(null);const alive=useRef(false);const request=useRef<AbortController|null>(null);const lock=useRef(false);const uploadId=useId();const callbacks=useRef({onBusyChange,onSaved});callbacks.current={onBusyChange,onSaved};
+ useEffect(()=>{callbacks.current.onBusyChange?.(saving||open);},[saving,open]);
+ useEffect(()=>{alive.current=true;void load();return()=>{alive.current=false;request.current?.abort();callbacks.current.onBusyChange?.(false);};},[]);
+ async function load(preserveChoice=false){
+  request.current?.abort();const controller=new AbortController();request.current=controller;const timer=setTimeout(()=>controller.abort(),6000);setLoading(true);
+  try{const result=await requestAvatar('/api/avatar',undefined,controller.signal);if(!alive.current||request.current!==controller)return;if(result.ok){setSaved(result.data);if(!preserveChoice)setChoice(result.data.presetId??'preset-01');setError('');}else setError(result.message);}
+  finally{clearTimeout(timer);if(alive.current&&request.current===controller)setLoading(false);}
+ }
+ useEffect(()=>{
+  let cancelled=false;let url='';prepared.current=null;setPreview('');if(!file){setCropping(false);return;}
+  setCropping(true);
+  void cropAvatar(file,zoom,x,y).then(result=>{if(cancelled)return;prepared.current=result;url=URL.createObjectURL(result);setPreview(url);}).catch(()=>{if(!cancelled)setError('사진을 읽지 못했어요. 400만 화소 이하의 PNG, JPG, WebP를 골라 주세요.');}).finally(()=>{if(!cancelled)setCropping(false);});
+  return()=>{cancelled=true;if(url)URL.revokeObjectURL(url);};
+ },[file,zoom,x,y]);
+ function dismiss(){if(lock.current)return;setOpen(false);setFile(null);setError('');setChoice(saved.presetId??'preset-01');}
+ function selectFile(selected?:File){if(!selected)return;const invalid=validateAvatarFile(selected);if(invalid){setError(invalid);return;}setError('');setEdited(true);setFile(selected);setZoom(1);setX(0.5);setY(0.5);}
+ async function save(){
+  if(lock.current||cropping||loading||!edited)return;const upload=prepared.current;if(file&&!upload){setError('사진 미리보기를 먼저 확인해 주세요.');return;}
+  lock.current=true;setSaving(true);setError('');request.current?.abort();const controller=new AbortController();request.current=controller;const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+   const result=await requestAvatar(file?'/api/avatar/image':'/api/avatar',file?{file:upload!,expectedRevision:saved.revision}:{presetId:choice,expectedRevision:saved.revision},controller.signal);
+   if(!alive.current)return;
+   if(result.ok){setSaved(result.data);setChoice(result.data.presetId??'preset-01');setFile(null);setOpen(false);setNotice('캐릭터를 저장했어요.');callbacks.current.onSaved?.(result.data);window.dispatchEvent(new Event('avatar-updated'));}
+   else{setError(result.code==='STATE_CONFLICT'?'다른 화면에서 캐릭터가 바뀌었어요. 최신 캐릭터를 불러온 뒤 다시 골라 주세요.':result.message);}
+  }finally{clearTimeout(timer);lock.current=false;if(alive.current)setSaving(false);}
+ }
+ const chosen:AvatarProfile={kind:'preset',presetId:choice,revision:0,imageUrl:null};
+ return <section className="avatar-picker" aria-label="내 캐릭터"><div className="avatar-identity"><Avatar avatar={saved} size="large" label="내 캐릭터"/><div><strong>{saved.kind==='image'?'내 사진':presetLabel(saved.presetId)}</strong><Button variant="quiet" disabled={loading} onPress={()=>{setChoice(saved.presetId??'preset-01');setError('');setNotice('');setEdited(false);setOpen(true);}}>캐릭터 고르기</Button></div></div>{notice&&<p role="status" className="field-hint">{notice}</p>}{!open&&error&&<div><p role="alert">{error}</p><Button variant="quiet" disabled={loading} onPress={load}>캐릭터 다시 불러오기</Button></div>}<Modal open={open} title="내 캐릭터 고르기" onDismiss={dismiss}><div className="avatar-editor" aria-busy={saving}><div className="avatar-crop-preview">{preview?<img src={preview} width="160" height="160" alt="저장할 사진 미리보기"/>:file?<p role="status">사진을 준비하고 있어요.</p>:<Avatar avatar={chosen} size="large" label="선택한 캐릭터"/>}</div><fieldset className="avatar-grid" disabled={saving}><legend>캐릭터 10종</legend>{avatarPresets.map(([id,name])=><label key={id} className={!file&&id===choice?'avatar-option selected':'avatar-option'}><input type="radio" name={`${uploadId}-preset`} value={id} checked={!file&&id===choice} onChange={()=>{setEdited(true);setChoice(id);setFile(null);setError('');}}/><Avatar avatar={{kind:'preset',presetId:id,revision:0,imageUrl:null}}/><span>{name}</span></label>)}</fieldset><div className="avatar-upload"><label htmlFor={uploadId}>내 사진 선택</label><input id={uploadId} type="file" accept="image/png,image/jpeg,image/webp" disabled={saving} onChange={event=>{selectFile(event.target.files?.[0]);event.target.value='';}}/><p className="field-hint">PNG · JPG · WebP, 최대 1MB · 400만 화소. 저장하면 같은 방 참가자에게 보여요. 원본 대신 정사각 썸네일만 저장해요.</p></div>{file&&<fieldset disabled={saving} className="avatar-crop-controls"><legend>사진 위치 맞추기</legend><label>확대<input aria-label="사진 확대" type="range" min="1" max="3" step="0.05" value={zoom} onChange={event=>setZoom(Number(event.target.value))}/></label><label>가로 위치<input aria-label="사진 가로 위치" type="range" min="0" max="1" step="0.01" value={x} onChange={event=>setX(Number(event.target.value))}/></label><label>세로 위치<input aria-label="사진 세로 위치" type="range" min="0" max="1" step="0.01" value={y} onChange={event=>setY(Number(event.target.value))}/></label><Button variant="quiet" onPress={()=>{setFile(null);setError('');}}>사진 빼기</Button></fieldset>}{error&&<div><p className="field-error" role="alert">{error}</p><Button variant="quiet" disabled={saving} onPress={()=>load(true)}>최신 캐릭터 불러오기</Button></div>}<div className="avatar-editor-actions"><Button variant="secondary" disabled={saving} onPress={dismiss}>취소</Button><Button disabled={loading||cropping||!edited||(!!file&&!preview)} loading={saving} onPress={save}>이 캐릭터로 저장</Button></div></div></Modal></section>;
+}
