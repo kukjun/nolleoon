@@ -12,15 +12,17 @@ function validate(db: Database.Database): void {
   const integrity = db.pragma('integrity_check') as { integrity_check: string }[];
   if (integrity.length !== 1 || integrity[0]?.integrity_check !== 'ok') throw new Error('integrity');
   if ((db.pragma('foreign_key_check') as unknown[]).length !== 0) throw new Error('foreign keys');
+  const rows = db.prepare('SELECT version,name,checksum FROM schema_migrations ORDER BY version').all() as {version:number;name:string;checksum:string}[];
+  // Schema9 is the explicitly supported pre-party restore source; never migrate the input.
+  if (rows.length !== 9 && rows.length !== migrations.length) throw new Error('manifest length');
+  const expected = migrations.slice(0, rows.length);
   const reference = new Database(':memory:');
   try {
-    migrate(reference);
+    migrate(reference, expected);
     const schema = "SELECT type,name,tbl_name,sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name";
     if (JSON.stringify(db.prepare(schema).all()) !== JSON.stringify(reference.prepare(schema).all())) throw new Error('schema mismatch');
   } finally { reference.close(); }
-  const rows = db.prepare('SELECT version,name,checksum FROM schema_migrations ORDER BY version').all() as {version:number;name:string;checksum:string}[];
-  if (rows.length !== migrations.length) throw new Error('manifest length');
-  for (const [index, migration] of migrations.entries()) {
+  for (const [index, migration] of expected.entries()) {
     const row = rows[index];
     const checksum = createHash('sha256').update(migration.sql).digest('hex');
     if (!row || row.version !== migration.version || row.name !== migration.name || row.checksum !== checksum) throw new Error('manifest mismatch');
