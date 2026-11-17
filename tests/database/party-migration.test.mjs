@@ -15,7 +15,9 @@ test('공통 활성게임·동결배정·교차방 FK와 실패 migration rollba
  db.exec("UPDATE games SET status='result' WHERE id='legacy-active'");
  db.exec("INSERT INTO game_runs VALUES ('draw','legacy-room','draw','active',0,'{}',2000)");
  assert.throws(()=>db.exec("INSERT INTO run_participants VALUES ('draw','legacy-room','absent','가짜',1)"),/FOREIGN KEY/);
- db.exec("INSERT INTO run_participants VALUES ('draw','legacy-room','legacy-member','합성',1);INSERT INTO run_allocations VALUES ('draw','legacy-member',NULL,1)");
+ db.exec("INSERT INTO run_participants VALUES ('draw','legacy-room','legacy-member','합성',1)");
+ assert.throws(()=>db.exec("INSERT INTO run_allocations VALUES ('draw','legacy-member',NULL,NULL)"),/CHECK/);
+ db.exec("INSERT INTO run_allocations VALUES ('draw','legacy-member',NULL,1)");
  assert.throws(()=>db.exec("UPDATE run_allocations SET winning=0"),/immutable/);
  assert.throws(()=>db.exec("INSERT INTO games VALUES ('other-court','legacy-room','defense','사건','벌칙',180,0,3000)"),/UNIQUE/);
  const count=db.prepare('SELECT COUNT(*) AS n FROM schema_migrations').get().n;

@@ -24,7 +24,7 @@ CREATE TABLE run_participants (
 ) STRICT;
 CREATE TABLE run_allocations (
  run_id TEXT NOT NULL,member_id TEXT NOT NULL,team INTEGER,winning INTEGER,
- CHECK((team IS NOT NULL AND team>=1 AND winning IS NULL) OR (team IS NULL AND winning IN (0,1))),
+ CHECK((team IS NOT NULL AND team>=1 AND winning IS NULL) OR (team IS NULL AND winning IS NOT NULL AND winning IN (0,1))),
  PRIMARY KEY(run_id,member_id),FOREIGN KEY(run_id,member_id) REFERENCES run_participants(run_id,member_id)
 ) STRICT;
 CREATE TABLE run_reveals (
