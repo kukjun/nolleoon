@@ -7,9 +7,10 @@ import {RequestBudget} from '../application/request-budget.js';
 import {sessionToken} from './commands.js';
 export class RequestGuard implements CanActivate {
  private readonly budget=new RequestBudget();
- constructor(private readonly sessions:BrowserSessions,private readonly clock:Clock,private readonly accounts?:AccountAuth){}
+ constructor(private readonly sessions:BrowserSessions,private readonly clock:Clock,private readonly accounts?:AccountAuth,private readonly reconcileDeletions?:()=>void){}
  canActivate(context:ExecutionContext){
   const request=context.switchToHttp().getRequest<Request>();const response=context.switchToHttp().getResponse<Response>();
+  this.reconcileDeletions?.();
   const path=request.path.toLowerCase().replace(/\/+$/,'');
   if(path==='/api/health')return true;
   if(request.body!==undefined&&Buffer.byteLength(JSON.stringify(request.body),'utf8')>65536)throw new HttpException('요청 본문이 너무 큽니다.',413);

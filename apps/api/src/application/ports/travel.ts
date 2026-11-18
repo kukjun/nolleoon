@@ -3,7 +3,11 @@ export interface TravelRoom {id:string;title:string;startDate:string|null;endDat
 export interface TravelMember {id:string;roomId:string;accountId:string;joinedAt:number;leftAt:number|null;departure:'left'|'removed'|null}
 export interface TravelPresence {membershipId:string;lastSeenAt:number;disconnectedAt:number|null}
 export interface TravelRun {id:string;roomId:string;type:TravelGameType;status:TravelRunStatus;creatorMembershipId:string;facilitatorMembershipId:string;version:number;settingsJson:string;stateJson:string;resultJson:string|null;selectedMembershipIdsJson:string;createdAt:number;startedAt:number|null;endedAt:number|null;legacyRunId:string|null}
+export interface RoomDeletion {roomId:string;deletionVersion:number;deletedAt:number;purgeAfter:number;previousStatus:'open'|'closed';administratorAccountId:string}
 export interface TravelRepository {
+ deletionEventApplied(operationId:string):boolean; recordDeletionEvent(operationId:string):void;
+ dueDeletions(now:number,limit:number):string[];
+ rawRoom(id:string):TravelRoom|undefined; deletion(id:string):RoomDeletion|undefined; deletedRooms(accountId:string):Array<RoomDeletion & {title:string}>; markDeleted(d:RoomDeletion):void; restoreDeleted(id:string):void; purgeDeleted(id:string):void;
  room(id:string):TravelRoom|undefined;insertRoom(r:TravelRoom):void;saveRoom(r:TravelRoom):void;
  list(accountId:string,before:{createdAt:number;id:string}|null,limit:number):TravelRoom[];
  member(id:string):TravelMember|undefined;membership(roomId:string,accountId:string):TravelMember|undefined;members(roomId:string):TravelMember[];insertMember(r:TravelMember):void;depart(id:string,now:number,departure:'left'|'removed'):void;
