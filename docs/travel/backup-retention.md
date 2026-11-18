@@ -15,3 +15,5 @@
 각 행은 operationId/accountId/travel run IDs/명시 연결 legacy run IDs/요청시각만 갖는다. 이름·이메일·provider token·게임 본문은 기록하지 않는다. hash chain과 별도 checkpoint를 검증하며, 누락/절단/변조/알려진 최신 checkpoint보다 오래된 ledger는 거부한다. append 후 checkpoint 게시 전 중단은 복원을 차단하며, 동일 삭제 요청 재시도가 검증된 앞으로의 chain으로 checkpoint를 복구할 수 있다. 자동으로 빈 ledger를 생성하거나 지워서 복구하지 않는다.
 
 별도 checkpoint도 같은 과거 상태로 함께 롤백되면 로컬 두 파일만으로 최신성을 증명할 수 없다. 운영 authoritative 저장 위치, 독립 최신성 확인, 외부 보관/암호화/접근권한은 아직 설정하지 않았다. 따라서 로컬 합성시험 통과를 운영 삭제 부활 방지 완료로 표현하지 않는다. 과거 바이너리나 일반 파일복사로 검증 경로를 우회해 공개 서비스를 시작하는 것도 이 도구가 차단하지 못하며, 복원 release 공개 전 검증이 필수다.
+
+SQL UPDATE/DELETE는 서비스 조회에서 정보를 제거하는 논리 삭제다. 운영 DB의 freelist/WAL, 이전 snapshot과 저장 장치의 잔여 바이트가 즉시 forensic 삭제된다고 보장하지 않는다. 복원 경로는 새 비공개 복사본에 삭제를 적용한 뒤 VACUUM으로 live-page snapshot을 재구성하고 검증된 새 파일만 게시할 계획이다. 이는 원본 운영 DB에 VACUUM/보안 설정을 적용하는 작업과 다르며, 정리한 임시파일의 물리 복구 불가능성도 보장하지 않는다. 기존 백업의 7일 보관 정책과 논리적 부활 차단/물리적 삭제는 서로 별개의 요구다.
