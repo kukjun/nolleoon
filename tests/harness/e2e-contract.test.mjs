@@ -57,11 +57,18 @@ test('외부 배포는 승인 차단이며 로컬 E2E로 통과 처리하지 않
 
 test('새 파티 파일은 별도 실제 gate로 빠짐·중복 없이 분리한다',async()=>{
  const party=(await import('../../playwright.party.config.mjs')).default;
- assert.deepEqual(config.testIgnore,['**/party-*.spec.mjs','**/avatar-picker.spec.mjs']);
- assert.deepEqual(party.testMatch,config.testIgnore);assert.deepEqual(party.testIgnore,[]);
+ assert.deepEqual(config.testIgnore,['**/travel-*.spec.mjs','**/party-*.spec.mjs','**/avatar-picker.spec.mjs']);
+ assert.deepEqual(party.testMatch,['**/party-*.spec.mjs','**/avatar-picker.spec.mjs']);assert.deepEqual(party.testIgnore,[]);
  assert.equal(party.retries,0);assert.equal(party.timeout,20000);
  for(const id of ['party-browser','party-e2e']){const gate=checks.split('\n').find(line=>line.includes(`id:'${id}'`));assert.match(gate,/kind:'playwright'/);assert.match(gate,/--config=playwright.party.config.mjs/);assert.match(gate,/timeoutMs:180000/);}
  assert.match(checks.split('\n').find(line=>line.includes("id:'party-browser'")),/'--grep-invert','@party-e2e'/);
  assert.match(checks.split('\n').find(line=>line.includes("id:'party-e2e'")),/'--grep','@party-e2e'/);
  assert.match(scripts['test:party'],/--grep-invert @party-e2e/);assert.match(scripts['test:party-e2e'],/--grep @party-e2e/);
+});
+
+test('여행방 UI와 실제API E2E는 별도 gate로 빠짐·중복 없이 실행한다',async()=>{
+ const travel=(await import('../../playwright.travel.config.mjs')).default;
+ assert.equal(travel.testMatch,'travel-*.spec.mjs');assert.equal(travel.retries,0);
+ for(const id of ['travel-browser','travel-e2e']){const gate=checks.split('\n').find(line=>line.includes(`id:'${id}'`));assert.match(gate,/kind:'playwright'/);assert.match(gate,/--config=playwright.travel.config.mjs/);}
+ assert.match(scripts['test:travel'],/--grep-invert @travel-e2e/);assert.match(scripts['test:travel-e2e'],/--grep @travel-e2e/);
 });

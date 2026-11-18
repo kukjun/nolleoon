@@ -17,7 +17,7 @@ node --test tests/database/backup.test.mjs
 
 설치된 better-sqlite3 13.2.0의 `Database#backup()` 온라인 백업 API를 사용한다. 원본 연결은 `readonly: true`, `fileMustExist: true`다. 실행 중인 WAL DB를 파일 복사하지 않는다. 커밋된 WAL 데이터는 포함하고 다른 연결의 미커밋 변경은 포함하지 않는다. 백업 이후 커밋은 복원본에 있다고 보장하지 않는다.
 
-원본과 생성한 스냅샷 각각에 `integrity_check`, `foreign_key_check`, 현재 배포 코드의 모든 migration 번호·이름·SQL SHA-256 manifest 일치를 검사한다. 부족하거나 더 새로운 버전, 변경된 checksum, 손상된 파일은 거부한다. 신뢰하는 현재 migration으로 별도 메모리 DB를 구성해 `sqlite_schema`의 type/name/tbl_name/sql도 비교한다. manifest만 복사하고 실제 table/index/trigger를 누락한 DB도 거절한다. 입력 파일에 migrate를 실행하지 않는다. 이것은 임의의 악성 SQLite 파일의 안전성 인증이나 모든 업무 데이터의 의미 검증이 아니다.
+원본과 생성한 스냅샷 각각에 `integrity_check`, `foreign_key_check`, 현재 배포 코드의 모든 migration 번호·이름·SQL SHA-256 manifest 일치를 검사한다. 명시적으로 지원하는 과거 배포 schema 9/11 및 현재 최신 schema만 허용한다. 그 외 부족하거나 더 새로운 버전, 변경된 checksum, 손상된 파일은 거부한다. 신뢰하는 현재 migration으로 별도 메모리 DB를 구성해 `sqlite_schema`의 type/name/tbl_name/sql도 비교한다. manifest만 복사하고 실제 table/index/trigger를 누락한 DB도 거절한다. 입력 파일에 migrate를 실행하지 않는다. 이것은 임의의 악성 SQLite 파일의 안전성 인증이나 모든 업무 데이터의 의미 검증이 아니다.
 
 대상 디렉터리 내부의 고유 임시 디렉터리에 생성하고, 검증·파일 sync 후 같은 파일시스템 hard link로 원자적으로 게시한다. 기존 대상이나 경쟁 실행이 먼저 만든 대상은 절대 교체하지 않는다. 완료/실패 시 이 실행이 만든 임시 디렉터리만 정리한다. 게시 성공 뒤 정리만 실패하면 새 대상이 이미 생성됐음을 구분해 알린다. 대상의 최종 symlink(끊어진 링크 포함)와 원본 파일 symlink는 거절한다. 상위 디렉터리 symlink는 realpath로 정규화한다. 신뢰할 수 있는 운영자만 디렉터리를 변경하는 환경을 전제하며 악의적인 동시 디렉터리 교체 방어를 보장하지 않는다.
 
