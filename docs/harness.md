@@ -78,3 +78,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 ## 여행방 회귀
 
 `npm run test:travel`은 여행방 화면/권한의 모의 API 회귀, `npm run test:travel-e2e`는 실제 Nest·임시 SQLite·정적 웹 서버를 사용하는 독립 브라우저 흐름이다. 두 gate를 전체 `check`에 포함하며 기존 브라우저 gate와 중복 집계하지 않는다. 테스트용 로그인 제공자만 합성 신원으로 대체한다. 실제 카카오 인증, 물리 기기 또는 외부 배포의 성공 증거는 아니다. 실제 게임 생성·참가·투표·결과·권한은 제품 서버와 저장소를 거친다. 테스트 서버는 loopback에만 바인딩하고 운영 진입점에서 가져오지 않는다.
+
+## API 파일 워커 예산 (#190)
+
+`npm run test:integration`과 전체 하네스의 API gate는 공유 `nodeTestArguments`를 통해 `--test-concurrency=1`로 모든 발견 파일을 직렬 실행한다. 다른 Node suite의 파일 병렬 정책은 바꾸지 않는다. 같은 46파일/151개에서 병렬 149/151, 직렬 151/151(99.038초)을 관측하여 API **suite 전체 예산을 15초에서 180초로 변경**했다. production의 개별 2초 종료 제한/기동 polling과 durability의 4초 IPC 제한 및 assertion은 그대로다. 시험을 빼거나 skip을 허용하는 변경이 아니며, 원격 CI·실기기·제품 인수는 별도다. 상세 근거는 [작업 기록](tasks/2026-11-19-api-worker-budget.md)을 본다.

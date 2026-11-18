@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCheck } from './runner.mjs';
-import { discoverTests } from './discovery.mjs';
+import { discoverTests, API_SUITE_TIMEOUT_MS } from './discovery.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const startedAt=new Date().toISOString();
 const git=args=>{const r=spawnSync('git',args,{cwd:root,encoding:'utf8'});return r.status===0?r.stdout.trim():null;};
@@ -18,7 +18,7 @@ const checks=[
  {id:'build',kind:'script',files:['tools/harness/tasks.mjs'],args:['build'],timeoutMs:120000},
  {id:'types',kind:'script',files:['tools/harness/tasks.mjs'],args:['typecheck'],timeoutMs:60000,dependsOn:'build'},
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
- {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:15000,dependsOn:'build'},
+ {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:API_SUITE_TIMEOUT_MS,dependsOn:'build'},
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
  {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e|@mobile'],timeoutMs:360000,dependsOn:'build'},
  {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'},

@@ -1,3 +1,4 @@
+import { nodeTestArguments } from './discovery.mjs';
 import {tmpdir} from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { existsSync, realpathSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
@@ -20,7 +21,7 @@ export function runCheck(check, cwd) {
     if(rel.startsWith('..') || isAbsolute(rel) || !/\.[cm]?js$/.test(file)) return stop('failed','input must be an in-repo JavaScript file');
   }
   if(check.kind!=='node-tests' && check.files.length!==1) return stop('failed','script requires one file');
-  const args=check.kind==='node-tests' ? ['--test','--test-reporter=tap',...check.files] : [...check.files,...(check.args??[])];
+  const args=check.kind==='node-tests' ? nodeTestArguments(check.testDirectory,check.files,'tap') : [...check.files,...(check.args??[])];
   const env={...process.env,NO_COLOR:'1'};
   delete env.NODE_TEST_CONTEXT;
   const leaseDirectory=check.kind==='playwright'?mkdtempSync(join(tmpdir(),'trip-browser-lease-')):null;
