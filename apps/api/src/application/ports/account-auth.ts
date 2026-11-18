@@ -1,6 +1,6 @@
 // Account identity is deliberately separate from legacy browser sessions.
 export interface AccountRecord {id:string;createdAt:number;status:'active'|'disabled';displayName:string;presetId:string;revision:number}
-export interface AccountSessionRecord {tokenHash:string;accountId:string;createdAt:number;expiresAt:number;revokedAt:number|null}
+export interface AccountSessionRecord {tokenHash:string;accountId:string;browserHash:string;createdAt:number;expiresAt:number;revokedAt:number|null}
 export interface OAuthAttempt {stateHash:string;browserHash:string;codeHash:string|null;returnPath:string;createdAt:number;expiresAt:number;status:'pending'|'exchanging'|'consumed';previousSessionHash:string|null}
 export interface AccountAuthRepository {
  findAccount(id:string):AccountRecord|undefined;
@@ -11,6 +11,7 @@ export interface AccountAuthRepository {
  findSession(hash:string):AccountSessionRecord|undefined;
  insertSession(record:AccountSessionRecord):void;
  revokeSession(hash:string,now:number):void;
+ revokeBrowserSessions(browserHash:string,now:number):void;
  insertAttempt(record:OAuthAttempt):void;
  findAttempt(stateHash:string):OAuthAttempt|undefined;
  invalidateAttempts(browserHash:string):void;
