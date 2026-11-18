@@ -31,3 +31,10 @@
 - 최종 합성 corpus SHA-256: `5d7f1d68c15a3094edf7c6d12714ab3230f7956ad845ae8cb0f066d3acd6a84d`. corpus 자체는 임시 private0600 파일이며 저장소에 올리지 않는다. 재실행 때 실제 random IDs/timestamps로 hash가 달라지는 것은 정상이다.
 - changed-files ESLint 및 diff check PASS. 초기 lint는 사용하지 않은 room GET 할당 한 곳을 보고했고 불필요한 read를 제거 후 API/Dart 검사를 재실행했다. Assertions/timeout/보호 장치는 약화하지 않았다.
 - 이 변경은 기존 구현에 대한 회귀 보강으로 TDD 제품 구현 완료를 주장하지 않는다. 전체 API/full harness/Flutter UI 통합/실기기/SDK/스토어는 미실행이다. 성공해도 #176/#177의 물리 플랫폼 완료를 대체하지 않는다.
+
+## 독립 리뷰 후 증거 입력 동결 보강
+원래 도구는 외부 source/corpus 경로를 실행 시 재참조하고 source hash를 실행 뒤 읽어, 경로가 동시에 교체되면 검사한 bytes와 기록 hash가 다를 수 있었다. 기존 pinned materialization 실측의 hash는 일치했지만 도구 자체의 증거 정합성 P2로 수정했다.
+
+현재 도구는 두 입력 bytes를 먼저 읽고 private temporary directory의 wx0600 복사본만 Dart에 전달한다. hash도 그 최초 bytes로 계산한다. 기존 DTO는 독립 파일이므로 import/export/part 키워드가 있는 소스는 보수적으로 거부한다(주석/문자열도 포함). 의존성이 생기면 전체 소스 graph를 별도로 동결하는 설계가 필요하며, 외부 상대 경로를 자동 탐색하지 않는다.
+
+도구 회귀는 합성 runner 경계에서 원래 두 파일을 교체해도 private copies와 hash가 처음 bytes를 유지하는지 확인한다. 이전 동작에서 실제 RED 2건 → 변경 후 2/2 PASS, cleanup 및0600 확인. 이 두 단위 시험은 Dart 실행 성공을 흉내 낸 근거로 사용하지 않는다. 별도로 실제 Dart를 기존 합성 corpus에 다시 실행해40 decode/27 negative controls PASS와 이전 source/corpus hash 동일을 확인했다. 제품/API 재실행은 이 도구 수정 범위에 포함하지 않았다.
