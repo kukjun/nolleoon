@@ -25,15 +25,16 @@ CREATE TRIGGER next_preparation_no_delete BEFORE DELETE ON next_preparation_rece
 export interface LegacyNumericSummary {participantCount:number;teams:{team:number;count:number}[];revealed:{winnerCount:number;notWinnerCount:number};rounds:{number:number;guilty:number;notGuilty:number;abstain:number;total:number}[]}
 /** Trusted explicit run IDs only: caller derives these from account links or verified deletion ledger.
  * Must share the account-deletion transaction. Never derive targets from anonymous session history. */
-export function scrubLegacyRuns(db:Database.Database,targets:readonly {runId:string;departingSessionIds:readonly string[]}[],now:number,options:{allowActiveForRestore?:boolean}={}):void{
+export function scrubLegacyRuns(db:Database.Database,targets:readonly {runId:string;departingSessionIds:readonly string[]}[],now:number,options:{allowActiveForRestore?:boolean;allowActiveForAccountDeletion?:boolean}={}):void{
  if(!db.inTransaction)throw new Error('Legacy redaction requires transaction');
  for(const target of targets){
   const id=target.runId;
   const run=db.prepare('SELECT id,room_id roomId,type,status FROM game_runs WHERE id=?').get(id) as {id:string;roomId:string;type:'trial'|'team'|'draw';status:string}|undefined;
   if(!run)continue;
   if(run.status==='active'){
-   if(!options.allowActiveForRestore)throw new Error('Linked active legacy run cannot be redacted');
-   // An authoritative deletion ledger may replay onto an older pre-completion backup.
+   if(!options.allowActiveForRestore&&!options.allowActiveForAccountDeletion)throw new Error('Linked active legacy run cannot be redacted');
+   // Explicit live account deletion or authoritative replay stops this exact linked run.
+   // Close without settlement: unpublished votes/lots must never become public results.
    db.prepare("UPDATE rounds SET closed_at=? WHERE game_id=? AND closed_at IS NULL").run(now,id);
    if(run.type==='trial'){
     db.prepare("INSERT OR IGNORE INTO game_interruptions VALUES (?,'legacy-private',?)").run(id,now);
