@@ -23,6 +23,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: GameScreen(
+            accountScope: 'synthetic-account',
             repository: repo,
             roomId: 'room-a',
             runId: 'run-a',
@@ -67,6 +68,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: GameScreen(
+          accountScope: 'synthetic-account',
           repository: repo,
           roomId: 'room-a',
           runId: 'run-a',

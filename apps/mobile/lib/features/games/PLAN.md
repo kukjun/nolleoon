@@ -12,3 +12,6 @@ Native endpoint/실제 Kakao/실기기는 미검증이다. 변경은 games 디�
 - scoped Flutter analyze issue0. Widget의 inactive 렌더 숨김과 controller의 background 메모리삭제/취소 검사를 별도로 시행했다(paused에서는 Flutter가 프레임 자체를 멈춤).
 - 초기 추가 fixture는 activeRun에 불필요 version을 넣어 strict parser가 거절했으며 실제 DTO의 facilitatorMembershipId로 바로잡았다. Timer 보존 오류는 widget 시험 종료 전에 lifecycle 중단을 명시해 해소했다.
 - 게임별 설정·투표·추첨·결과 화면, 계정 앱 route 조립, 실기기/원격 인증/배포는 미완료다. 공통 셸에서 callback이 없으면 입력기능 미연결을 표시한다.
+
+## 독립 리뷰 후 identity 교체 보완
+같은 Widget key에서 room/run만 바뀌면 옛 private projection이 남던 실제 RED를 재현했다. didUpdateWidget이 room/run/repository/viewer/accountScope 변경을 감지해 이전 controller·poll·요청·intent를 폐기하고 새로 읽는다. accountScope는 필수 비어있지 않은 문자열이며 동일 repository의 계정/세션 교체에도 갱신해야 한다. callback 인스턴스 변경만으로 입력을 초기화하지 않고 현재 widget callback을 호출한다. 이전 configure 완료는 새 계정/방에 명령을 보낼 수 없다. 추가5개+기존10개=15 PASS, 변경 파일 analyze issue0. team WIP는 이 보안 수정 커밋에 포함하지 않는다.

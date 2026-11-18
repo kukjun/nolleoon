@@ -7,19 +7,27 @@ import 'game_repository.dart';
 
 /// Game-specific forms/results are injected, not simulated by this common shell.
 class GameScreen extends StatefulWidget {
-  const GameScreen({
+  GameScreen({
     super.key,
     required this.repository,
     required this.roomId,
     this.runId,
     this.viewerMembershipId,
+    required this.accountScope,
     required this.onSessionLost,
     this.configure,
     this.play,
-  });
+  }) {
+    if (accountScope.trim().isEmpty) {
+      throw ArgumentError('Account scope required');
+    }
+  }
   final GameRepository repository;
   final String roomId;
   final String? runId, viewerMembershipId;
+
+  /// Change on account/session replacement even when reusing a repository.
+  final String accountScope;
   final VoidCallback onSessionLost;
   final Future<JsonMap?> Function(BuildContext, String, List<String>)?
   configure;
@@ -29,7 +37,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
-  late final GameController controller;
+  late GameController controller;
   String kind = 'team';
   final selected = <String>{};
   bool _configuring = false;
@@ -39,11 +47,36 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _replaceController();
+  }
+
+  void _replaceController() {
     controller = GameController(
       widget.repository,
-      onSessionLost: widget.onSessionLost,
+      onSessionLost: () => widget.onSessionLost(),
     )..addListener(_changed);
+    if (_lifecycle != AppLifecycleState.resumed) {
+      controller.setForeground(false);
+    }
     controller.open(widget.roomId, widget.runId);
+  }
+
+  @override
+  void didUpdateWidget(covariant GameScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId ||
+        oldWidget.runId != widget.runId ||
+        !identical(oldWidget.repository, widget.repository) ||
+        oldWidget.viewerMembershipId != widget.viewerMembershipId ||
+        oldWidget.accountScope != widget.accountScope) {
+      _configEpoch++;
+      _configuring = false;
+      selected.clear();
+      kind = 'team';
+      controller.removeListener(_changed);
+      controller.dispose();
+      _replaceController();
+    }
   }
 
   void _changed() {
@@ -88,9 +121,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     } catch (_) {
       settings = null;
     } finally {
-      _configuring = false;
+      if (epoch == _configEpoch) _configuring = false;
     }
-    if (!mounted || _lifecycle != AppLifecycleState.resumed) return;
+    if (!mounted ||
+        epoch != _configEpoch ||
+        _lifecycle != AppLifecycleState.resumed) {
+      return;
+    }
     await controller.setForeground(true);
     if (!mounted ||
         epoch != _configEpoch ||
