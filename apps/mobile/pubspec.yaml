@@ -1,5 +1,5 @@
 name: nolleoon_mobile
-description: 놀러온 네이티브 앱 개발 기반. 실제 게임 연동 전 단계.
+description: 여행방과 네 가지 게임을 연결하는 놀러온 Flutter 앱.
 publish_to: none
 version: 0.1.0+1
 environment:
