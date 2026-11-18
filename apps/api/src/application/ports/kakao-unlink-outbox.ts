@@ -4,7 +4,7 @@ export interface UnlinkJob extends UnlinkIntent {attempts:number;nextAttemptAt:n
 /** Authoritative current queue outside application DB/backups. All methods validate current authority.
  * Terminal records contain only operationId/status/timestamp, never subject or its hash. */
 export interface KakaoUnlinkOutbox {
- prepare(intent:UnlinkIntent):void;
+ prepare(intent:UnlinkIntent):UnlinkIntent;
  pending(subject:string,now:number):boolean;
  jobs(now:number):UnlinkJob[];
  claim(operationId:string,now:number):UnlinkJob|undefined;
@@ -12,4 +12,7 @@ export interface KakaoUnlinkOutbox {
  fail(operationId:string,now:number):void;
  expire(now:number):void;
  available():void;
+ bindingIdentity?():string;
+ witness?():{sequence:number;digest:string};
+ verifyPrefix?(witness:{sequence:number;digest:string}):void;
 }
