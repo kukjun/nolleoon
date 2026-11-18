@@ -297,10 +297,12 @@ class _TrialGameViewState extends State<TrialGameView> {
   final defense = TextEditingController(), reason = TextEditingController();
   String? choice;
   int minutes = 3;
+  bool durationDirty = false;
   void _reset() {
     defense.clear();
     reason.clear();
     choice = null;
+    durationDirty = false;
     final seconds = widget.run.game?.data['durationSeconds'];
     minutes = seconds is int && seconds >= 60 && seconds <= 600
         ? seconds ~/ 60
@@ -326,9 +328,17 @@ class _TrialGameViewState extends State<TrialGameView> {
         old?.data['phase'] != game.data['phase'] ||
         old?.data['roundNumber'] != game.data['roundNumber']) {
       _reset();
-    } else if ((game.data['self'] as Map?)?['voted'] == true) {
-      reason.clear();
-      choice = null;
+    } else {
+      final seconds = game.data['durationSeconds'];
+      if (seconds is int && seconds >= 60 && seconds <= 600) {
+        final saved = seconds ~/ 60;
+        if (!durationDirty) minutes = saved;
+        if (minutes == saved) durationDirty = false;
+      }
+      if ((game.data['self'] as Map?)?['voted'] == true) {
+        reason.clear();
+        choice = null;
+      }
     }
   }
 
@@ -480,7 +490,13 @@ class _TrialGameViewState extends State<TrialGameView> {
                     onChanged: disabled
                         ? null
                         : (v) {
-                            if (v != null) setState(() => minutes = v);
+                            if (v != null) {
+                              setState(() {
+                                minutes = v;
+                                durationDirty =
+                                    minutes * 60 != p['durationSeconds'];
+                              });
+                            }
                           },
                   ),
                   OutlinedButton(
@@ -492,10 +508,24 @@ class _TrialGameViewState extends State<TrialGameView> {
                           }),
                     child: const Text('시간 적용'),
                   ),
+                  if (durationDirty) ...[
+                    Text(
+                      '선택한 $minutes분은 아직 적용되지 않았어요. 서버 저장값은 ${p['durationSeconds']}초예요.',
+                    ),
+                    TextButton(
+                      onPressed: disabled
+                          ? null
+                          : () => setState(() {
+                              minutes = (p['durationSeconds'] as int) ~/ 60;
+                              durationDirty = false;
+                            }),
+                      child: const Text('저장된 시간으로 되돌리기'),
+                    ),
+                  ],
                 ],
               ),
             FilledButton(
-              onPressed: disabled
+              onPressed: disabled || durationDirty
                   ? null
                   : () => _send({'action': 'begin-vote'}),
               child: const Text('모두 함께 투표 시작'),

@@ -17,3 +17,7 @@
 테스트: 없는 모듈 compile RED를 확인한 후 Flutter trial focused 12개 PASS. 새 core draft edit 3 + restricted 1 + 기존 owned dialog 2 PASS는 별도 실행이며 전체 suite 통과를 뜻하지 않는다. `flutter analyze lib/features/games test/features/games` issues 0. 테스트 중 공개결과 라벨과 redacted 외부 DTO의 facilitator=null/selected=[] 조건 누락은 합성 fixture를 실제 계약에 맞춰 정정했다. 서버 DTO validator를 약화하지 않았다.
 
 실제 native HTTP/Kakao, 루트 registry 통합, 실기기 접근성/화면, 전체 하네스는 이 작업에서 검증하지 않았다. 독립 리뷰와 통합 게이트가 남아 있다. 백엔드/API/판정/인증/배포 변경은 없다.
+
+## 독립 리뷰 후 시간 설정 수정
+
+리뷰에서 동일 defense phase의 서버 180→300초 변경을 받아도 dropdown 3분이 남는 실제 결함이 확인됐다. 동일 재현을 RED로 추가하고 clean 입력은 최신 서버값 동기화, dirty 입력은 유지하면서 저장값 차이를 명시하도록 수정했다. dirty 상태에서는 투표 시작을 막고 명시 적용 후 서버 값 확인 또는 되돌리기를 요구한다. 회귀 2개와 기존 12개 총 14 PASS, trial scoped analyze issues 0. 서버 명령/판정은 변경하지 않았다.
