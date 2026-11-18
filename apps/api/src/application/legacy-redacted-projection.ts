@@ -1,4 +1,7 @@
-import type {RedactedGame} from '@trip-court/contracts';
+import type {RedactedRunSummary} from './ports/account-deletion.js';
+import type {TravelGameType} from './ports/travel-engine.js';
+/** Application-owned output; transport contracts remain outside this layer. */
+interface RedactedGame {kind:TravelGameType;redacted:true;summary:Omit<RedactedRunSummary,'rounds'>&{rounds?:{number:1|2;guilty:number;notGuilty:number;abstain:number;total:number}[]}}
 import type {Repositories} from './ports/storage.js';
 import {DomainFailure} from '../domain/failure.js';
 /** Call only after the existing history authorization check. */
