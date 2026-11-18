@@ -12,3 +12,9 @@
 저장은 기존 `flutter_secure_storage`와 iOS `first_unlock_this_device` 정책을 사용한다. Android 앱의 shared preferences cloud/device-transfer 백업 제외를 유지해야 한다. 이 변경은 설정/권한을 바꾸지 않는다. 계정·토큰·payload를 예외/log/toString에 넣지 않는다.
 
 검증: envelope strict/만료, 합성 secure platform의 새 adapter 인스턴스 복원·단계 역행 거절, 저장 실패 전 POST 차단, 전송 후 응답 불명 상태의 동일 요청 복원, ACK 뒤 쓰기 실패/cleanup 재시도, 계정 교체 거절. 실제 OS 보안 저장소/강제 프로세스 종료/백업 복원/운영 계정은 실행하지 않았다. TDD 최초 누락 모듈 RED 후 targeted tests로 검증한다.
+
+## v2: 원래 세션의 로컬 정리 증명
+
+pending 생성 시 원래 bearer의 SHA-256 `tokenDigest`를 계산하고 confirmed에서도 같은 digest만 유지한다. root의 별도 local-only cleanup은 현재 secure session token의 digest가 일치하거나 token이 없을 때만 정리하며, 다른 새 session은 건드리지 않는다. digest도 로그나 서버로 보내지 않는다. 이전 v1 데이터는 자동 승격하지 않고 명시 오류로 차단한다. 아직 배포되지 않은 스키마 변경이다.
+
+기존 lock에 있던 dart.dev의 [crypto 3.0.8](https://pub.dev/packages/crypto/versions/3.0.8)을 같은 버전 direct exact dependency로 선언했다. 직접 해시를 구현하지 않았고 다른 dependency version/hash는 바꾸지 않았다. pending token/digest 불일치, confirmed raw token 부재, v1 거절 추가 회귀 포함 scoped16 PASS.

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Only a fixed original deletion request, never a renewable login credential.
@@ -10,21 +12,36 @@ class DeletionReceipt {
     this.expiresAt,
     this.token,
     this.serverConfirmed,
+    this.tokenDigest,
   );
   factory DeletionReceipt.pending({
     required String accountScope,
     required String requestId,
     required String token,
     required int expiresAt,
-  }) => DeletionReceipt._(accountScope, requestId, expiresAt, token, false);
-  final String accountScope, requestId;
+  }) => DeletionReceipt._(
+    accountScope,
+    requestId,
+    expiresAt,
+    token,
+    false,
+    sha256.convert(utf8.encode(token)).toString(),
+  );
+  final String accountScope, requestId, tokenDigest;
   final int expiresAt;
   final String? token;
   final bool serverConfirmed;
-  DeletionReceipt confirmed() =>
-      DeletionReceipt._(accountScope, requestId, expiresAt, null, true);
+  DeletionReceipt confirmed() => DeletionReceipt._(
+    accountScope,
+    requestId,
+    expiresAt,
+    null,
+    true,
+    tokenDigest,
+  );
   String encode() => jsonEncode({
-    'version': 1,
+    'version': 2,
+    'tokenDigest': tokenDigest,
     'accountScope': accountScope,
     'requestId': requestId,
     'expiresAt': expiresAt,
@@ -47,6 +64,7 @@ class DeletionReceipt {
     final confirmed = map['phase'] == 'confirmed';
     final keys = {
       'version',
+      'tokenDigest',
       'accountScope',
       'requestId',
       'expiresAt',
@@ -58,7 +76,9 @@ class DeletionReceipt {
         expiry = map['expiresAt'];
     if (map.length != keys.length ||
         !map.keys.every(keys.contains) ||
-        map['version'] != 1 ||
+        map['version'] != 2 ||
+        map['tokenDigest'] is! String ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(map['tokenDigest'] as String) ||
         !{'confirmed', 'pending'}.contains(map['phase']) ||
         account is! String ||
         !RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(account) ||
@@ -70,7 +90,11 @@ class DeletionReceipt {
         (!confirmed &&
             (map['token'] is! String ||
                 !RegExp(r'^[A-Za-z0-9_-]{43}$')
-                    .hasMatch(map['token'] as String)))) {
+                    .hasMatch(map['token'] as String) ||
+                sha256
+                        .convert(utf8.encode(map['token'] as String))
+                        .toString() !=
+                    map['tokenDigest']))) {
       throw const FormatException('Invalid deletion receipt');
     }
     return DeletionReceipt._(
@@ -78,7 +102,8 @@ class DeletionReceipt {
       request,
       expiry,
       confirmed ? null : map['token'] as String,
-      true == confirmed,
+      confirmed,
+      map['tokenDigest'] as String,
     );
   }
 
@@ -127,6 +152,7 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
         (existing.accountScope != receipt.accountScope ||
             existing.requestId != receipt.requestId ||
             existing.expiresAt != receipt.expiresAt ||
+            existing.tokenDigest != receipt.tokenDigest ||
             (!existing.serverConfirmed &&
                 !receipt.serverConfirmed &&
                 existing.token != receipt.token) ||
