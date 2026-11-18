@@ -2,7 +2,7 @@
 
 현재 사용자 노출 브랜드는 **놀러온**이다. [브랜드·운영 구분](../branding.md)에서 주소와 호환 경계를 확인한다.
 
-상태: 승인된 제품 방향 + 구현 검증 진행 중. 이 문서는 기존 일회성 방 규칙을 과거 데이터에 소급 적용하지 않는다. 상위 [#117](https://github.com/kukjun/trip-court/issues/117), [정책 검토](travel-policy-review.md).
+상태: 승인된 제품 방향 + 구현 검증 진행 중. 이 문서는 기존 일회성 방 규칙을 과거 데이터에 소급 적용하지 않는다. 상위 [#117](https://github.com/kukjun/nolleoon/issues/117), [정책 검토](travel-policy-review.md).
 
 ## 확정한 규칙
 
@@ -25,13 +25,13 @@ Account → TravelMembership → GameParticipant를 구분한다. 현재 멤버 
 
 ## 미정·출시 차단 경계
 
-[#119](https://github.com/kukjun/trip-court/issues/119): 마지막 관리자, 추방/재가입, 활성 판 중 명시적 탈퇴/삭제/여행종료, 진행자 적격자 0명, 공동 기록 삭제 범위. 예외를 안전하게 거부하는 구현은 정책 완료와 다르다.
+[#119](https://github.com/kukjun/nolleoon/issues/119): 마지막 관리자, 추방/재가입, 활성 판 중 명시적 탈퇴/삭제/여행종료, 진행자 적격자 0명, 공동 기록 삭제 범위. 예외를 안전하게 거부하는 구현은 정책 완료와 다르다.
 
-[#33](https://github.com/kukjun/trip-court/issues/33): 중단 재판의 이미 공개된 라운드 처리. 상세 공개를 넓히지 않는다.
+[#33](https://github.com/kukjun/nolleoon/issues/33): 중단 재판의 이미 공개된 라운드 처리. 상세 공개를 넓히지 않는다.
 
-[#135](https://github.com/kukjun/trip-court/issues/135): 메뉴 세부 규칙. 위임으로 채택하는 구현 기본값은 이전 확정 사실과 구분해 기록한다.
+[#135](https://github.com/kukjun/nolleoon/issues/135): 메뉴 세부 규칙. 위임으로 채택하는 구현 기본값은 이전 확정 사실과 구분해 기록한다.
 
-[#116](https://github.com/kukjun/trip-court/issues/116): 보관기간·전체 DB/WAL·백업·프로세스 예산. 임의 자동삭제·영구보관 보장 금지.
+[#116](https://github.com/kukjun/nolleoon/issues/116): 보관기간·전체 DB/WAL·백업·프로세스 예산. 임의 자동삭제·영구보관 보장 금지.
 
 ## 요구사항 → 구현/검증 추적
 

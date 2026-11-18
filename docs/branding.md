@@ -13,9 +13,9 @@
 | 현재 화면·README·가이드 이름 | 놀러온 사용 |
 | 공개 서비스 origin | `https://nolleoon.kukjun.com` |
 | 카카오 앱 표시명·동의 화면 | 외부 확인 미실행. [체크리스트](travel/kakao-auth.md) |
-| 저장소와 Mac 프로젝트 폴더 | `nolleoon`으로 변경 예정. 담당자의 실제 변경 확인 전 URL/명령 경로를 일괄 치환하지 않음 |
-| `@trip-court/*`, HTTP 헤더, 쿠키 이름, localStorage 키 | 호환 식별자. 브랜드 변경만으로 변경하지 않음 |
-| DB·백업 파일, launchd 서비스명, release·로그 경로 | 실제 동작 경로. 자동 변경/새 DB 생성 금지, 별도 검증 필요 |
+| 저장소와 Mac 프로젝트 폴더 | [kukjun/nolleoon](https://github.com/kukjun/nolleoon)으로 변경 완료. 동일 repository ID와 기존 이슈/PR 보존을 담당자가 확인. Mac main은 `nolleoon`, 통합 폴더는 `nolleoon-travel-integration`; 기존 경로는 호환 alias 유지, 개별 worktree 이름은 일괄 변경하지 않음 |
+| `@trip-court/*`, HTTP 헤더, 쿠키 이름, localStorage 키 | 기존 호환 식별자 유지. 패키지 해석·요청 검증·기존 신원/브라우저 기록을 깨뜨리지 않도록 별도 마이그레이션 없이 바꾸지 않음 |
+| DB·백업 파일, launchd 서비스명, release·로그 경로 | 기존 운영 경로 유지. 소스 폴더 rename이 실행 중 release 전환이나 DB 이동은 아니며, 파일 유실·빈 DB 생성·서비스 중단을 피하려 별도 승인·검증 없이 바꾸지 않음 |
 | 과거 ADR·작업 증거·이슈/commit URL·스크린샷 | 당시 이름과 주소 유지. 현재 이름으로 소급 수정하지 않음 |
 | localhost와 `*.example.com` | 개발/검토 예시. 현재 공개 서비스 주소로 치환하지 않음 |
 
@@ -27,4 +27,4 @@
 
 ## 문서 검증 범위
 
-`node --test tests/workspace/brand-docs.test.mjs`는 현재 이름·주소·운영/개발 구분과 상대 파일 링크를 확인한다. 외부 GitHub 링크 접속, DNS, 실제 Kakao 동의 화면, 배포 성공을 검증하는 시험은 아니다. 역사 링크는 원문을 보존하며 저장소 이름 변경 후 별도로 확인한다.
+`node --test tests/workspace/brand-docs.test.mjs`는 현재 이름·주소·운영/개발 구분과 상대 파일 링크를 확인한다. 외부 GitHub 링크 접속, DNS, 실제 Kakao 동의 화면, 배포 성공을 검증하는 시험은 아니다. 현재 안내 링크는 새 저장소 주소를 사용한다. 역사 링크는 원문을 보존한다. rename 담당자의 repository ID·이슈/PR 보존 확인과 개별 과거 URL 전수 접속 검증은 구분한다.

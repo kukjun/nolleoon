@@ -16,7 +16,7 @@ React/TypeScript + NestJS 내부 Web BFF + SQLite, 로컬 서버 + Cloudflare Tu
 - [최신 제품 규칙](docs/design/00-current-rules.md)
 - [MVP 범위·완료 기준](docs/mvp/scope-and-done.md)
 - [실행 이슈 매핑](docs/mvp/github-issues.md)
-- [GitHub 진행 상태](https://github.com/kukjun/trip-court/issues)
+- [GitHub 진행 상태](https://github.com/kukjun/nolleoon/issues)
 
 ## 방향
 
