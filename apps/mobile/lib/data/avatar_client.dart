@@ -147,16 +147,23 @@ class AvatarClient {
         !{'image/png', 'image/jpeg', 'image/webp'}.contains(mime)) {
       throw ArgumentError('Invalid photo');
     }
-    return _dto(
-      await _request(
-        '/api/native/account/avatar/image',
-        'PUT',
-        body: bytes,
-        mime: mime,
-        revision: revision,
-        cancel: cancel,
-      ),
-    );
+    // Snapshot before credential acquisition yields; UI may clear its preview
+    // on navigation/logout while this request is awaiting secure storage.
+    final owned = Uint8List.fromList(bytes);
+    try {
+      return _dto(
+        await _request(
+          '/api/native/account/avatar/image',
+          'PUT',
+          body: owned,
+          mime: mime,
+          revision: revision,
+          cancel: cancel,
+        ),
+      );
+    } finally {
+      owned.fillRange(0, owned.length, 0);
+    }
   }
 
   Future<Uint8List> image(String path, {CancellationToken? cancel}) async {

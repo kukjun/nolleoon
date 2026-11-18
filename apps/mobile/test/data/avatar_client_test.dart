@@ -214,4 +214,16 @@ void main() {
       );
     },
   );
+  test('upload freezes caller bytes before credential await', () async {
+    final credentials = Completer<String?>();
+    c = AvatarClient(transport: t, accessToken: () => credentials.future);
+    t.handler = (r, c) async => jsonResponse(preset);
+    final bytes = Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 1]);
+    final expected = Uint8List.fromList(bytes);
+    final pending = c.upload(bytes, 'image/png', 0);
+    bytes.fillRange(0, bytes.length, 0);
+    credentials.complete('a' * 43);
+    await pending;
+    expect(t.requests.single.body, expected);
+  });
 }
