@@ -10,3 +10,5 @@ process-global serial executor, 매 호출 다른 비식별 marker, fixed prefs4
 
 ## 실행과 증거
 source 누락 RED 확인 → Node source-contract 4 PASS. native compiler/실기기/강제 종료/backup restore 미실행이며 출시 완료가 아니다. 설치·라이선스·global 설정·운영 변경 없음. 상세 근거/제약은 ../mobile/android-storage-barrier.md.
+
+독립 소스 리뷰 정정: payload 열거/복호화에서 marker가 제외되는 것과 keyStorage migration backup은 다르다. keyStorage의 모든 String을 복사하는 경로에는 marker도 포함됨을 상세 문서에 명시했다. 런타임 코드는 변경하지 않았다.

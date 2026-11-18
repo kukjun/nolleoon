@@ -19,7 +19,7 @@
 
 ## 추천 최소 보완
 - 앱 전용 no-arg MethodChannel, background single executor. 사용자가 넘긴 파일명/키/값을 받아 임의 prefs에 쓰는 API 금지.
-- 위 fixed prefs의 각 editor에 앱 reserved 비식별 barrier marker를 매번 다른 값으로 putString하고 commit true를 요구한다. marker는 plugin credential key-prefix를 포함하지 않게 하여 readAll/migration의 credential 열거와 섞이지 않게 한다. empty commit만 하는 설계는 사용하지 않는다.
+- 위 fixed prefs의 각 editor에 앱 reserved 비식별 barrier marker를 매번 다른 값으로 putString하고 commit true를 요구한다. marker는 plugin credential key-prefix를 포함하지 않게 하여 payload readAll 및 데이터 migration의 credential 열거와 섞이지 않게 한다. 이는 모든 migration 경로에서 제외된다는 뜻은 아니다. empty commit만 하는 설계는 사용하지 않는다.
 - 새 암호화 없음. secret plaintext/ciphertext/token을 custom channel로 읽거나 전달하지 않는다. 키/config 먼저, data 마지막 순서. 네 prefs 전체 atomic transaction은 아니므로 실패하면 성공 주장하지 않는다.
 - Dart secure receipt write/delete 후 barrier await → 기존 readback 검증, 이 구간을 현재 store static serialization 안에 둔다. 누락/false/throw/timeout은 POST 전 중단 또는 ACK 이후 cleanup-only 미완료로 남긴다.
 - 로그인 session clear 역시 barrier를 적용해야 cleanup 완료가 삭제된 세션 disk 복구 가능성을 남기지 않는다. 새로그인/session 쓰기와 receipt 쓰기는 앱 수준 조율이 필요하다.
@@ -35,7 +35,7 @@ AndroidOptions.dart 기본 resetOnError=true인 반면 앱은 명시 override하
 
 ## 이번 구현 (#210, native source만)
 
-`SecureStorageBarrier.kt`는 위 fixed prefs 4곳을 process-global single executor로 순회한다. marker는 plugin의 Base64 credential prefix와 겹치지 않는 `__nolleoon_storage_barrier_v1__`이며 값은 process UUID + 단조 증가 sequence이다. Long overflow는 실패하고, prefs마다 commit false/예외는 generic error로만 반환한다. 앱의 plaintext/session/receipt 값은 읽거나 채널로 받지 않는다. plugin 11.2.0의 readAll/deleteAll 및 데이터 migration은 credential prefix를 가진 key만 다루므로 이 marker를 암호문으로 복호화하지 않는다. Marker는 기존 backup exclusion에 포함되는 비식별 보조 메타데이터다.
+`SecureStorageBarrier.kt`는 위 fixed prefs 4곳을 process-global single executor로 순회한다. marker는 plugin의 Base64 credential prefix와 겹치지 않는 `__nolleoon_storage_barrier_v1__`이며 값은 process UUID + 단조 증가 sequence이다. Long overflow는 실패하고, prefs마다 commit false/예외는 generic error로만 반환한다. 앱의 plaintext/session/receipt 값은 읽거나 채널로 받지 않는다. plugin 11.2.0의 readAll/deleteAll 및 데이터 migration은 credential prefix를 가진 key만 다루므로 이 marker를 암호문으로 복호화하지 않는다. 다만 MigrationBackup.java:130–137의 wrapped-key 백업은 keyStorage의 모든 String 항목을 _BACKUP으로 복사하므로 keyStorage의 marker도 백업·복원 대상이다. 이를 자격증명이나 복호화 대상 키로 해석하지 않으며 다음 barrier는 새 marker를 기록한다. 따라서 모든 migration에서 marker가 제외된다고 주장하지 않는다. Marker와 그 백업은 기존 sharedpref backup exclusion에 포함되는 비식별 보조 메타데이터다.
 
 채널 `nolleoon/native_secure_storage_barrier`, method `flush`, arguments=null, 성공=true. MainActivity가 엔진 설정에서 등록하고 정리 때 handler를 해제한다. 이미 실행 중인 commit을 activity detach/timeout으로 취소했다고 주장하지 않는다. 후속 요청은 동일 executor에 직렬화된다. UUID는 marker 충돌 회피용이며 새로운 자격증명/암호화 방식이 아니다.
 
