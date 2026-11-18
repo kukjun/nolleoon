@@ -1,0 +1,934 @@
+{
+  "formatVersion": 1,
+  "sourceCommit": "f955209",
+  "synthetic": true,
+  "nativeAuthentication": {
+    "status": "not-implemented",
+    "issue": 162
+  },
+  "transport": {
+    "mode": "existing-browser-cookie",
+    "mutatingJsonHeaders": {
+      "Content-Type": "application/json",
+      "X-Trip-Court-Request": "1"
+    },
+    "originRequirement": "exact configured PUBLIC_ORIGIN; optional Sec-Fetch-Site must be same-origin",
+    "responseCache": "no-store",
+    "timeUnit": "integer UTC epoch milliseconds"
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/account/session",
+      "versionScope": "none",
+      "response": "session"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/login",
+      "versionScope": "none",
+      "response": "authorizationUrl"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/logout",
+      "versionScope": "none",
+      "response": "session"
+    },
+    {
+      "method": "POST",
+      "path": "/api/account/profile",
+      "versionScope": "account.revision",
+      "response": "session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/travel-rooms",
+      "versionScope": "none",
+      "response": "room-list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms",
+      "versionScope": "none",
+      "response": "room"
+    },
+    {
+      "method": "GET",
+      "path": "/api/travel-rooms/:roomId",
+      "versionScope": "none",
+      "response": "room"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/travel-rooms/:roomId",
+      "versionScope": "room.version",
+      "response": "room"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/status",
+      "versionScope": "room.version",
+      "response": "room"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/invite",
+      "versionScope": "room.version",
+      "response": "invite-issued",
+      "retryPolicy": "duplicate-conflict-no-token-replay"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/invite/revoke",
+      "versionScope": "room.version",
+      "response": "room"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/administrator",
+      "versionScope": "room.version",
+      "response": "room"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/leave",
+      "versionScope": "room.version",
+      "response": "left"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/members/:membershipId/remove",
+      "versionScope": "room.version",
+      "response": "room"
+    },
+    {
+      "method": "GET",
+      "path": "/api/travel-invites/:token/preview",
+      "versionScope": "none",
+      "response": "invite-preview"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-invites/:token/join",
+      "versionScope": "none",
+      "response": "room"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/runs",
+      "versionScope": "room.version",
+      "response": "run"
+    },
+    {
+      "method": "GET",
+      "path": "/api/travel-rooms/:roomId/runs/:runId",
+      "versionScope": "none",
+      "response": "run"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/travel-rooms/:roomId/runs/:runId",
+      "versionScope": "run.version",
+      "response": "run"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/runs/:runId/start",
+      "versionScope": "run.version",
+      "response": "run"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/runs/:runId/cancel",
+      "versionScope": "run.version",
+      "response": "run"
+    },
+    {
+      "method": "POST",
+      "path": "/api/travel-rooms/:roomId/runs/:runId/actions",
+      "versionScope": "run.version",
+      "response": "run"
+    },
+    {
+      "method": "GET",
+      "path": "/api/travel-rooms/:roomId/history",
+      "versionScope": "none",
+      "response": "run-list"
+    }
+  ],
+  "commands": {
+    "requestId": "synthetic-request-1",
+    "createRoom": {
+      "requestId": "synthetic-create-1",
+      "title": "합성 여행방",
+      "startDate": null,
+      "endDate": null
+    },
+    "createRun": {
+      "requestId": "synthetic-run-1",
+      "expectedVersion": 0,
+      "type": "team",
+      "selectedMembershipIds": [
+        "member-a",
+        "member-b",
+        "member-c"
+      ],
+      "settings": {
+        "teamCount": 2
+      }
+    },
+    "startOrCancel": {
+      "requestId": "synthetic-start-1",
+      "expectedVersion": 0
+    },
+    "join": {
+      "requestId": "synthetic-join-1"
+    },
+    "gameSettings": {
+      "team": {
+        "teamCount": 2
+      },
+      "draw": {
+        "winnerCount": 1,
+        "penaltyText": "합성 간식 벌칙"
+      },
+      "menu": {},
+      "trial": {
+        "caseText": "합성 사건",
+        "penaltyText": "합성 벌칙",
+        "durationMinutes": 3,
+        "defendantMembershipId": "member-c"
+      }
+    },
+    "actions": {
+      "draw": [
+        {
+          "kind": "reveal"
+        }
+      ],
+      "menu": [
+        {
+          "type": "submit",
+          "menu": "합성 메뉴"
+        },
+        {
+          "type": "pass"
+        },
+        {
+          "type": "cancel"
+        }
+      ],
+      "trial": [
+        {
+          "action": "consent",
+          "decision": "accepted"
+        },
+        {
+          "action": "consent",
+          "decision": "rejected"
+        },
+        {
+          "action": "defense",
+          "decision": "submit",
+          "text": "합성 변론"
+        },
+        {
+          "action": "defense",
+          "decision": "skip",
+          "text": ""
+        },
+        {
+          "action": "duration",
+          "durationMinutes": 3
+        },
+        {
+          "action": "begin-vote"
+        },
+        {
+          "action": "final-defense"
+        },
+        {
+          "action": "vote",
+          "choice": "guilty",
+          "reason": "합성 이유"
+        },
+        {
+          "action": "vote",
+          "choice": "not-guilty",
+          "reason": "합성 이유"
+        },
+        {
+          "action": "vote",
+          "choice": "abstain",
+          "reason": ""
+        }
+      ]
+    }
+  },
+  "responses": {
+    "signedOut": {
+      "authenticated": false
+    },
+    "signedIn": {
+      "authenticated": true,
+      "account": {
+        "id": "account-example",
+        "displayName": "합성 참가자 1",
+        "presetId": "preset-01",
+        "revision": 0,
+        "avatar": {
+          "kind": "preset",
+          "presetId": "preset-01",
+          "revision": 0,
+          "imageUrl": null
+        }
+      }
+    },
+    "room": {
+      "roomId": "room-example",
+      "title": "합성 여행방",
+      "startDate": null,
+      "endDate": null,
+      "status": "open",
+      "version": 0,
+      "self": {
+        "membershipId": "member-a",
+        "isAdmin": true
+      },
+      "members": [
+        {
+          "membershipId": "member-a",
+          "nickname": "합성 참가자 1",
+          "presetId": "preset-01",
+          "connected": true,
+          "isAdmin": true
+        },
+        {
+          "membershipId": "member-b",
+          "nickname": "합성 참가자 2",
+          "presetId": "preset-01",
+          "connected": true,
+          "isAdmin": false
+        },
+        {
+          "membershipId": "member-c",
+          "nickname": "합성 참가자 3",
+          "presetId": "preset-01",
+          "connected": true,
+          "isAdmin": false
+        }
+      ],
+      "activeRun": null
+    },
+    "roomList": {
+      "items": [
+        {
+          "roomId": "room-example",
+          "title": "합성 여행방",
+          "startDate": null,
+          "endDate": null,
+          "status": "open",
+          "version": 0,
+          "isAdmin": true,
+          "memberCount": 3
+        }
+      ],
+      "nextCursor": null
+    },
+    "invitePreview": {
+      "available": true,
+      "loginRequired": true
+    },
+    "runs": [
+      {
+        "name": "team-draft",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "team",
+          "status": "draft",
+          "game": {
+            "kind": "team",
+            "teamCount": 2,
+            "assignments": []
+          }
+        }
+      },
+      {
+        "name": "team-started",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 1,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": 1800000000000,
+          "isParticipant": true,
+          "type": "team",
+          "status": "completed",
+          "game": {
+            "kind": "team",
+            "teamCount": 2,
+            "assignments": [
+              {
+                "membershipId": "member-b",
+                "team": 1
+              },
+              {
+                "membershipId": "member-c",
+                "team": 2
+              },
+              {
+                "membershipId": "member-a",
+                "team": 1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "name": "draw-draft",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "draw",
+          "status": "draft",
+          "game": {
+            "kind": "draw",
+            "winnerCount": 1,
+            "penaltyText": "합성 간식 벌칙",
+            "revealed": [],
+            "self": {
+              "participating": true,
+              "revealed": false,
+              "canReveal": false
+            },
+            "blockedPolicy": null
+          }
+        }
+      },
+      {
+        "name": "draw-started",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 1,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "draw",
+          "status": "active",
+          "game": {
+            "kind": "draw",
+            "winnerCount": 1,
+            "penaltyText": "합성 간식 벌칙",
+            "revealed": [],
+            "self": {
+              "participating": true,
+              "revealed": false,
+              "canReveal": true
+            },
+            "blockedPolicy": null
+          }
+        }
+      },
+      {
+        "name": "menu-draft",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "menu",
+          "status": "draft",
+          "game": {
+            "kind": "menu",
+            "phase": "draft",
+            "self": {
+              "eligible": true,
+              "submission": null
+            },
+            "result": null
+          }
+        }
+      },
+      {
+        "name": "menu-started",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 1,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "menu",
+          "status": "active",
+          "game": {
+            "kind": "menu",
+            "phase": "collecting",
+            "self": {
+              "eligible": true,
+              "submission": null
+            },
+            "result": null
+          }
+        }
+      },
+      {
+        "name": "trial-draft",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "draft",
+          "game": {
+            "kind": "trial",
+            "restricted": false,
+            "phase": "preparing",
+            "caseText": "합성 사건",
+            "penaltyText": "합성 벌칙",
+            "durationSeconds": 180,
+            "defendantMembershipId": "member-c",
+            "consent": "pending",
+            "roundNumber": 1,
+            "deadline": null,
+            "submittedCount": 0,
+            "self": {
+              "voted": false,
+              "vote": null,
+              "isDefendant": false
+            },
+            "defenses": [],
+            "rounds": [],
+            "outcome": null
+          }
+        }
+      },
+      {
+        "name": "trial-restricted",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": false,
+          "type": "trial",
+          "status": "draft",
+          "game": {
+            "kind": "trial",
+            "restricted": true,
+            "phase": "preparing"
+          }
+        }
+      },
+      {
+        "name": "trial-cancelled",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 1,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": 1800000000000,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "incomplete",
+          "game": {
+            "kind": "trial",
+            "restricted": true,
+            "phase": "interrupted"
+          }
+        }
+      },
+      {
+        "name": "trial-hidden",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 0,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": null,
+          "endedAt": null,
+          "isParticipant": false,
+          "type": "trial",
+          "status": "draft",
+          "game": null
+        }
+      },
+      {
+        "name": "trial-redacted",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 3,
+          "facilitatorMembershipId": null,
+          "selectedMembershipIds": [],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": 1800000000000,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "incomplete",
+          "game": {
+            "kind": "trial",
+            "redacted": true,
+            "summary": {
+              "participantCount": 3,
+              "rounds": []
+            }
+          }
+        }
+      },
+      {
+        "name": "trial-voting-before",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 3,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "active",
+          "game": {
+            "kind": "trial",
+            "restricted": false,
+            "phase": "voting",
+            "caseText": "합성 사건",
+            "penaltyText": "합성 벌칙",
+            "durationSeconds": 180,
+            "defendantMembershipId": "member-c",
+            "consent": "accepted",
+            "roundNumber": 1,
+            "deadline": 1800000180000,
+            "submittedCount": 0,
+            "self": {
+              "voted": false,
+              "vote": null,
+              "isDefendant": false
+            },
+            "defenses": [],
+            "rounds": [],
+            "outcome": null
+          }
+        }
+      },
+      {
+        "name": "trial-voting-own-receipt",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 3,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "active",
+          "game": {
+            "kind": "trial",
+            "restricted": false,
+            "phase": "voting",
+            "caseText": "합성 사건",
+            "penaltyText": "합성 벌칙",
+            "durationSeconds": 180,
+            "defendantMembershipId": "member-c",
+            "consent": "accepted",
+            "roundNumber": 1,
+            "deadline": 1800000180000,
+            "submittedCount": 1,
+            "self": {
+              "voted": true,
+              "vote": {
+                "choice": "guilty",
+                "reason": "합성 비공개 사유"
+              },
+              "isDefendant": false
+            },
+            "defenses": [],
+            "rounds": [],
+            "outcome": null
+          }
+        }
+      },
+      {
+        "name": "trial-voting-other-private",
+        "value": {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 3,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": null,
+          "isParticipant": true,
+          "type": "trial",
+          "status": "active",
+          "game": {
+            "kind": "trial",
+            "restricted": false,
+            "phase": "voting",
+            "caseText": "합성 사건",
+            "penaltyText": "합성 벌칙",
+            "durationSeconds": 180,
+            "defendantMembershipId": "member-c",
+            "consent": "accepted",
+            "roundNumber": 1,
+            "deadline": 1800000180000,
+            "submittedCount": 1,
+            "self": {
+              "voted": false,
+              "vote": null,
+              "isDefendant": false
+            },
+            "defenses": [],
+            "rounds": [],
+            "outcome": null
+          }
+        }
+      }
+    ],
+    "history": {
+      "items": [
+        {
+          "runId": "run-example",
+          "roomId": "room-example",
+          "version": 1,
+          "facilitatorMembershipId": "member-a",
+          "selectedMembershipIds": [
+            "member-a",
+            "member-b",
+            "member-c"
+          ],
+          "createdAt": 1800000000000,
+          "startedAt": 1800000000000,
+          "endedAt": 1800000000000,
+          "isParticipant": true,
+          "type": "team",
+          "status": "completed",
+          "game": {
+            "kind": "team",
+            "teamCount": 2,
+            "assignments": [
+              {
+                "membershipId": "member-b",
+                "team": 1
+              },
+              {
+                "membershipId": "member-c",
+                "team": 2
+              },
+              {
+                "membershipId": "member-a",
+                "team": 1
+              }
+            ]
+          }
+        }
+      ],
+      "nextCursor": null
+    }
+  },
+  "errors": [
+    {
+      "httpStatus": 429,
+      "body": {
+        "error": {
+          "code": "RATE_LIMITED",
+          "message": "요청이 많아요. 잠시 기다렸다가 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "httpStatus": 413,
+      "body": {
+        "error": {
+          "code": "PAYLOAD_TOO_LARGE",
+          "message": "입력 데이터가 너무 커요. 내용을 줄여 주세요."
+        }
+      }
+    },
+    {
+      "httpStatus": 410,
+      "body": {
+        "error": {
+          "code": "ROOM_CLOSED",
+          "message": "이미 닫힌 방이에요. 새로 참여하거나 게임을 진행할 수 없어요."
+        }
+      }
+    },
+    {
+      "httpStatus": 401,
+      "body": {
+        "error": {
+          "code": "SESSION_REQUIRED",
+          "message": "브라우저 신원을 확인할 수 없습니다."
+        }
+      }
+    },
+    {
+      "httpStatus": 403,
+      "body": {
+        "error": {
+          "code": "FORBIDDEN",
+          "message": "이 요청을 수행할 권한이 없습니다."
+        }
+      }
+    },
+    {
+      "httpStatus": 400,
+      "body": {
+        "error": {
+          "code": "INVALID_INPUT",
+          "message": "입력 내용을 확인해 주세요."
+        }
+      }
+    },
+    {
+      "httpStatus": 404,
+      "body": {
+        "error": {
+          "code": "NOT_FOUND",
+          "message": "요청한 항목을 찾을 수 없습니다."
+        }
+      }
+    },
+    {
+      "httpStatus": 409,
+      "body": {
+        "error": {
+          "code": "STATE_CONFLICT",
+          "message": "상태가 변경됐어요. 최신 내용을 확인해 주세요."
+        }
+      }
+    },
+    {
+      "httpStatus": 409,
+      "body": {
+        "error": {
+          "code": "DEADLINE_PASSED",
+          "message": "제출 시간이 지났습니다."
+        }
+      }
+    },
+    {
+      "httpStatus": 503,
+      "body": {
+        "error": {
+          "code": "TEMPORARILY_UNAVAILABLE",
+          "message": "잠시 후 상태를 확인하고 다시 시도해 주세요."
+        }
+      }
+    },
+    {
+      "httpStatus": 500,
+      "body": {
+        "error": {
+          "code": "INTERNAL_ERROR",
+          "message": "요청을 처리하지 못했습니다."
+        }
+      }
+    }
+  ]
+}

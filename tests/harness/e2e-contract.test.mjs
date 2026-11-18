@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import config from '../../playwright.config.mjs';
+import {LEGACY_BROWSER_CHECKS} from '../../tools/harness/legacy-browser.mjs';
 const read = file => readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
 const source = read('tools/harness/check.mjs');
 const checks = source.split('const checks=[')[1].split('];')[0];
@@ -18,9 +19,8 @@ test('gameplay E2E는 실제 별도 집계 gate이며 미구성 목록이 아니
  assert.doesNotMatch(planned, /gameplay-e2e/);
 });
 test('기능 회귀와 E2E CLI 선택은 배타적이며 기존 기능 예산을 유지한다', () => {
- const features = checks.split('\n').find(line => line.includes("id:'browser-launch'"));
- assert.match(features, /'--grep-invert','@e2e\|@mobile'/);
- assert.match(features, /timeoutMs:360000/);
+ assert.match(checks,/\.\.\.LEGACY_BROWSER_CHECKS/);
+ for(const features of LEGACY_BROWSER_CHECKS){assert.equal(features.args[2],'--grep-invert');assert.equal(features.args[3],'@e2e|@mobile');assert.equal(features.timeoutMs,360000);}
  assert.equal(scripts['test:browser'], 'playwright test --reporter=json --grep-invert "@e2e|@mobile"');
  assert.equal(scripts['test:e2e'], 'playwright test --reporter=json --grep @e2e');
  assert.equal(scripts['test:mobile'], 'playwright test --reporter=json --grep @mobile');
