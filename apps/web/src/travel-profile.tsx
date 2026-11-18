@@ -1,3 +1,4 @@
+import {AccountDeletion} from './travel-deletion';
 import {useEffect,useRef,useState} from 'react';
 import {Button,Input} from './design/components';
 import {AvatarPicker} from './avatar-picker';
@@ -14,5 +15,5 @@ export function TravelProfile({account,onSaved,onIdentityLost}:{account:TravelAc
   const r=await saveAccountProfile({expectedRevision:current.data.account.revision,displayName:name.trim(),presetId:current.data.account.presetId},c.signal);if(ticket!==generation.current)return;
   if(r.ok){onSaved(r.data.account);setOpen(false);}else if(['SESSION_REQUIRED','ACCOUNT_REQUIRED'].includes(r.code))onIdentityLost();else setError(r.message);
  }finally{clearTimeout(timer);if(ticket===generation.current)setBusy(false);}}
- return <section className="travel-card"><div className="travel-profile-summary"><strong>{account.displayName}</strong><Button variant="quiet" disabled={busy} onPress={()=>{setOpen(!open);setName(account.displayName);setError('');}}>프로필 {open?'접기':'수정'}</Button></div>{open&&<><Input label="여행방에서 사용할 이름" value={name} maxLength={20} onChange={e=>setName(e.target.value)}/>{error&&<p role="alert">{error}</p>}<Button loading={busy} disabled={!name.trim()} onPress={save}>이름 저장</Button><AvatarPicker apiBase="/api/account/avatar" onIdentityLost={onIdentityLost}/><p className="travel-muted">카카오 사진과 이전 브라우저 사진은 자동으로 가져오지 않아요. 내 사진을 직접 선택하면 계정에 저장해요.</p></>}</section>;
+ return <section className="travel-card"><div className="travel-profile-summary"><strong>{account.displayName}</strong><Button variant="quiet" disabled={busy} onPress={()=>{setOpen(!open);setName(account.displayName);setError('');}}>프로필 {open?'접기':'수정'}</Button></div>{open&&<><Input label="여행방에서 사용할 이름" value={name} maxLength={20} onChange={e=>setName(e.target.value)}/>{error&&<p role="alert">{error}</p>}<Button loading={busy} disabled={!name.trim()} onPress={save}>이름 저장</Button><AvatarPicker apiBase="/api/account/avatar" onIdentityLost={onIdentityLost}/><p className="travel-muted">카카오 사진과 이전 브라우저 사진은 자동으로 가져오지 않아요. 내 사진을 직접 선택하면 계정에 저장해요.</p><AccountDeletion onDeleted={onIdentityLost} onIdentityLost={onIdentityLost}/></>}</section>;
 }
