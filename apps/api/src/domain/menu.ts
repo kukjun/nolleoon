@@ -76,7 +76,7 @@ export function submitMenu(state: MenuState, actorId: string, command: unknown, 
 }
 
 export function cancelMenu(state: MenuState, actorId: string, facilitatorId: string | null): MenuState {
-  if (!facilitatorId || actorId !== facilitatorId || !state.participantIds.includes(actorId)) throw new DomainFailure('FORBIDDEN');
+  if (!facilitatorId || actorId !== facilitatorId) throw new DomainFailure('FORBIDDEN');
   if (state.phase === 'completed') throw new DomainFailure('STATE_CONFLICT');
   if (state.phase === 'incomplete') return state;
   return { ...state, phase: 'incomplete', result: null };

@@ -55,6 +55,11 @@ export class TravelMenuEngine implements TravelGameEngine {
     if (context.status === 'draft') {
       return { kind: 'menu', phase: 'draft', self: { eligible: context.participantIds.includes(context.actorMembershipId), submission: null }, result: null };
     }
+    // The common draft-cancel command preserves the original draft state; no ballots ever existed.
+    if (context.status === 'incomplete' && state && typeof state === 'object'
+      && !Array.isArray(state) && (state as { phase?: unknown }).phase === 'draft') {
+      return { kind: 'menu', phase: 'incomplete', self: { eligible: false, submission: null }, result: null };
+    }
     return projectMenu(storedState(state), context.actorMembershipId);
   }
 }

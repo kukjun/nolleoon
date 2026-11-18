@@ -20,3 +20,6 @@ projection은 `{kind:'menu',phase,self:{eligible,submission},result}`. phase는 
 
 ## 검증 범위
 순수 도메인 9개 + 어댑터 4개 시험: 초기 RED는 구현 모듈 부재로 각각 test file 1 fail. GREEN 13개. Unicode/빈값/악성문자/추가필드/대상위조/수정거부/난수경계/멱등/직렬화 재로딩/취소 및 공개 allowlist 검증. 실제 HTTP·SQLite 원자성/동시 제출·브라우저 UI는 공통 backend 통합 후 별도로 검증해야 한다. 이 문서는 해당 통합 테스트 통과나 전체 제품 완료를 주장하지 않는다.
+
+### 독립 리뷰 후 취소 경계 보완
+비참가 진행자도 취소 권한을 갖지만 후보 제출권은 없다. 공통 draft 취소는 원래 `{phase:'draft'}` state를 보존하므로 incomplete projection은 후보를 파싱하지 않고 최소 종료 응답을 반환한다. 새 회귀 RED는 unit 2개(FORBIDDEN/STATE_CONFLICT), 실제 HTTP 2개(취소403/409)로 재현했다. HTTP의 최초503은 구형 fixture가 team/draw만 주입한 구성 문제였으며 현재 공통 fixture로 교체한 후 실제 두 실패를 확인했다. 수정 후 메뉴 unit15/API2 및 기존 travel-run DB8, 총25 PASS. 실제 API는 취소 후 새 판 생성, 재시작·영수증 재시도·이력 비공개까지 검증한다. 전체 브라우저/전체 하네스는 별도다.

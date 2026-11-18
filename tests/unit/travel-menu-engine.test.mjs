@@ -36,3 +36,15 @@ test('새 진행자 위임은 후보/명단 보존·자기취소 권한은 현�
  assert.deepEqual(cancelled.state.participantIds, ['a', 'b']);
  assert.equal(JSON.stringify(engine.project({}, cancelled.state, null, context({ status: 'incomplete' }))).includes('비밀'), false);
 });
+test('비참가 진행자는 취소만 가능하며 제출권을 얻지 않는다', () => {
+ const ctx = context({ actorMembershipId: 'fac', creatorMembershipId: 'fac', facilitatorMembershipId: 'fac' });
+ const run = engine.start({}, engine.prepare({}, ctx).state, ctx);
+ assert.throws(() => engine.action({}, run.state, { type: 'pass' }, { ...ctx, status: 'active' }), fail('FORBIDDEN'));
+ assert.equal(engine.action({}, run.state, { type: 'cancel' }, { ...ctx, status: 'active' }).status, 'incomplete');
+});
+test('공통 draft 취소의 incomplete projection은 collecting state를 요구하거나 공개하지 않는다', () => {
+ const draft = engine.prepare({}, context()).state;
+ assert.deepEqual(engine.project({}, draft, null, context({ status: 'incomplete' })), {
+  kind: 'menu', phase: 'incomplete', self: { eligible: false, submission: null }, result: null,
+ });
+});
