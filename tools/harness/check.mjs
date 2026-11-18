@@ -38,7 +38,7 @@ for(const check of checks) {
  } catch(error) { results.push({id:check.id,status:'blocked',reason:error.message,testCount:null}); }
 }
 const planned=[
- {id:'mobile-device',status:'blocked',reason:'물리 iPhone은 offline/unavailable, Android 기기 접근 미확보. 에뮬레이션으로 대체 불가'},
+ {id:'mobile-device',status:'blocked',reason:'물리 iPhone/Android 검증 수단 미확보. 현재 개발자 기기 도구/연결 증거 없이 에뮬레이션으로 대체 불가'},
  {id:'external-deployment',status:'blocked',reason:'기존 서비스 배포와 운영 승인은 완료됐지만 새 여행방 릴리스의 외부 다인 인수는 미완료. 로컬 검사로 대체 불가'}
 ];
 const report={schemaVersion:2,startedAt,finishedAt:new Date().toISOString(),node:process.version,platform:process.platform,arch:process.arch,...source,
