@@ -1,24 +1,47 @@
 import 'dart:math';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
 import '../../data/api_client.dart';
+import 'deletion_receipt_store.dart';
+export 'deletion_receipt_store.dart';
 
 /// Fixed credential snapshot: a deleted session's receipt must NOT be retried
-/// with a newly signed-in account's token. No credential is persisted here.
+/// with a newly signed-in account's token. Production injects a secure receipt store.
 class AccountDeletionRepository {
   AccountDeletionRepository({
     required this.accountScope,
     required String token,
     required this.transport,
     String Function()? requestId,
+    this.receiptStore,
+    this.expiresAt,
   }) : _token = token,
        requestId = requestId ?? _id {
+    if ((receiptStore == null) != (expiresAt == null)) {
+      throw ArgumentError('Receipt store requires original session expiry');
+    }
     if (accountScope.isEmpty ||
         !RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(token)) {
       throw ArgumentError('Verified native account required');
     }
   }
+  AccountDeletionRepository._restored(
+    DeletionReceipt receipt,
+    this.transport,
+    this.receiptStore,
+  ) : accountScope = receipt.accountScope,
+      expiresAt = receipt.expiresAt,
+      requestId = (() => receipt.requestId),
+      _token = receipt.token,
+      _receipt = receipt,
+      _serverConfirmed = receipt.serverConfirmed;
+  final DeletionReceiptStore? receiptStore;
+  final int? expiresAt;
+  DeletionReceipt? _receipt;
+  bool _serverConfirmed = false;
+  bool get serverConfirmed => _serverConfirmed;
   final String accountScope;
   final ApiTransport transport;
   final String Function() requestId;
@@ -36,6 +59,31 @@ class AccountDeletionRepository {
     body: {'requestId': requestId(), 'confirmation': '계정 탈퇴'},
   );
   Future<void> execute(MutationIntent intent, CancellationToken cancel) async {
+    if (_serverConfirmed) {
+      await persistConfirmation();
+      return;
+    }
+    final body = jsonDecode(intent.serializedBody);
+    if (intent.operation != ApiOperation.deleteAccount ||
+        body is! Map ||
+        body.length != 2 ||
+        body['confirmation'] != '계정 탈퇴' ||
+        body['requestId'] is! String) {
+      throw ArgumentError('Fixed deletion request required');
+    }
+    if (receiptStore != null) {
+      _receipt ??= DeletionReceipt.pending(
+        accountScope: accountScope,
+        requestId: body['requestId'] as String,
+        token: _token!,
+        expiresAt: expiresAt!,
+      );
+      if (_receipt!.requestId != body['requestId']) {
+        throw StateError('Deletion request changed');
+      }
+      await receiptStore!.write(_receipt!);
+      if (cancel.isCancelled) throw const ApiFailure(FailureKind.cancelled);
+    }
     final token = _token;
     if (token == null) throw const ApiFailure(FailureKind.unauthenticated);
     final client = ApiClient(
@@ -49,10 +97,25 @@ class AccountDeletionRepository {
       }
       return true;
     }, cancel: cancel);
+    _serverConfirmed = true;
+    forgetCredential();
+    _receipt = _receipt?.confirmed();
+    await persistConfirmation();
+  }
+
+  Future<void> persistConfirmation() async {
+    if (_serverConfirmed && receiptStore != null) {
+      await receiptStore!.write(_receipt!.confirmed());
+    }
+  }
+
+  Future<void> clearReceipt() async {
+    await receiptStore?.clear();
   }
 
   void forgetCredential() {
     _token = null;
+    _receipt = _serverConfirmed ? _receipt?.confirmed() : null;
   }
 
   @override
@@ -60,9 +123,26 @@ class AccountDeletionRepository {
 }
 
 /// Caller retains this in account-scoped memory across background/remount.
-/// Clear on explicit logout/account change. Never serialize it to disk.
+/// Clear on explicit logout/account change. Only the bounded receipt store may persist intent.
 class DeletionRecovery {
   DeletionRecovery(this._account);
+  factory DeletionRecovery.restore(
+    DeletionReceipt receipt, {
+    required ApiTransport transport,
+    required DeletionReceiptStore store,
+  }) {
+    receipt = DeletionReceipt.decode(receipt.encode(), now: DateTime.now());
+    final recovery = DeletionRecovery(receipt.accountScope);
+    final repo = AccountDeletionRepository._restored(receipt, transport, store);
+    recovery._repository = repo;
+    recovery._intent = repo.prepare();
+    recovery._deleted = receipt.serverConfirmed;
+    return recovery;
+  }
+  AccountDeletionRepository? get pendingRepository => _repository;
+  bool get hasPending => _intent != null;
+  bool get serverDeleted => _deleted;
+  bool get completed => _complete;
   String _account;
   int _epoch = 0;
   MutationIntent? _intent;
@@ -160,14 +240,25 @@ class AccountDeletionController extends ChangeNotifier {
     _notify();
     try {
       if (!deleted) {
-        await recovery._repository!.execute(recovery._intent!, cancel);
+        try {
+          await recovery._repository!.execute(recovery._intent!, cancel);
+        } finally {
+          if (_owned && recovery._repository?.serverConfirmed == true) {
+            recovery._deleted = true;
+            repository.forgetCredential();
+          }
+        }
         if (!_current(generation)) return;
         recovery._deleted = true;
         recovery._repository?.forgetCredential();
         repository.forgetCredential();
       }
       if (!_current(generation)) return;
+      await recovery._repository!.persistConfirmation();
+      if (!_current(generation)) return;
       await onDeleted(repository.accountScope);
+      if (!_current(generation)) return;
+      await recovery._repository!.clearReceipt();
       if (!_current(generation)) return;
       recovery._complete = true;
     } catch (e) {
