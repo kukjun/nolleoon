@@ -1,3 +1,5 @@
+import 'photo_selection_owner.dart';
+
 import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
@@ -33,13 +35,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? selection;
   Uint8List? photo;
   String? localError;
-  bool picking = false;
+  bool picking = false, _preparingRecovered = false;
   int _pickGeneration = 0;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _bind();
+    _listenPhoto();
   }
 
   void _bind() {
@@ -50,9 +53,93 @@ class _ProfileScreenState extends State<ProfileScreen>
     controller.load();
   }
 
+  PhotoSelectionOwner? _photoOwner;
+  void _listenPhoto() {
+    _photoOwner?.removeListener(_recoverPhoto);
+    _photoOwner = widget.photoSource is PhotoSelectionOwner
+        ? widget.photoSource as PhotoSelectionOwner
+        : null;
+    _photoOwner?.addListener(_recoverPhoto);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _recoverPhoto();
+    });
+  }
+
+  void _recoverPhoto() {
+    final owner = _photoOwner;
+    if (!mounted ||
+        owner == null ||
+        owner.accountScope != widget.accountScope ||
+        !controller.foreground ||
+        controller.account == null) {
+      return;
+    }
+    if (owner.pending) {
+      setState(() {
+        choosing = true;
+        picking = true;
+      });
+      return;
+    }
+    final input = owner.take(widget.accountScope);
+    if (input != null) {
+      setState(() {
+        choosing = true;
+        picking = true;
+        localError = null;
+      });
+      _acceptPhoto(input, ++_pickGeneration);
+    } else if (owner.failed) {
+      owner.consumeError();
+      setState(() {
+        choosing = true;
+        picking = false;
+        localError = '사진을 준비하지 못했어요. 다른 사진을 선택해 주세요.';
+      });
+    } else if (picking && !_preparingRecovered) {
+      setState(() => picking = false);
+    }
+  }
+
+  Future<void> _acceptPhoto(PhotoInput input, int generation) async {
+    _preparingRecovered = true;
+    try {
+      late final Uint8List prepared;
+      try {
+        prepared = await prepareProfilePhoto(input);
+      } finally {
+        input.bytes.fillRange(0, input.bytes.length, 0);
+      }
+      if (!mounted || !controller.foreground || generation != _pickGeneration) {
+        prepared.fillRange(0, prepared.length, 0);
+        return;
+      }
+      setState(() {
+        _clearPhoto();
+        photo = prepared;
+        selection = null;
+      });
+    } catch (_) {
+      if (mounted && generation == _pickGeneration) {
+        setState(
+          () => localError =
+              '사진을 준비하지 못했어요. JPEG·PNG·WebP, 1MiB·400만 화소 이하 사진을 선택해 주세요.',
+        );
+      }
+    } finally {
+      if (mounted && generation == _pickGeneration) {
+        setState(() {
+          picking = false;
+          _preparingRecovered = false;
+        });
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(ProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.photoSource, widget.photoSource)) _listenPhoto();
     if (oldWidget.accountScope != widget.accountScope ||
         !identical(oldWidget.repository, widget.repository)) {
       controller.removeListener(_changed);
@@ -63,6 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       initialized = false;
       choosing = false;
       picking = false;
+      _preparingRecovered = false;
       selection = null;
       localError = null;
       _bind();
@@ -70,6 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       _pickGeneration++;
       _clearPhoto();
       picking = false;
+      _preparingRecovered = false;
       choosing = false;
       selection = null;
       localError = null;
@@ -84,6 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         initialized = true;
       }
     });
+    _recoverPhoto();
   }
 
   void _clearPhoto() {
@@ -101,6 +191,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   @override
   void dispose() {
+    _photoOwner?.removeListener(_recoverPhoto);
     WidgetsBinding.instance.removeObserver(this);
     controller.removeListener(_changed);
     controller.dispose();
@@ -153,9 +244,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _closeChooser() {
+    _photoOwner?.cancel();
     _pickGeneration++;
     setState(() {
       choosing = false;
+      picking = false;
+      _preparingRecovered = false;
       selection = null;
       _clearPhoto();
       localError = null;

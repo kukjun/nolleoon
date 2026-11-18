@@ -1,7 +1,10 @@
+import '../room_avatars/room_avatar_widgets.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../design/app_components.dart';
 import 'rooms_controller.dart';
+import '../../data/wire_models.dart';
 import 'rooms_repository.dart';
 
 /// Mount only for a verified signed-in account; key by account ID.
@@ -12,11 +15,15 @@ class RoomsScreen extends StatefulWidget {
     required this.repository,
     required this.onSessionLost,
     this.onOpenRun,
+    this.roomActionsBuilder,
+    this.roomScopeBuilder,
     this.accountId,
     this.initialRoomId,
     this.createRecovery,
   });
   final RoomsRepository repository;
+  final Widget Function(RoomDto)? roomActionsBuilder;
+  final Widget Function(RoomDto, Widget)? roomScopeBuilder;
   final String? accountId;
   final String? initialRoomId;
   final RoomsCreateRecovery? createRecovery;
@@ -335,7 +342,16 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     ] else if (room != null)
-                      ..._lobby(room.data)
+                      if (widget.roomScopeBuilder != null)
+                        widget.roomScopeBuilder!(
+                          room,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _lobby(room.data),
+                          ),
+                        )
+                      else
+                        ..._lobby(room.data)
                     else if (!inDetail) ...[
                       AppAction(
                         label: '새 여행방 만들기',
@@ -454,6 +470,8 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
         )
       else
         const AppStatus(message: '진행 중인 판이 없어요.'),
+      if (widget.roomActionsBuilder != null)
+        widget.roomActionsBuilder!(controller.room!),
       Semantics(
         header: true,
         child: Text(
@@ -468,7 +486,12 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
             final member = raw as Map<String, Object?>;
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading: RoomMemberAvatar(
+                membershipId: member['membershipId'] as String,
+                presetId: member['presetId'] as String? ?? 'preset-01',
+                size: 40,
+                label: '참가자 아바타',
+              ),
               title: Text(
                 '${member['nickname']}${member['membershipId'] == self['membershipId'] ? ' (나)' : ''}',
               ),

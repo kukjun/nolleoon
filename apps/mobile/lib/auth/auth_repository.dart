@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 // Secrets deliberately have no custom toString and are never part of UI state.
@@ -53,6 +56,7 @@ class AuthRepository extends ChangeNotifier {
   final SessionStore store;
   AuthPhase phase = AuthPhase.signedOut;
   AuthSession? session;
+  String? _lastVerifiedAccount, _lastVerifiedToken;
   bool _busy = false, _disposed = false;
   bool _sessionUnresolved = false;
   bool get hasUnresolvedSession => _sessionUnresolved;
@@ -109,6 +113,8 @@ class AuthRepository extends ChangeNotifier {
         return;
       }
       session = issued;
+      _lastVerifiedAccount = issued.accountId;
+      _lastVerifiedToken = issued.token;
       _state(AuthPhase.signedIn);
     } on LoginCancelled {
       _state(AuthPhase.signedOut);
@@ -150,6 +156,8 @@ class AuthRepository extends ChangeNotifier {
         throw const SessionExpired();
       }
       session = result;
+      _lastVerifiedAccount = result.accountId;
+      _lastVerifiedToken = result.token;
       _state(AuthPhase.signedIn);
     } on SessionExpired {
       try {
@@ -186,6 +194,116 @@ class AuthRepository extends ChangeNotifier {
       _state(AuthPhase.signedOut);
     } catch (_) {
       _state(AuthPhase.logoutFailed);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  /// Only after a verified server deletion receipt. No remote logout/unlink.
+  /// Retain scope proof on failure so the same local cleanup can be retried.
+  Future<void> clearDeletedAccount(String accountScope) async {
+    if (_disposed ||
+        _busy ||
+        accountScope != _lastVerifiedAccount ||
+        (session != null && session!.accountId != accountScope)) {
+      throw StateError('Deletion cleanup ownership is unavailable');
+    }
+    _busy = true;
+    try {
+      final stored = await store.read();
+      if (_disposed || (stored != null && stored != _lastVerifiedToken)) {
+        throw StateError('Stored credential ownership changed');
+      }
+      session = null;
+      _sessionUnresolved = true;
+      _state(AuthPhase.busy);
+      await store.clear();
+      await identity.clear();
+      _lastVerifiedAccount = null;
+      _lastVerifiedToken = null;
+      _sessionUnresolved = false;
+      _state(AuthPhase.signedOut);
+    } catch (_) {
+      if (!_disposed) {
+        session = null;
+        _sessionUnresolved = true;
+        _state(AuthPhase.error);
+      }
+      throw StateError('Local deletion cleanup is incomplete');
+    } finally {
+      _busy = false;
+    }
+  }
+
+  /// Only a strictly parsed, non-expired confirmed secure receipt may call this.
+  /// The digest binds cleanup to the original credential without restoring auth.
+  Future<void> clearDeletedReceipt({
+    required String accountScope,
+    required String tokenDigest,
+  }) async {
+    if (_disposed ||
+        _busy ||
+        accountScope.trim().isEmpty ||
+        !RegExp(r'^[a-f0-9]{64}$').hasMatch(tokenDigest) ||
+        (session != null &&
+            (session!.accountId != accountScope ||
+                sha256.convert(utf8.encode(session!.token)).toString() !=
+                    tokenDigest))) {
+      throw StateError('Receipt cleanup ownership unavailable');
+    }
+    _busy = true;
+    var started = false;
+    try {
+      final stored = await store.read();
+      if (_disposed ||
+          (stored != null &&
+              sha256.convert(utf8.encode(stored)).toString() != tokenDigest)) {
+        throw StateError('Receipt credential does not match');
+      }
+      started = true;
+      session = null;
+      _sessionUnresolved = true;
+      _state(AuthPhase.busy);
+      await store.clear();
+      await identity.clear();
+      _lastVerifiedAccount = null;
+      _lastVerifiedToken = null;
+      _sessionUnresolved = false;
+      _state(AuthPhase.signedOut);
+    } catch (_) {
+      if (started && !_disposed) {
+        session = null;
+        _sessionUnresolved = true;
+        _state(AuthPhase.error);
+      }
+      throw StateError('Receipt local cleanup is incomplete');
+    } finally {
+      _busy = false;
+    }
+  }
+
+  /// User-confirmed device-only recovery for a malformed/expired receipt.
+  /// Does not assert that server account deletion succeeded.
+  Future<void> discardLocalIdentityForReceiptRecovery({
+    required String confirmation,
+  }) async {
+    if (_disposed || _busy || confirmation != 'CLEAR_LOCAL_AUTH') {
+      throw StateError('Explicit local recovery required');
+    }
+    _busy = true;
+    session = null;
+    _sessionUnresolved = true;
+    _state(AuthPhase.busy);
+    try {
+      await store.clear();
+      await identity.clear();
+      _lastVerifiedAccount = null;
+      _lastVerifiedToken = null;
+      _sessionUnresolved = false;
+      _state(AuthPhase.signedOut);
+    } catch (_) {
+      if (!_disposed) _state(AuthPhase.error);
+      throw StateError('Local recovery is incomplete');
     } finally {
       _busy = false;
     }

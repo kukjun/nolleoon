@@ -91,9 +91,15 @@ class _TeamSetupState extends State<TeamSetupForm> {
 /// Displays only the server's already-authorized projection. Start/cancel and
 /// immutable request retry remain in GameScreen/GameController.
 class TeamGameView extends StatelessWidget {
-  const TeamGameView({super.key, required this.run, this.names = const {}});
+  const TeamGameView({
+    super.key,
+    required this.run,
+    this.names = const {},
+    this.avatarBuilder,
+  });
   final RunDto run;
   final Map<String, String> names;
+  final Widget Function(String memberId)? avatarBuilder;
   @override
   Widget build(BuildContext context) {
     final game = run.game;
@@ -120,7 +126,9 @@ class TeamGameView extends StatelessWidget {
           const Text('진행자가 시작하면 팀이 정해져요.'),
           for (final id in selected)
             ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading:
+                  avatarBuilder?.call(id) ??
+                  const CircleAvatar(child: Icon(Icons.person_outline)),
               title: Text(name(id)),
             ),
           const Text('시작 전까지 선택 명단을 확인해 주세요.'),
@@ -157,9 +165,9 @@ class TeamGameView extends StatelessWidget {
                   ),
                   for (final id in groups[team]!)
                     ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person_outline),
-                      ),
+                      leading:
+                          avatarBuilder?.call(id) ??
+                          const CircleAvatar(child: Icon(Icons.person_outline)),
                       title: Text(name(id)),
                     ),
                 ],
