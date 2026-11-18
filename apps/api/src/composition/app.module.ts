@@ -1,3 +1,4 @@
+import {LedgerRequirements} from '../infrastructure/deletion/ledger-requirements.js';
 import type {RoomDeletionLedger} from '../application/ports/room-deletion.js';
 import {RoomDeletionMonitor} from '../infrastructure/sessions/room-deletion-monitor.js';
 import {TravelRoomDeletion} from '../application/travel-room-deletion.js';
@@ -49,9 +50,10 @@ const STORAGE = Symbol('STORAGE');
 class StorageResources {
   readonly db;
   readonly uow;
-  constructor(path: string) {
+  readonly requirements;
+  constructor(path: string,account?:DeletionLedger,room?:RoomDeletionLedger) {
     this.db=openSqlite(path);
-    try {migrate(this.db);this.uow=new SqliteUnitOfWork(this.db);} catch(error) {this.db.close();throw error;}
+    try {migrate(this.db);this.requirements=new LedgerRequirements(this.db);this.requirements.check(account,room);this.uow=new SqliteUnitOfWork(this.db);} catch(error) {this.db.close();throw error;}
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
@@ -62,20 +64,20 @@ export class AppModule {
     const random=config.random??new SecureRandom();const imageProcessor=new SharpAvatarProcessor();
     return {module:AppModule,controllers:[AccountDeletionController,AccountAvatarController,LegacyImportsController,TravelDeletedRoomsController,TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:RoomDeletionMonitor,inject:[TravelRoomDeletion],useFactory:(deletion:TravelRoomDeletion)=>new RoomDeletionMonitor(deletion,config.roomDeletionMonitor??true)},
-      {provide:TravelRoomDeletion,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRoomDeletion(resources.uow,config.clock??new SystemClock(),config.roomDeletionLedger)},
-      {provide:AccountDeletion,inject:[STORAGE],useFactory:(resources:StorageResources)=>{const deletion=new AccountDeletion(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.deletionLedger);deletion.reconcile();return deletion;}},
+      {provide:TravelRoomDeletion,inject:[STORAGE],useFactory:(resources:StorageResources)=>{const deletion=new TravelRoomDeletion(resources.uow,config.clock??new SystemClock(),config.roomDeletionLedger);deletion.reconcile();return deletion;}},
+      {provide:AccountDeletion,inject:[STORAGE,TravelRoomDeletion],useFactory:(resources:StorageResources)=>{const deletion=new AccountDeletion(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.deletionLedger);deletion.reconcile();return deletion;}},
       {provide:TravelRooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:TravelRuns,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRuns(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.travelEngines??[new TravelTeamEngine(random),new TravelDrawEngine(random),new TravelTrialEngine(),new TravelMenuEngine(random)],random)},
       {provide:LegacyImports,inject:[STORAGE,PartyGames,Rooms],useFactory:(resources:StorageResources,party:PartyGames,rooms:Rooms)=>new LegacyImports(resources.uow,config.clock??new SystemClock(),new SecureTokens(),party,rooms)},
-      {provide:AccountAuth,inject:[STORAGE,AccountDeletion],useFactory:(resources:StorageResources,deletion:AccountDeletion)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider,()=>deletion.reconcile())},
+      {provide:AccountAuth,inject:[STORAGE,AccountDeletion,TravelRoomDeletion],useFactory:(resources:StorageResources,deletion:AccountDeletion,rooms:TravelRoomDeletion)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider,()=>{resources.requirements.check(config.deletionLedger,config.roomDeletionLedger);rooms.reconcile();deletion.reconcile();})},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
-      {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth,TravelRoomDeletion,AccountDeletion],useFactory:(sessions:BrowserSessions,accounts:AccountAuth,rooms:TravelRoomDeletion,accountDeletion:AccountDeletion)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts,()=>{rooms.reconcile();accountDeletion.reconcile();})},
-      {provide:AccountAvatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAvatars(resources.uow,imageProcessor,config.clock??new SystemClock())},
+      {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth,TravelRoomDeletion,AccountDeletion,STORAGE],useFactory:(sessions:BrowserSessions,accounts:AccountAuth,rooms:TravelRoomDeletion,accountDeletion:AccountDeletion,resources:StorageResources)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts,()=>{resources.requirements.check(config.deletionLedger,config.roomDeletionLedger);rooms.reconcile();accountDeletion.reconcile();})},
+      {provide:AccountAvatars,inject:[STORAGE,AccountDeletion,TravelRoomDeletion],useFactory:(resources:StorageResources,deletion:AccountDeletion,rooms:TravelRoomDeletion)=>new AccountAvatars(resources.uow,imageProcessor,config.clock??new SystemClock(),()=>{resources.requirements.check(config.deletionLedger,config.roomDeletionLedger);rooms.reconcile();deletion.reconcile();})},
       {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow,imageProcessor)},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},
       {provide:PUBLIC_ORIGIN,useValue:config.publicOrigin},
-      {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath)},
+      {provide:STORAGE,useFactory:()=>new StorageResources(config.dbPath,config.deletionLedger,config.roomDeletionLedger)},
       {provide:PresenceMonitor,inject:[Rooms],useFactory:(rooms:Rooms)=>new PresenceMonitor(rooms,config.presenceMonitor??true)},
       {provide:SettleRounds,inject:[STORAGE],useFactory:(resources:StorageResources)=>new SettleRounds(resources.uow,config.clock??new SystemClock(),random)},
       {provide:SettlementMonitor,inject:[SettleRounds],useFactory:(rounds:SettleRounds)=>new SettlementMonitor(rounds,config.settlementMonitor??true)},

@@ -1,5 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto';
-import {lstatSync,readFileSync,openSync,closeSync,writeFileSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
+import {realpathSync,lstatSync,readFileSync,openSync,closeSync,writeFileSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
 import {dirname,isAbsolute,resolve} from 'node:path';
 export interface DeletionEntry{operationId:string;accountId:string;runIds:string[];legacyRunIds:string[];legacyProofs:{runId:string;sessionId:string}[];createdAt:number}
 type Anchor={sequence:number;digest:string};
@@ -57,6 +57,7 @@ class DurableJournal<T>{
  }
  entries():T[]{return this.locked(()=>this.load(false).rows.map(row=>row.entry));}
  lookup(operationId:string):T|undefined{return this.entries().find(item=>(item as {operationId:string}).operationId===operationId);}
+ bindingIdentity():string{return realpathSync(this.path)+'\0'+realpathSync(this.checkpoint);}
  checkpointValue():Anchor{return this.locked(()=>this.load(false).tip);}
 }
 
