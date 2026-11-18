@@ -73,8 +73,9 @@ class AuthRepository extends ChangeNotifier {
         _disposed ||
         _sessionUnresolved ||
         phase == AuthPhase.signedIn ||
-        phase == AuthPhase.logoutFailed)
+        phase == AuthPhase.logoutFailed) {
       return;
+    }
     if (!identity.configured) {
       _state(AuthPhase.unavailable);
       return;
