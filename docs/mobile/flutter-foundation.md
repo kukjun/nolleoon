@@ -29,3 +29,11 @@ iOS/Android 앱 scaffold와 Flutter 테스트 기반을 추가한다. 로그인�
 - 320×640·글자 배율2에서 overflow 예외 없음. 실제 iPhone/Android 렌더링 검증과는 다르다.
 - native integration smoke runner는 작성만 했다. iOS/Android build, simulator/device integration, 실제 로그인, 스토어 배포는 미실행/환경 게이트다.
 - 직접 외부 의존성은 `material_ui:1.11.1`, `flutter_lints:6.0.0`으로 고정. Flutter3.50 템플릿의 Material UI 분리 구성을 따르며 SDK dependency와 전체 전이 의존성은 pubspec.lock에 기록한다.
+
+## #165 공통 표현 컴포넌트
+
+`lib/design/app_components.dart`는 서버 상태를 만들지 않는 공통 위젯이다. AppAction은 최소48dp와 pending 중 중복 실행 차단, 원시 오류 미노출을 제공한다. AppStatus는 live-region 안내를 제공한다. StepPage는 단계/제목 semantics, 큰 글씨/키보드에 대응하는 scroll, unsaved 취소 확인을 제공한다. 초안 데이터와 실제 단계 변경은 호출자가 소유한다. onBack에서 단계 변경 또는 Navigator.pop을 수행할 수 있으며 확인 전 초안을 지우지 않는다. 서버에 자동 저장하거나 자동 재시도하지 않는다.
+
+추가 widget 사례: 비동기 중복 버튼·실패 안내, 취소 후 초안 유지·중복 확인 방지, 320px/글자2배/키보드 inset, system back에서 취소/승인 후 route 복귀. 실제 서비스 로그인/게임 화면 구현이나 실기기 접근성 인수로 해석하지 않는다.
+
+검증: 컴포넌트 모듈 부재 RED 후 구현. 첫 실행에서 시험의 semantics handle 정리 시점 오류를 발견해 try/finally로 명시 정리했다. 최종 정확한 코드의 `tools/mobile/check.sh`: format/analyze PASS, 전체 unit/widget8 PASS(신규5). 실기기/통합 smoke는 미실행이다.
