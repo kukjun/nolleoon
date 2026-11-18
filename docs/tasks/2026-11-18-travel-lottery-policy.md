@@ -18,3 +18,10 @@
 engine4개+policy5개+기존allocation2개=11/11 PASS, API build 및 대상 ESLint PASS. 구현 전 engine module missing RED. foundation이 참조한 account-auth port 의존 두 커밋을 별도 수용해 빌드했고 auth 구현은 변경하지 않았다. 전체 API/DB/history race는 generic service 통합 후 아직 검증 필요.
 
 입력 호환 수정: 500개 emoji가 JS UTF-16 .length 때문에 거절되는 unit RED를 확인했다. 기존 제비처럼 Unicode code point 수500 기준과 줄바꿈/CR/tab 제외 Cc/Cf 거절을 적용했다. unit engine5개 PASS. 실제 HTTP 팀/제비 검증은 별도 추가 중이며 generic pre-touch timeout 결함을 10분 복귀 GET에서 재현했다.
+
+## 실제 HTTP / SQLite 검증
+새 독립 fixture는 임시 파일 DB, 합성 account/session, 실제 Nest controller + TravelRuns + 실제 두 엔진을 사용한다. 공급자 OAuth 로그인을 검증하는 fixture가 아니며 외부 서비스·운영에는 접속하지 않는다.
+
+신규 HTTP 3개 PASS(290ms): 팀 균형/동일 start request 동시 멱등/현재 미참가 멤버 조회/외부·퇴장403/DB재시작; 제비 9:59와10:00 복귀/실제 만료·종료후flip409/공개분 이력/멤버십4명유지/새runID와 새N배정; 동시다른flip1성공1CAS충돌/재시도 전원공개 정확N당첨/재시작결과 보존. API 응답에 allocations/winning 내부필드가 없음을 검사한다.
+
+처음 실제HTTP timeout 시험은 b의10분복귀 GET에서 active 반환 RED였다. generic19f990b pre-touch 수정(선행4b9cd2e 포함) 반영 후 동일 시험 GREEN. 충돌시 임의 해결하지 않고 cherry abort 뒤 누락 선행을 적용했다. API build와 추가시험 scopedlint PASS. 전체 하네스·UI/HTML·로그의 exhaustive 누출검사는 이 단계에서 미실행이다.
