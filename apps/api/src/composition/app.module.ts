@@ -1,3 +1,6 @@
+import {AccountAuth} from '../application/account-auth.js';
+import {AccountController} from '../presentation/account.controller.js';
+import type {KakaoIdentityProvider} from '../application/ports/account-auth.js';
 import {SharpAvatarProcessor} from '../infrastructure/images/avatar-processor.js';
 import {Avatars} from '../application/avatars.js';
 import {AvatarController} from '../presentation/avatar.controller.js';
@@ -35,12 +38,13 @@ class StorageResources {
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
-export interface AppConfiguration { dbPath: string; publicOrigin: string; clock?: Clock; random?: RandomSource; presenceMonitor?: boolean; settlementMonitor?: boolean }
+export interface AppConfiguration { kakaoProvider?:KakaoIdentityProvider; dbPath: string; publicOrigin: string; clock?: Clock; random?: RandomSource; presenceMonitor?: boolean; settlementMonitor?: boolean }
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();
-    return {module:AppModule,controllers:[PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
+    return {module:AppModule,controllers:[AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
+      {provide:AccountAuth,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider)},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
       {provide:APP_GUARD,inject:[BrowserSessions],useFactory:(sessions:BrowserSessions)=>new RequestGuard(sessions,config.clock??new SystemClock())},
       {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow,new SharpAvatarProcessor())},
