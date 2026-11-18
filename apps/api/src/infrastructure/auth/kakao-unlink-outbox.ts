@@ -60,6 +60,11 @@ export class DurableKakaoUnlinkOutbox implements KakaoUnlinkOutbox {
  fail(operationId:string,now:number):void{this.locked(()=>{const s=this.checked(now),j=s.jobs.find(j=>j.operationId===operationId);if(!j)return;j.leaseUntil=0;j.nextAttemptAt=Math.min(j.expiresAt,now+Math.min(3600000,30000*2**Math.min(j.attempts,7)));this.save(s.jobs);});}
  expire(now:number):void{this.locked(()=>{this.checked(now);});}
  available():void{this.locked(()=>{this.checked();});}
+ async withVerifiedAuthority<R>(work:(authority:Pick<DurableKakaoUnlinkOutbox,'available'|'bindingIdentity'|'witness'|'verifyPrefix'>)=>Promise<R>,now=Date.now()):Promise<R>{
+  const fd=openSync(this.pendingPath+'.lock','wx',0o600);
+  try{const s=this.checked(now),binding=this.bindingIdentity();const authority={available:()=>{},bindingIdentity:()=>binding,witness:()=>({...s.tip}),verifyPrefix:(expected:Tip)=>{const known=expected.sequence===0?initial:s.rows[expected.sequence-1];if(!time(expected.sequence)||!known||known.digest!==expected.digest)throw Error('QUEUE_ROLLBACK');}};return await work(authority);}
+  finally{closeSync(fd);unlinkSync(this.pendingPath+'.lock');}
+ }
  health(now:number):{pending:number;expired:number;completed:number}{return this.locked(()=>{const s=this.checked(now);return {pending:s.jobs.length,expired:s.rows.filter(r=>r.event.action==='expired').length,completed:s.rows.filter(r=>r.event.action==='completed').length};});}
  bindingIdentity():string{return [this.pendingPath,this.journalPath,this.checkpointPath].map(p=>realpathSync(p)).join('\0');}
  witness():Tip{return this.locked(()=>this.checked().tip);}
