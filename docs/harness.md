@@ -74,3 +74,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 ## 외부 인수 준비
 
 `external-deployment`는 실제 배포 승인·적용 #65 대기로 `blocked`다. 로컬 E2E/production smoke 성공으로 해제하지 않는다. [외부 인수 체크리스트](external-acceptance.md)와 빈 evidence 템플릿은 준비용이며, 오프라인 증거 형식 검사는 네트워크 요청 없이 최대 독립검토 준비 상태만 반환한다. 외부 도메인에서 방을 생성하는 시험을 일반 `npm run check`에 추가하지 않는다.
+
+## 여행방 회귀
+
+`npm run test:travel`은 여행방 화면/권한의 모의 API 회귀, `npm run test:travel-e2e`는 실제 Nest·임시 SQLite·정적 웹 서버를 사용하는 독립 브라우저 흐름이다. 두 gate를 전체 `check`에 포함하며 기존 브라우저 gate와 중복 집계하지 않는다. 테스트용 로그인 제공자만 합성 신원으로 대체한다. 실제 카카오 인증, 물리 기기 또는 외부 배포의 성공 증거는 아니다. 실제 게임 생성·참가·투표·결과·권한은 제품 서버와 저장소를 거친다. 테스트 서버는 loopback에만 바인딩하고 운영 진입점에서 가져오지 않는다.
