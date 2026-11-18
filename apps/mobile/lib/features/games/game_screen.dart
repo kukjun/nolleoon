@@ -18,6 +18,7 @@ class GameScreen extends StatefulWidget {
     required this.onSessionLost,
     this.configure,
     this.play,
+    this.restrictedControls,
   }) {
     if (accountScope.trim().isEmpty) {
       throw ArgumentError('Account scope required');
@@ -41,6 +42,10 @@ class GameScreen extends StatefulWidget {
   )?
   configure;
   final Widget Function(BuildContext, RunDto, GameController)? play;
+
+  /// Minimal server-authorized trial phase controls, never private content.
+  final Widget Function(BuildContext, RunDto, GameController)?
+  restrictedControls;
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
@@ -222,9 +227,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ),
               if (run.game?.redacted ?? false)
                 const Text('탈퇴로 삭제된 게임입니다. 개인 내용은 표시하지 않아요.')
-              else if (run.game?.restricted ?? false)
-                const Text('이 게임의 상세 내용은 볼 수 없어요.')
-              else if (widget.play != null)
+              else if (run.game?.restricted ?? false) ...[
+                const Text('이 게임의 상세 내용은 볼 수 없어요.'),
+                if (run.data['type'] == 'trial' &&
+                    canControl &&
+                    widget.restrictedControls != null)
+                  widget.restrictedControls!(context, run, controller),
+              ] else if (widget.play != null)
                 widget.play!(context, run, controller)
               else
                 const Text('게임 상태는 연결됐어요. 게임별 입력·결과 화면은 준비 중이에요.'),
