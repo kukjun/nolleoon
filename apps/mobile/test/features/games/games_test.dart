@@ -274,6 +274,22 @@ void main() {
       expect(c.hasPendingIntent, false);
     },
   );
+  test(
+    'old account controller cannot dispatch after shared owner changes scope',
+    () async {
+      c.dispose();
+      final owner = PendingGameCommands();
+      c = GameController(
+        repo,
+        pendingCommands: owner,
+        accountScope: 'old-account',
+      );
+      await c.open('room-a', 'run-a');
+      owner.bind('new-account');
+      await c.submit(repo.command(ApiOperation.startRun, 'room-a', 'run-a', 1));
+      expect(t.requests.where((r) => r.method != 'GET'), isEmpty);
+    },
+  );
   testWidgets(
     'setup room polls at 10 seconds until a server active run exists',
     (tester) async {

@@ -20,3 +20,5 @@ Native endpoint/실제 Kakao/실기기는 미검증이다. 변경은 games 디�
 `GameScreen.pendingCommands`는 필수이며 인증 세션 상위에서 만든 `PendingGameCommands`를 같은 계정의 route remount에 재사용해야 한다. 앱 조립 담당이 로그아웃·계정 교체에 `clear()`한다. owner는 메모리 전용이고 디스크에 개인 명령을 저장하지 않는다. accountScope 변경은 옛 intent를 버린다. background/route dispose는 DTO를 지우지만 응답이 불확실한 immutable intent를 owner에 남겨, 돌아와 GET 확인 후 사용자 명시 retry만 같은 requestId/bytes로 전송한다. 새 명령으로 대체하거나 자동 offline 재생하지 않는다. 권한 상실과 로그아웃은 제거한다.
 
 신규 owner 계약 부재 RED 후 accepted-response 지연→background→controller remount→명시 retry exact bytes, 새 계정 및 logout 제거 회귀를 추가했다. 공통17개 PASS, scoped analyze issue0. 이 owner를 앱에 실제 연결하는 것은 별도 조립 게이트다.
+
+추가 방어: owner가 새 계정에 bind된 뒤 dispose 전인 옛 controller에서도 새 Bearer로 명령이 나갈 수 있던 단독 RED를 확인했다. 응답 수락뿐 아니라 dispatch 직전에도 owner의 accountScope 일치를 확인한다. 신규1+공통17+team7=25 PASS, games analyze issue0. 검증 이후 변경은 동일 if문의 lint용 braces뿐이다.

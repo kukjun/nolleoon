@@ -108,7 +108,12 @@ class GameController extends ChangeNotifier {
   Future<void> _perform(
     Future<void> Function(CancellationToken, int) work,
   ) async {
-    if (_disposed || !foreground || busy) return;
+    if (_disposed ||
+        !foreground ||
+        busy ||
+        !pendingCommands.owns(accountScope)) {
+      return;
+    }
     final generation = ++_generation;
     final cancel = CancellationToken();
     _cancel = cancel;
@@ -180,7 +185,13 @@ class GameController extends ChangeNotifier {
 
   Future<void> refresh() => _perform(_read);
   Future<void> submit(MutationIntent intent) async {
-    if (_disposed || !foreground || busy || _pending != null) return;
+    if (_disposed ||
+        !foreground ||
+        busy ||
+        _pending != null ||
+        !pendingCommands.owns(accountScope)) {
+      return;
+    }
     if (intent.parameters['roomId'] != roomId ||
         (intent.operation != ApiOperation.createRun &&
             intent.parameters['runId'] != runId)) {
