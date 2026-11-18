@@ -7,7 +7,7 @@ export function validAuthorizationUrl(value:unknown):value is string{
  if(typeof value!=='string')return false;
  try{const url=new URL(value);return url.protocol==='https:'&&url.hostname==='kauth.kakao.com'&&url.port===''&&url.pathname==='/oauth/authorize'&&!url.username&&!url.password&&!url.hash;}catch{return false;}
 }
-const messages:Record<string,string>={ACCOUNT_REQUIRED:'로그인이 만료됐어요. 다시 로그인해 주세요.',SESSION_REQUIRED:'로그인이 만료됐어요. 다시 로그인해 주세요.',FORBIDDEN:'이 여행방에 접근할 수 없어요.',NOT_FOUND:'대상을 찾을 수 없어요.',INVITE_INVALID:'사용할 수 없는 초대 링크예요. 새 링크를 요청해 주세요.',ROOM_CLOSED:'종료된 여행방은 읽기 전용이에요.',VERSION_CONFLICT:'다른 변경이 먼저 반영됐어요. 최신 상태를 확인해 주세요.',TEMPORARILY_UNAVAILABLE:'지금은 로그인에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'};
+const messages:Record<string,string>={ACCOUNT_REQUIRED:'로그인이 만료됐어요. 다시 로그인해 주세요.',SESSION_REQUIRED:'로그인이 만료됐어요. 다시 로그인해 주세요.',STATE_CONFLICT:'다른 변경이 먼저 반영됐거나 현재 상태에서 할 수 없는 동작이에요. 최신 상태를 확인해 주세요.',FORBIDDEN:'이 여행방에 접근할 수 없어요.',NOT_FOUND:'대상을 찾을 수 없어요.',INVITE_INVALID:'사용할 수 없는 초대 링크예요. 새 링크를 요청해 주세요.',ROOM_CLOSED:'종료된 여행방은 읽기 전용이에요.',VERSION_CONFLICT:'다른 변경이 먼저 반영됐어요. 최신 상태를 확인해 주세요.',TEMPORARILY_UNAVAILABLE:'지금은 로그인에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.'};
 export async function travelRequest<T>(path:string,valid:(x:unknown)=>x is T,options:{body?:unknown;method?:string;signal?:AbortSignal}={},fetcher:typeof fetch=fetch):Promise<TravelResult<T>>{
  const controller=new AbortController();const cancel=()=>controller.abort();options.signal?.addEventListener('abort',cancel,{once:true});if(options.signal?.aborted)controller.abort();const timeout=setTimeout(cancel,6000);
  try{

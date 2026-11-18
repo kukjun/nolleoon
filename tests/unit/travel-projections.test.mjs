@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validMenuProjection,validTrialProjection} from '../../apps/web/src/api/travel-projections.ts';
+test('restricted trial projection is rendered without needing private case or votes',()=>{assert.equal(validTrialProjection({kind:'trial',restricted:true,phase:null}),true);assert.equal(validTrialProjection({kind:'trial',restricted:false,phase:'voting',rounds:null}),false);assert.equal(validTrialProjection({kind:'trial',restricted:false,phase:'interrupted'}),true);});
+test('menu requires sanitized self response and final choice shape',()=>{assert.equal(validMenuProjection({kind:'menu',phase:'collecting',self:{eligible:true,submission:null},result:null}),true);assert.equal(validMenuProjection({kind:'menu',phase:'collecting',self:{eligible:true,submission:{kind:'candidate',menu:12}},result:null}),false);assert.equal(validMenuProjection({kind:'menu',phase:'completed',self:{eligible:false,submission:null},result:{outcome:'selected',menu:'국수'}}),true);});
