@@ -45,5 +45,5 @@ export function Modal({open,title,onDismiss,children}:{open:boolean;title:string
   }}><header><h2 id={titleId}>{title}</h2><Button variant="quiet" aria-label="닫기" onPress={onDismiss}>닫기</Button></header>{children}</dialog>;
 }
 export function Layout({children,demo=false}:{children:ReactNode;demo?:boolean}) {
-  return <div className="app-layout"><header className="site-header"><a className="wordmark" href="/" aria-label="Trip Court 홈"><span className="brand-mark" aria-hidden="true">tc</span><h1>Trip Court</h1></a><a className="header-link" href={demo?'/':'/?view=design'}>{demo?'홈으로':'UI 미리보기'}<span aria-hidden="true">↗</span></a></header><main>{children}</main><footer className="site-footer">우리끼리 가볍게, 서로에게 다정하게.</footer></div>;
+  return <div className="app-layout"><header className="site-header"><a className="wordmark" href="/" aria-label="놀러온 홈"><h1>놀러온</h1></a><a className="header-link" href={demo?'/':'/?view=design'}>{demo?'홈으로':'UI 미리보기'}<span aria-hidden="true">↗</span></a></header><main>{children}</main><footer className="site-footer">우리끼리 가볍게, 서로에게 다정하게.</footer></div>;
 }

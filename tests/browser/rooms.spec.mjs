@@ -25,7 +25,7 @@ test('지연된 방 응답 도중 홈으로 이동하면 이전 대기실이 나
  await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('나가기 시험');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toBeVisible();const roomUrl=page.url();
  let release;const gate=new Promise(resolve=>release=resolve);let reached;const started=new Promise(resolve=>reached=resolve);
  await page.route('**/api/rooms/*',async route=>{reached();await gate;try{await route.continue();}catch{/* 페이지 이동에 따른 요청 취소 */}});
- await page.goto(roomUrl);await started;await page.getByRole('link',{name:'Trip Court 홈'}).click();release();await expect(page.getByRole('button',{name:'방 만들기',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toHaveCount(0);
+ await page.goto(roomUrl);await started;await page.getByRole('link',{name:'놀러온 홈'}).click();release();await expect(page.getByRole('button',{name:'방 만들기',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'우리의 대기실'})).toHaveCount(0);
 });
 test('같은 프레임의 반복 제출은 방 생성 요청을 한 번만 보낸다',async({page})=>{
  await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('반복 제출');
