@@ -25,3 +25,5 @@ engine4개+policy5개+기존allocation2개=11/11 PASS, API build 및 대상 ESLi
 신규 HTTP 3개 PASS(290ms): 팀 균형/동일 start request 동시 멱등/현재 미참가 멤버 조회/외부·퇴장403/DB재시작; 제비 9:59와10:00 복귀/실제 만료·종료후flip409/공개분 이력/멤버십4명유지/새runID와 새N배정; 동시다른flip1성공1CAS충돌/재시도 전원공개 정확N당첨/재시작결과 보존. API 응답에 allocations/winning 내부필드가 없음을 검사한다.
 
 처음 실제HTTP timeout 시험은 b의10분복귀 GET에서 active 반환 RED였다. generic19f990b pre-touch 수정(선행4b9cd2e 포함) 반영 후 동일 시험 GREEN. 충돌시 임의 해결하지 않고 cherry abort 뒤 누락 선행을 적용했다. API build와 추가시험 scopedlint PASS. 전체 하네스·UI/HTML·로그의 exhaustive 누출검사는 이 단계에서 미실행이다.
+
+독립리뷰 수정: 미시작 제비 draft 취소에서 `incomplete + 빈 allocations`를 실제 시작판처럼 검증하여 cancel409/rollback하는 HTTP RED를 재현했다. 미시작 취소의 빈 allocations/reveals/endedAt 상태만 안전한 빈 projection으로 허용한다. active 또는 공개표가 있는데 배정이 비어있는 상태는 계속 거절한다. 취소 뒤 새 판 생성·현재 미참가 멤버의 취소 이력 조회까지 실제HTTP GREEN. engine6+HTTP4=10/10 PASS, API build·대상lint PASS.
