@@ -40,7 +40,7 @@ export function actOnTrial(state:TravelTrialState,input:unknown,ctx:TrialContext
  }
  if(b.action==='vote'){
   exact(b,['action','choice','reason']);if(!participating||ctx.actor===s.defendantMembershipId)fail('FORBIDDEN');if(s.phase!=='voting'||s.votes.some(v=>v.membershipId===ctx.actor))fail('STATE_CONFLICT');
-  if(!['guilty','not-guilty','abstain'].includes(String(b.choice))||typeof b.reason!=='string'||(b.choice!=='abstain'&&!b.reason.trim())||[...b.reason].length>2000||/[\p{Cc}\p{Cf}]/u.test(b.reason.replace(/[\n\r\t]/g,'')))fail('INVALID_INPUT');
+  if(typeof b.choice!=='string'||!['guilty','not-guilty','abstain'].includes(b.choice)||typeof b.reason!=='string'||(b.choice!=='abstain'&&!b.reason.trim())||[...b.reason].length>2000||/[\p{Cc}\p{Cf}]/u.test(b.reason.replace(/[\n\r\t]/g,'')))fail('INVALID_INPUT');
   s.votes.push({membershipId:ctx.actor,choice:b.choice as Choice,reason:(b.reason as string).trim()});return s.votes.length===s.participants.length-1?settle(s):s;
  }
  if(b.action==='duration'){
