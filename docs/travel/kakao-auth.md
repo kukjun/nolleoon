@@ -48,3 +48,5 @@ claim을 별도 짧은 transaction으로 먼저 확정한 뒤 provider HTTP는 t
 초기 auth 모듈 및 provider 파일 미존재 RED를 확인한 뒤 mock unit을 구현했다. fake 저장소 시험은 실제 SQLite 원자성/재시작 검증을 대신하지 않는다. provider mock은 실카카오 통신이 아니다. 후속 실제 SQLite/HTTP 시험 결과는 작업 보고의 정확한 commit/명령을 따른다. 제품 전체 하네스·실기기·실카카오 smoke·운영 배포는 별도다.
 
 2026-11-18 개발 검증: auth unit 6 + provider mock 3 + 실제 Nest/SQLite HTTP 3 + native SQLite 3 통과. SQLite는 동시 callback, 동일 subject 계정 하나, 재개방 세션/코드 replay, session insert 장애 rollback, 교환 중 logout/만료를 확인했다. 전체 기존 unit 86/API 119는 통과했으나 DB 62 중 1건이 새 schema12 대 기존 시험의 hardcoded11 불일치로 실패했고 스키마 담당에 보고했다. 이 실패를 숨기거나 전체 통과로 기록하지 않는다. 브라우저와 실카카오 smoke는 이 백엔드 작업에서 실행하지 않았다.
+
+독립 리뷰 수정: NFKC 뒤 Unicode Cc/Cf(보이지 않는 문자·bidi·C1 포함)를 거절한다. 해당 입력 RED 후 GREEN. 전역 요청 budget은 검증된 account principal을 우선 사용하고 legacy principal은 별도 namespace로 유지한다. 동일 proxy socket의 다른 계정 두 개가 각 80회 session 조회하는 HTTP 회귀가 기존 429 RED 후 모두 200 GREEN이다. 미인증은 여전히 socket IP 제한이며 X-Forwarded-For를 신뢰하지 않는다.

@@ -35,3 +35,7 @@ test('HTTP two browser account isolation and profile CAS are server-authorized',
  const a=await login('123','one'),b=await login('456','two');assert.equal((await f.send('profile',{expectedRevision:0,displayName:'새 이름',presetId:'preset-04'},a)).status,201);assert.equal((await f.send('profile',{expectedRevision:0,displayName:'덮기',presetId:'preset-04'},a)).status,409);
  const other=await(await fetch(f.url+'/api/account/session',{headers:{Cookie:b}})).json();assert.equal(other.account.displayName,'여행자');assert.equal((await f.send('profile',{expectedRevision:0,displayName:'침입',presetId:'preset-04'})).status,401);
 });
+test('valid account readers have separate rate budgets behind the same proxy socket',async t=>{
+ const f=await api(t);const cookies=[];for(let i=0;i<2;i++){f.setSubject(String(i+1));const b=await begin(f);const r=await fetch(f.url+'/api/account/callback?state='+b.state+'&code=rate-'+i,{headers:{Cookie:b.flow},redirect:'manual'});cookies.push(r.headers.get('set-cookie').split(';')[0]);}
+ for(let i=0;i<80;i++)for(const cookie of cookies)assert.equal((await fetch(f.url+'/api/account/session',{headers:{Cookie:cookie}})).status,200);
+});

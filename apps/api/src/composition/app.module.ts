@@ -46,7 +46,7 @@ export class AppModule {
     return {module:AppModule,controllers:[AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:AccountAuth,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider)},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
-      {provide:APP_GUARD,inject:[BrowserSessions],useFactory:(sessions:BrowserSessions)=>new RequestGuard(sessions,config.clock??new SystemClock())},
+      {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth],useFactory:(sessions:BrowserSessions,accounts:AccountAuth)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts)},
       {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow,new SharpAvatarProcessor())},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
       {provide:GetHealth,useFactory:()=>new GetHealth()},

@@ -31,3 +31,4 @@ test('second device same account persists profile; expired sessions and delayed 
 test('cancellation consumes bound state and preserves only validated invite return',async()=>{
  const f=fixture();const path='/travel/invite/'+'a'.repeat(43),a=f.auth.begin(path);const result=await f.auth.callback(a.state,a.browserToken,undefined,true);assert.deepEqual(result,{returnPath:path,cancelled:true});assert.equal(f.maps.accounts.size,0);await assert.rejects(f.auth.callback(a.state,a.browserToken,'later'));assert.equal(f.auth.callbackReturnPath(a.state,'x'),'/travel');
 });
+test('profile rejects invisible, bidi and C1 names after normalization',async()=>{const f=fixture(),b=f.auth.begin('/travel'),a=await f.auth.callback(b.state,b.browserToken,'one');for(const name of ['\u200b','abc\u202Etxt','\u0085'])assert.throws(()=>f.auth.profile(a.token,{expectedRevision:0,displayName:name,presetId:'preset-01'}),e=>e.code==='INVALID_INPUT');});

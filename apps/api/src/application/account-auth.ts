@@ -3,7 +3,7 @@ import type {AccountAuthRepository,AccountAuthUnitOfWork,AccountRecord,KakaoIden
 import {DomainFailure} from '../domain/failure.js';
 export const ACCOUNT_SESSION_MS=30*24*60*60*1000;
 export const ACCOUNT_FLOW_MS=5*60*1000;
-const control=(s:string)=>[...s].some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127);
+const control=(s:string)=>/[\p{Cc}\p{Cf}]/u.test(s);
 const opaque=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z0-9_-]{43}$/.test(v);
 export function accountReturnPath(value:unknown):string {
  if(typeof value!=='string'||!(value==='/travel'||/^\/travel\/invite\/[A-Za-z0-9_-]{20,128}$/.test(value)))throw new DomainFailure('INVALID_INPUT');
