@@ -1,3 +1,4 @@
+import type {AccountAuthRepository} from './account-auth.js';
 import type {PartyRepository} from './party.js';
 import type {TallyOutcome} from '../../domain/tally.js';
 export interface SessionRecord { id: string; tokenHash: string; createdAt: number; expiresAt: number }
@@ -19,6 +20,7 @@ export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:s
 export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
+  accountAuth:AccountAuthRepository;
   avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};
   party:PartyRepository;
   nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
