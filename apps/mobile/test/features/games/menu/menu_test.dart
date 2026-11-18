@@ -197,6 +197,9 @@ void main() {
       await tester.pump();
       await tester.tap(find.text('수집 중단'));
       await tester.pump();
+      expect(t.requests.where((r) => r.method == 'POST'), isEmpty);
+      await tester.tap(find.text('결정 없이 종료'));
+      await tester.pump();
       await tester.pump();
       expect(find.text('메뉴 선택이 중단됐어요.'), findsOneWidget);
       expect(jsonDecode(t.requests.last.body!)['command'], {'type': 'cancel'});
@@ -335,6 +338,38 @@ void main() {
       expect(t.requests, isEmpty);
       await tester.pumpWidget(const SizedBox());
       c.dispose();
+    },
+  );
+  testWidgets(
+    'menu cancellation continue and Back dismiss confirmation without sending',
+    (tester) async {
+      t.handler = (_) async => ok(menuRun());
+      await tester.pumpWidget(screen());
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('수집 중단'));
+      await tester.pump();
+      expect(find.text('결정 없이 종료'), findsOneWidget);
+      expect(t.requests.where((r) => r.method != 'GET'), isEmpty);
+      await tester.tap(find.text('계속하기'));
+      await tester.pump();
+      expect(find.text('결정 없이 종료'), findsNothing);
+      await tester.tap(find.text('수집 중단'));
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.text('결정 없이 종료'), findsNothing);
+      expect(find.text('메뉴를 함께 골라요'), findsOneWidget);
+      await tester.tap(find.text('수집 중단'));
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('결정 없이 종료'), findsNothing);
+      expect(t.requests.where((r) => r.method != 'GET'), isEmpty);
+      await tester.pumpWidget(const SizedBox());
     },
   );
 }

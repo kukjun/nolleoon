@@ -7,3 +7,5 @@
 TDD: 모듈 부재 RED 후 focused9 PASS. 빈 설정/후보 ack 대기·서버정규화 응답/패스 no-choice/모호한 응답 exact intent retry/관전자 응답차단 및 비참가 진행자 중단/409 최신결과 GET/새 판 oldresponse 차단/background 미제출후보 제거/null·redacted 안전표시. 초기 widget 3실패는 enterText 직후 활성화 프레임을 반영하지 않은 시험 순서였고 입력 frame을 pump한 후 같은 검증을 통과했다. scoped Flutter analyze issue0.
 
 브라우저 부하 비교와 parent의 검사 조율을 위해 이번 커밋은 menu focused 검사만 실행했다. 이전 games37 PASS와 단순 합산하여 이번 전체46개 통과로 주장하지 않는다. 최종 통합 전체 모바일·독립 리뷰·실제 네이티브 BFF/Kakao·실기기/원격 인수·배포는 별도 미완료다. main/pubspec/기존 서버는 변경하지 않았다.
+
+독립 리뷰 ADR0020 보완: ‘수집 중단’ 한 번에 명령을 보내던 경로를 실제 RED로 확인했다. 이제 inline 영향 안내에서 ‘계속하기’ 또는 ‘결정 없이 종료’를 선택한다. 뒤로는 확인만 닫고 전송하지 않으며, 확정만 정확한 cancel intent를 보낸다. 판/계정/controller/진행자/phase 변경은 확인을 폐기하고 background는 보호된 subtree를 제거한다. 외부 dialog를 만들지 않는다. 신규 Back·계속하기·background 무전송 시험과 기존 비참가 진행자 확인 후1회POST 시험 포함 focused10 PASS, scoped analyze issue0. 전체 suite는 부모의 browser 측정 후 별도 실행 예정이다.
