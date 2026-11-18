@@ -1,4 +1,4 @@
-import {lstat,readFile,writeFile,unlink,open,readdir} from 'node:fs/promises';
+import {lstat,stat,realpath,readFile,writeFile,unlink,open,readdir} from 'node:fs/promises';
 import {resolve,join,isAbsolute} from 'node:path';
 import {createHash} from 'node:crypto';
 import {createReadStream} from 'node:fs';
@@ -9,9 +9,14 @@ const day=now=>new Date(now).toISOString().slice(0,10);
 /** Explicit operator invocation only. No scheduler installation, no production defaults. */
 export async function dailyBackup({source,directory,now=Date.now(),prune=false,backup}){
  if(!isAbsolute(source)||!isAbsolute(directory)||!Number.isSafeInteger(now)||now<0)throw Error('INVALID_INPUT');
- const root=resolve(directory);if(!(await lstat(root)).isDirectory()||(await lstat(root)).isSymbolicLink())throw Error('INVALID_DIRECTORY');
+ const root=await realpath(resolve(directory));const sourcePath=await realpath(source),sourceInfo=await stat(sourcePath);
+ if(!sourceInfo.isFile()||sourcePath===root||sourcePath.startsWith(root+'/'))throw Error('SOURCE_INSIDE_BACKUP_DIRECTORY');if(!(await lstat(root)).isDirectory()||(await lstat(root)).isSymbolicLink())throw Error('INVALID_DIRECTORY');
  const lock=await open(join(root,'.daily-lock'),'wx',0o600);
  try{
+  for(const entry of await readdir(root)){if(!/^trip-\d{4}-\d{2}-\d{2}\.sqlite$/.test(entry))continue;const candidate=await stat(join(root,entry));if(candidate.dev===sourceInfo.dev&&candidate.ino===sourceInfo.ino)throw Error('SOURCE_ALIASES_BACKUP');}
+  const bindingPath=join(root,'.source-binding.json'),binding={owner,sourcePath,device:sourceInfo.dev,inode:sourceInfo.ino};
+  try{const info=await lstat(bindingPath);if(!info.isFile()||info.isSymbolicLink())throw Error('INVALID_BINDING');if(JSON.stringify(JSON.parse(await readFile(bindingPath,'utf8')))!==JSON.stringify(binding))throw Error('SOURCE_CHANGED');}
+  catch(error){if(error.code!=='ENOENT')throw error;await writeFile(bindingPath,JSON.stringify(binding),{flag:'wx',mode:0o600});}
   const today=day(now),name=`trip-${today}.sqlite`,target=join(root,name),manifest=target+'.json';
   let existing=false;
   try{await lstat(target);existing=true;}catch(e){if(e.code!=='ENOENT')throw e;}
