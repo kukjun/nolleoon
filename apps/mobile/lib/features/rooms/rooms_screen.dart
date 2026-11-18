@@ -13,10 +13,12 @@ class RoomsScreen extends StatefulWidget {
     required this.onSessionLost,
     this.onOpenRun,
     this.accountId,
+    this.initialRoomId,
     this.createRecovery,
   });
   final RoomsRepository repository;
   final String? accountId;
+  final String? initialRoomId;
   final RoomsCreateRecovery? createRecovery;
   final VoidCallback onSessionLost;
   final Future<void> Function(String roomId, String runId)? onOpenRun;
@@ -25,7 +27,7 @@ class RoomsScreen extends StatefulWidget {
 }
 
 class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
-  late final RoomsController controller;
+  late RoomsController controller;
   bool creating = false;
   bool _childRoute = false;
   bool _backPending = false;
@@ -35,6 +37,14 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _bindController();
+  }
+
+  void _bindController() {
+    creating = false;
+    title.clear();
+    start = null;
+    end = null;
     controller = RoomsController(
       widget.repository,
       onSessionLost: widget.onSessionLost,
@@ -49,7 +59,24 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
       end = DateTime.tryParse(draft['endDate'] as String? ?? '');
     }
     controller.addListener(_changed);
-    controller.refresh();
+    if (widget.initialRoomId != null) {
+      controller.open(widget.initialRoomId!);
+    } else {
+      controller.refresh();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant RoomsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountId != widget.accountId ||
+        oldWidget.initialRoomId != widget.initialRoomId) {
+      controller.removeListener(_changed);
+      controller.dispose();
+      _childRoute = false;
+      _backPending = false;
+      _bindController();
+    }
   }
 
   void _changed() {

@@ -1,3 +1,5 @@
+import 'app/invitation_links.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import 'app/auth_gate.dart';
@@ -13,7 +15,8 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, this.auth, this.transport});
+  const MyApp({super.key, this.auth, this.transport, this.invitationLinks});
+  final InvitationLinkSource? invitationLinks;
   final AuthRepository? auth;
   final ApiTransport? transport;
   @override
@@ -21,6 +24,14 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late final InvitationLinkSource _links =
+      widget.invitationLinks ??
+      createInvitationLinkSource(
+        platformVerified: const bool.fromEnvironment(
+          'NATIVE_INVITE_LINKS_VERIFIED',
+          defaultValue: false,
+        ),
+      );
   late final AuthRepository _auth =
       widget.auth ??
       createNativeAuth(
@@ -43,6 +54,6 @@ class _MyAppState extends State<MyApp> {
     title: '놀러온',
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
-    home: AuthGate(auth: _auth, transport: _transport),
+    home: AuthGate(auth: _auth, transport: _transport, invitationLinks: _links),
   );
 }
