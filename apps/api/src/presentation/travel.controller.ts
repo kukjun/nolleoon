@@ -21,9 +21,11 @@ export class TravelRoomsController {
  @Post(':roomId/administrator') admin(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.rooms.transfer(this.actor(req,res,true),id,req.body);}
  @Post(':roomId/leave') leave(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.rooms.leave(this.actor(req,res,true),id,req.body);}
  @Post(':roomId/members/:membershipId/remove') remove(@Param('roomId') id:string,@Param('membershipId') memberId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.rooms.remove(this.actor(req,res,true),id,memberId,req.body);}
- @Get(':roomId/history') history(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.history(this.actor(req,res),id);}
+ @Get(':roomId/history') history(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){if(Object.keys(req.query).some(k=>k!=='cursor')||(req.query.cursor!==undefined&&typeof req.query.cursor!=='string'))throw new DomainFailure('INVALID_INPUT');return this.runs.history(this.actor(req,res),id,req.query.cursor as string|undefined);}
  @Post(':roomId/runs') createRun(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.create(this.actor(req,res,true),id,req.body);}
  @Get(':roomId/runs/:runId') run(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.get(this.actor(req,res),id,runId);}
+ @Patch(':roomId/runs/:runId') editRun(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.edit(this.actor(req,res,true),id,runId,req.body);}
+ @Post(':roomId/runs/:runId/cancel') cancelRun(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.cancel(this.actor(req,res,true),id,runId,req.body);}
  @Post(':roomId/runs/:runId/start') start(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.start(this.actor(req,res,true),id,runId,req.body);}
  @Post(':roomId/runs/:runId/actions') action(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.action(this.actor(req,res,true),id,runId,req.body);}
 }
