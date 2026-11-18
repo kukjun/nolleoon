@@ -1,3 +1,4 @@
+import type {TravelRepository} from './travel.js';
 import type {AccountAuthRepository} from './account-auth.js';
 import type {PartyRepository} from './party.js';
 import type {TallyOutcome} from '../../domain/tally.js';
@@ -21,6 +22,7 @@ export interface NextReceipt {roomId:string;requestId:string;actorSessionId:stri
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
   accountAuth:AccountAuthRepository;
+  travel:TravelRepository;
   avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};
   party:PartyRepository;
   nextPreparations:InsertRepository<NextReceipt>&{find(roomId:string,requestId:string):NextReceipt|undefined};
