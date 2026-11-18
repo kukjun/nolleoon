@@ -8,10 +8,9 @@ import {requireAccount} from './account.controller.js';
 import {assertWebCommand} from './commands.js';
 import {PUBLIC_ORIGIN} from './session.controller.js';
 import {DomainFailure} from '../domain/failure.js';
-@Controller('travel-rooms')
-export class TravelRoomsController {
- constructor(@Inject(TravelRooms) private readonly rooms:TravelRooms,@Inject(TravelRoomDeletion) private readonly deletion:TravelRoomDeletion,@Inject(TravelRuns) private readonly runs:TravelRuns,@Inject(AccountAuth) private readonly auth:AccountAuth,@Inject(PUBLIC_ORIGIN) private readonly origin:string){}
- private actor(req:Request,res:Response,command=false){res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');if(command)assertWebCommand(req,this.origin);return requireAccount(req,this.auth).accountId;}
+export abstract class TravelRoomRoutes {
+ constructor(protected readonly rooms:TravelRooms,protected readonly deletion:TravelRoomDeletion,protected readonly runs:TravelRuns){}
+ protected abstract actor(req:Request,res:Response,command?:boolean):string;
  @Get() list(@Req() req:Request,@Res({passthrough:true}) res:Response){if(Object.keys(req.query).some(k=>k!=='cursor')||(req.query.cursor!==undefined&&typeof req.query.cursor!=='string'))throw new DomainFailure('INVALID_INPUT');return this.rooms.list(this.actor(req,res),req.query.cursor as string|undefined);}
  @Post() create(@Req() req:Request,@Res({passthrough:true}) res:Response){return this.rooms.create(this.actor(req,res,true),req.body);}
  @Post(':roomId/deletion') deleteRoom(@Param('roomId') id:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.deletion.request(this.actor(req,res,true),id,req.body);}
@@ -32,6 +31,12 @@ export class TravelRoomsController {
  @Post(':roomId/runs/:runId/start') start(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.start(this.actor(req,res,true),id,runId,req.body);}
  @Post(':roomId/runs/:runId/actions') action(@Param('roomId') id:string,@Param('runId') runId:string,@Req() req:Request,@Res({passthrough:true}) res:Response){return this.runs.action(this.actor(req,res,true),id,runId,req.body);}
 }
+@Controller('travel-rooms')
+export class TravelRoomsController extends TravelRoomRoutes {
+ constructor(@Inject(TravelRooms) rooms:TravelRooms,@Inject(TravelRoomDeletion) deletion:TravelRoomDeletion,@Inject(TravelRuns) runs:TravelRuns,@Inject(AccountAuth) private readonly auth:AccountAuth,@Inject(PUBLIC_ORIGIN) private readonly origin:string){super(rooms,deletion,runs);}
+ protected actor(req:Request,res:Response,command=false){res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');if(command)assertWebCommand(req,this.origin);return requireAccount(req,this.auth).accountId;}
+}
+
 @Controller('travel-invites')
 export class TravelInvitesController {
  constructor(@Inject(TravelRooms) private readonly rooms:TravelRooms,@Inject(AccountAuth) private readonly auth:AccountAuth,@Inject(PUBLIC_ORIGIN) private readonly origin:string){}
