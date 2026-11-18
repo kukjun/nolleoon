@@ -107,6 +107,9 @@ export async function restoreDatabase(source:string,destination:string,options?:
      new UnlinkRequirements(db).check(authority,true);
      const uow=new SqliteUnitOfWork(db);
      uow.run(r=>{for(const event of rooms)applyRoomDeletionEvent(r,event);for(const event of accounts)applyAccountDeletion(r,event,{restore:true});});
+     // Restored native bearer tokens may have been revoked after this snapshot.
+     // Invalidate all of them on the PRIVATE copy; existing web policy stays unchanged.
+     db.exec('DELETE FROM native_account_sessions; DELETE FROM native_account_deletion_receipts');
      // Rebuild live pages on the PRIVATE copy, never mutate the source or running DB.
      db.exec('VACUUM');validate(db);
     }finally{db.close();}

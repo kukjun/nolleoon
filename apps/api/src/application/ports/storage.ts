@@ -1,3 +1,4 @@
+import type {NativeAccountSessions} from './native-account-sessions.js';
 import type {AccountDeletionRepository} from './account-deletion.js';
 import type {TravelRepository} from './travel.js';
 import type {LegacyLinksRepository} from './legacy-links.js';
@@ -23,6 +24,7 @@ export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:s
 export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
+  nativeSessions:NativeAccountSessions;
   accountDeletion:AccountDeletionRepository;
   legacyLinks:LegacyLinksRepository;
   accountAuth:AccountAuthRepository;

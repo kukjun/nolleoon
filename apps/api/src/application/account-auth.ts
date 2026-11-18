@@ -1,3 +1,4 @@
+import {principalAccount,type AccountPrincipal} from './account-principal.js';
 import type {KakaoUnlinkOutbox} from './ports/kakao-unlink-outbox.js';
 import {accountAvatar,accountAvatarView} from './account-avatar-view.js';
 import {SessionRequired,type Clock,type TokenCodec} from './browser-sessions.js';
@@ -11,7 +12,7 @@ export function accountReturnPath(value:unknown):string {
  if(typeof value!=='string'||!(value==='/travel'||/^\/travel\/invite\/[A-Za-z0-9_-]{20,128}$/.test(value)))throw new DomainFailure('INVALID_INPUT');
  return value;
 }
-function publicAccount(a:AccountRecord,r:AccountAuthRepository){return {avatar:accountAvatarView(accountAvatar(r,a)),id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
+function publicAccount(a:AccountRecord,r:AccountAuthRepository,imagePath?:string){return {avatar:accountAvatarView(accountAvatar(r,a),imagePath),id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
 export class AccountAuth {
  constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider,private readonly beforeContinuation?:()=>void,private readonly unlinkQueue?:KakaoUnlinkOutbox){}
  private current(r:AccountAuthRepository,token:unknown,now:number){
@@ -69,11 +70,13 @@ export class AccountAuth {
   });
  }
  logout(token?:string,browserToken?:string){this.uow.run(({accountAuth:r})=>{if(opaque(token))r.revokeSession(this.codec.hash(token),this.clock.now());if(opaque(browserToken)){r.invalidateAttempts(this.codec.hash(browserToken));r.revokeBrowserSessions(this.codec.hash(browserToken),this.clock.now());}});return {authenticated:false as const};}
- profile(token:string|undefined,input:unknown){
+ profile(token:string|undefined,input:unknown){return this.profileCommand(token,input);}
+ profilePrincipal(actor:AccountPrincipal,input:unknown){return this.profileCommand(undefined,input,actor);}
+ private profileCommand(token:string|undefined,input:unknown,actor?:AccountPrincipal){
   if(!input||typeof input!=='object'||Array.isArray(input))throw new DomainFailure('INVALID_INPUT');
   const b=input as Record<string,unknown>;
   if(Object.keys(b).sort().join(',')!=='displayName,expectedRevision,presetId'||typeof b.displayName!=='string'||!Number.isSafeInteger(b.expectedRevision)||(b.expectedRevision as number)<0||typeof b.presetId!=='string'||!/^preset-(0[1-9]|10)$/.test(b.presetId))throw new DomainFailure('INVALID_INPUT');
   const name=b.displayName.normalize('NFKC').trim();if(!name||[...name].length>20||control(name))throw new DomainFailure('INVALID_INPUT');
-  return this.uow.run(({accountAuth:r})=>{const a=this.current(r,token,this.clock.now()).account;if(!r.updateProfile(a.id,b.expectedRevision as number,name,b.presetId as string))throw new DomainFailure('STATE_CONFLICT');if(b.presetId!==a.presetId){const avatar=accountAvatar(r,a);r.saveAvatar({accountId:a.id,presetId:b.presetId as string,revision:avatar.revision+1,imageBytes:null});}return {authenticated:true as const,account:publicAccount(r.findAccount(a.id)!,r)};});
+  return this.uow.run(repositories=>{const r=repositories.accountAuth,a=actor?principalAccount(repositories,actor,this.clock.now()):this.current(r,token,this.clock.now()).account;if(!r.updateProfile(a.id,b.expectedRevision as number,name,b.presetId as string))throw new DomainFailure('STATE_CONFLICT');if(b.presetId!==a.presetId){const avatar=accountAvatar(r,a);r.saveAvatar({accountId:a.id,presetId:b.presetId as string,revision:avatar.revision+1,imageBytes:null});}return {authenticated:true as const,account:publicAccount(r.findAccount(a.id)!,r,actor?.transport==='native'?'/api/native/account/avatar/image':undefined)};});
  }
 }

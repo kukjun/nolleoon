@@ -1,3 +1,4 @@
+import {nativeSessionRepository} from './native-session-repository.js';
 import {accountDeletionRepository} from './account-deletion-repository.js';
 import {travelRepository} from './travel-repository.js';
 import {legacyLinksRepository} from './legacy-links-repository.js';
@@ -62,6 +63,7 @@ export class SqliteUnitOfWork implements UnitOfWork {
     const gameColumns='id,room_id AS roomId,status,case_text AS caseText,penalty_text AS penaltyText,duration_seconds AS durationSeconds,version,created_at AS createdAt';
     const runColumns='id,room_id AS roomId,type,status,version,settings_json AS settingsJson,created_at AS createdAt';
     const repositories:Repositories={
+      nativeSessions:nativeSessionRepository({execute,find,all}),
       accountDeletion:accountDeletionRepository({execute,find,all},this.db),
       travel:travelRepository({execute,find,all}),
       accountAuth:accountRepository({execute,find,all}),
