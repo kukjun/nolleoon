@@ -1,3 +1,5 @@
+import {unlinkOutbox} from './unlink-outbox.js';
+import {KakaoUnlinkProvider,kakaoUnlinkConfiguration} from '../infrastructure/auth/kakao-unlink.js';
 import {privacyLedgers} from './privacy-ledgers.js';
 import {KakaoProvider,kakaoConfiguration} from '../infrastructure/auth/kakao-provider.js';
 import 'reflect-metadata';
@@ -10,7 +12,9 @@ export async function bootstrap(environment:NodeJS.ProcessEnv){
  const web=environment.WEB_ROOT===undefined?undefined:staticWeb(environment.WEB_ROOT,env.dbPath);
  const ledgers=privacyLedgers(environment,env.dbPath);
  const kakao=kakaoConfiguration(environment,env.publicOrigin);
- const app=await NestFactory.create(AppModule.register({...env,...ledgers,kakaoProvider:kakao?new KakaoProvider(kakao):undefined}),{abortOnError:false,logger:false});
+ const unlinkKey=kakaoUnlinkConfiguration(environment);
+ const unlink=unlinkOutbox(environment,env.dbPath,Boolean(kakao||unlinkKey));
+ const app=await NestFactory.create(AppModule.register({...env,...ledgers,...unlink,kakaoUnlinkProvider:unlinkKey?new KakaoUnlinkProvider(unlinkKey):undefined,kakaoProvider:kakao?new KakaoProvider(kakao):undefined}),{abortOnError:false,logger:false});
  app.setGlobalPrefix('api');
  if(web)app.use(web);
  app.enableShutdownHooks();
