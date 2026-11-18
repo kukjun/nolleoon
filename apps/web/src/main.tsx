@@ -1,3 +1,4 @@
+import {TravelApp} from './travel-app';
 import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Button, Layout, Status } from './design/components';
@@ -54,5 +55,5 @@ function App() {
 }
 const root=document.getElementById('root');
 if(!root)throw new Error('앱 표시 영역을 찾지 못했습니다.');
-const Screen=new URL(document.location.href).searchParams.get('view')==='design'?Gallery:App;
+const Screen=window.location.pathname.startsWith('/travel')?TravelApp:new URL(document.location.href).searchParams.get('view')==='design'?Gallery:App;
 createRoot(root).render(<StrictMode><Screen /></StrictMode>);
