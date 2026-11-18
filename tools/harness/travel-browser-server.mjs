@@ -9,7 +9,7 @@ import {staticWeb} from '../../apps/api/dist/production/static-web.js';
 import {watchBrowserLease} from './browser-lease.mjs';
 const dir=mkdtempSync(join(tmpdir(),'travel-browser-'));
 const origin='http://127.0.0.1:4188',dbPath=join(dir,'synthetic.sqlite');
-const kakaoProvider={authorizationUrl:state=>'https://kauth.kakao.com/oauth/authorize?state='+state,exchange:async code=>{if(!/^synthetic-[0-9]+$/.test(code))throw Error('Synthetic identity only');return{subject:code.slice(10)};}};
+const kakaoProvider={authorizationUrl:state=>'https://kauth.kakao.com/oauth/authorize?state='+state,exchange:async code=>{const match=/^synthetic-([0-9]+)(?:-[a-zA-Z0-9]+)?$/.exec(code);if(!match)throw Error('Synthetic identity only');return{subject:match[1]};}};
 const app=await NestFactory.create(AppModule.register({dbPath,publicOrigin:origin,kakaoProvider}),{logger:false,abortOnError:false});
 app.setGlobalPrefix('api');app.use(staticWeb(resolve(import.meta.dirname,'../../apps/web/dist'),dbPath));await app.listen(4188,'127.0.0.1');
 let closing=false;
