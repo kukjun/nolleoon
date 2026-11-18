@@ -20,6 +20,9 @@ enum ApiOperation {
   transferAdministrator,
   leaveRoom,
   removeMember,
+  deletedRooms,
+  deleteRoom,
+  restoreRoom,
   history,
   run,
   createRun,
@@ -119,7 +122,9 @@ final class NativeRoutes implements ApiPathResolver {
       ApiOperation.transferAdministrator ||
       ApiOperation.leaveRoom ||
       ApiOperation.history ||
-      ApiOperation.createRun => ['roomId'],
+      ApiOperation.createRun ||
+      ApiOperation.deleteRoom ||
+      ApiOperation.restoreRoom => ['roomId'],
       ApiOperation.run ||
       ApiOperation.editRun ||
       ApiOperation.startRun ||
@@ -189,6 +194,12 @@ final class NativeRoutes implements ApiPathResolver {
         '$room/members/${parameters['membershipId']}/remove',
         'POST',
       ),
+      ApiOperation.deletedRooms => const ResolvedRoute(
+        '/api/native/travel-deleted-rooms',
+        'GET',
+      ),
+      ApiOperation.deleteRoom => ResolvedRoute('$room/deletion', 'POST'),
+      ApiOperation.restoreRoom => ResolvedRoute('$room/restore', 'POST'),
       ApiOperation.history => ResolvedRoute('$room/history', 'GET'),
       ApiOperation.run => ResolvedRoute(run, 'GET'),
       ApiOperation.createRun => ResolvedRoute('$room/runs', 'POST'),
@@ -228,12 +239,26 @@ final class MutationIntent {
         throw ArgumentError('requestId required');
       }
     }
+    if (operation == ApiOperation.restoreRoom) {
+      final version = body['deletionVersion'], deletedAt = body['deletedAt'];
+      if (body.length != 3 ||
+          body.containsKey('expectedVersion') ||
+          version is! int ||
+          version < 1 ||
+          version > 9007199254740991 ||
+          deletedAt is! int ||
+          deletedAt < 0 ||
+          deletedAt > 9007199254740991) {
+        throw ArgumentError('Invalid deletion proof');
+      }
+    }
     if (![
           ApiOperation.profile,
           ApiOperation.authExchange,
           ApiOperation.logout,
           ApiOperation.createRoom,
           ApiOperation.joinInvite,
+          ApiOperation.restoreRoom,
         ].contains(operation) ||
         body.containsKey('expectedVersion')) {
       final version = body['expectedVersion'];
