@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import {DurableKakaoUnlinkOutbox} from '../auth/kakao-unlink-outbox.js';
+import {UnlinkRequirements} from '../deletion/unlink-requirements.js';
 import {LedgerRequirements} from '../deletion/ledger-requirements.js';
 import { createHash } from 'node:crypto';
 import { lstat, realpath, mkdtemp, rm, link, open } from 'node:fs/promises';
@@ -78,16 +80,19 @@ export async function backupDatabase(source: string, destination: string): Promi
 }
 
 export interface RestoreLedgerOptions {
+ unlink:{queue:DurableKakaoUnlinkOutbox;checkpoint:{sequence:number;digest:string}};
  account:{journal:DurableDeletionLedger;checkpoint:{sequence:number;digest:string}};
  rooms:{journal:DurableRoomDeletionLedger;checkpoint:{sequence:number;digest:string}};
 }
 /** All supported generations require authoritative deletion journals, even pre-account backups. */
 export async function restoreDatabase(source:string,destination:string,options?:RestoreLedgerOptions):Promise<void>{
- if(!options)throw new Error(failure);
+ if(!options?.unlink)throw new Error(failure);
  let temporary:string|undefined;
  try{
   await options.account.journal.withVerifiedEntries(options.account.checkpoint,async accounts=>
-   options.rooms.journal.withVerifiedEntries(options.rooms.checkpoint,async rooms=>{
+   options.rooms.journal.withVerifiedEntries(options.rooms.checkpoint,async rooms=>
+    options.unlink.queue.withVerifiedAuthority(async authority=>{
+    const head=authority.witness();if(head.sequence!==options.unlink.checkpoint.sequence||head.digest!==options.unlink.checkpoint.digest)throw Error('UNLINK_QUEUE_STALE');
     if(!isAbsolute(destination))throw Error('absolute destination required');
     temporary=await mkdtemp(join(await realpath(dirname(destination)),'.trip-restore-'));
     const working=join(temporary,'private.sqlite');
@@ -99,13 +104,14 @@ export async function restoreDatabase(source:string,destination:string,options?:
       {entries:()=>accounts,bindingIdentity:()=>options.account.journal.bindingIdentity()},
       {entries:()=>rooms,bindingIdentity:()=>options.rooms.journal.bindingIdentity()}
      );
+     new UnlinkRequirements(db).check(authority,true);
      const uow=new SqliteUnitOfWork(db);
      uow.run(r=>{for(const event of rooms)applyRoomDeletionEvent(r,event);for(const event of accounts)applyAccountDeletion(r,event,{restore:true});});
      // Rebuild live pages on the PRIVATE copy, never mutate the source or running DB.
      db.exec('VACUUM');validate(db);
     }finally{db.close();}
     await backupDatabase(working,destination);
-   }));
+   })));
  }catch{throw new Error(failure);}
  finally{if(temporary)await rm(temporary,{recursive:true,force:true});}
 }

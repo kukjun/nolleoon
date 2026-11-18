@@ -30,7 +30,7 @@ export class DurableKakaoUnlinkOutbox implements KakaoUnlinkOutbox {
    if(!e||!id(e.operationId)||!time(e.at)||!['prepared','completed','expired'].includes(e.action)||Object.keys(e).sort().join(',')!==(e.action==='prepared'?'action,at,expiresAt,operationId':'action,at,operationId'))throw Error('QUEUE_CHAIN');
    if(row.sequence!==tip.sequence+1||row.previous!==tip.digest||row.digest!==hash({previous:tip.digest,sequence:row.sequence,event:e}))throw Error('QUEUE_CHAIN');
    if(e.action==='prepared'){if(prepared.has(e.operationId)||!time(e.expiresAt)||e.expiresAt!==e.at+UNLINK_RETENTION_MS)throw Error('QUEUE_CHAIN');prepared.set(e.operationId,e);}
-   else{const original=prepared.get(e.operationId);if(!original||terminal.has(e.operationId)||e.at<original.at)throw Error('QUEUE_CHAIN');terminal.add(e.operationId);}
+   else{const original=prepared.get(e.operationId);if(!original||terminal.has(e.operationId)||e.at<original.at||(e.action==='expired'&&e.at<original.expiresAt!))throw Error('QUEUE_CHAIN');terminal.add(e.operationId);}
    rows.push(row);tip={sequence:row.sequence,digest:row.digest};
   }
   const anchor=JSON.parse(readFileSync(this.checkpointPath,'utf8')) as Tip,known=anchor.sequence===0?initial:rows[anchor.sequence-1];
@@ -41,7 +41,7 @@ export class DurableKakaoUnlinkOutbox implements KakaoUnlinkOutbox {
   const seen=new Set<string>();for(const job of state.jobs){validateIntent(job);if(seen.has(job.operationId)||!time(job.attempts)||!time(job.nextAttemptAt)||!time(job.leaseUntil)||Object.keys(job).sort().join(',')!=='attempts,createdAt,expiresAt,leaseUntil,nextAttemptAt,operationId,subject')throw Error('QUEUE_INVALID');seen.add(job.operationId);const p=prepared.get(job.operationId);if(p&&(p.at!==job.createdAt||p.expiresAt!==job.expiresAt))throw Error('QUEUE_CONFLICT');}
   return {rows,tip,prepared,terminal,jobs:state.jobs};
  }
- private append(state:ReturnType<DurableKakaoUnlinkOutbox['load']>,event:Event){const sequence=state.tip.sequence+1,row:Row={sequence,previous:state.tip.digest,event,digest:hash({previous:state.tip.digest,sequence,event})};write(this.journalPath,JSON.stringify(row)+'\n','a');atomic(this.checkpointPath,{sequence,digest:row.digest});state.rows.push(row);state.tip={sequence,digest:row.digest};if(event.action==='prepared')state.prepared.set(event.operationId,event);else state.terminal.add(event.operationId);}
+ private append(state:ReturnType<DurableKakaoUnlinkOutbox['load']>,event:Event){const original=state.prepared.get(event.operationId);if(!time(event.at)||original&&(event.at<original.at||event.action==='expired'&&event.at<original.expiresAt!))throw Error('QUEUE_TIME');const sequence=state.tip.sequence+1,row:Row={sequence,previous:state.tip.digest,event,digest:hash({previous:state.tip.digest,sequence,event})};write(this.journalPath,JSON.stringify(row)+'\n','a');atomic(this.checkpointPath,{sequence,digest:row.digest});state.rows.push(row);state.tip={sequence,digest:row.digest};if(event.action==='prepared')state.prepared.set(event.operationId,event);else state.terminal.add(event.operationId);}
  private save(jobs:Job[]){atomic(this.pendingPath,{jobs});}
  private checked(now?:number){
   if(now!==undefined&&!time(now))throw Error('QUEUE_TIME');const s=this.load();

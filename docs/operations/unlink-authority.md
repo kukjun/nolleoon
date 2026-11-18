@@ -31,3 +31,11 @@ Kakao가 구성된 production은 큐가 없으면 기동을 거절한다. schema
 앱 worker의 주기 정리 외에 로그인/앱이 켜져 있는 상태에서 이 검사를 실행하는 운영 감시가 필요하다. Mac/디스크가 정지한 동안 정확히7일째 물리파일 삭제를 보장할 수 없다. 재기동 시 요청 수신과 remote 호출 전에 만료를 정리한다. 이전 디스크 블록/파일시스템 snapshot의 forensic 삭제도 보장하지 않으며 pending 파일을 일반 백업에 포함하지 않는다.
 
 운영 설치는 별도 root 적용: 서비스 env 세 경로+현재원장, 하루1회 기존 `daily-backup.mjs --prune-managed`(최근7일 정책), 주기적 storage-health/authority-health와 실패 전달. DB 일일백업 정책이 현재authority를 과거로 덮는 절차를 포함하지 않는다. 이 작업은 LaunchAgent 설치/실DB삭제/실사용자 unlink를 실행하지 않았다.
+
+## 검증된 DB 복원 연결
+
+`restoreDatabase`는 기존 두 삭제 원장 옵션에 더해 `unlink:{queue,checkpoint:{sequence,digest}}`를 필수로 받는다. schema9/11의 과거 DB도 예외가 아니다. CLI control JSON에는 `unlink:{pendingPath,journalPath,checkpointPath,expected:{sequence,digest}}`를 추가한다. 경로는 **현재 권위 파일**이며 백업 안의 파일이 아니다.
+
+복원은 account→room→unlink 순서로 잠금을 잡고, 큐 만료 정리 후 current witness와 전달한 checkpoint가 정확히 일치하는지 확인한다. 만료 정리로 새 terminal event가 생기면 old expected는 실패하므로 최신 checkpoint를 확인하고 다시 실행한다. 잠금 안에서 재진입하지 않는 readonly authority wrapper로 schema18 binding/known-prefix를 복원본에 기록한다. 누락/다른queue/이전prefix로 기동할 수 없으며 DB복원은 큐를 과거로 바꾸지 않는다. 대상이 이미 존재하면 여전히 no-clobber다.
+
+신규 restore 회귀 RED는 복원본의 `UnlinkRequirements.check()`가 큐 없이 성공했던 실제 실패였다. 수정 후 필수 큐 누락/stale witness 거부, terminal 뒤 옛 pending 복사본의 subject 청소, 새DB latch와 secret byte 부재를 확인했다. 합성 fixture만 명시적 빈 큐를 생성하고 testtmp 수명으로 관리한다.

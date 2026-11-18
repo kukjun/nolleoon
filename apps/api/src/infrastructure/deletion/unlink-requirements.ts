@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';import type Database from 'better-sqlite3
 /** No provider subject or hash enters SQLite/backup. Only current-authority path and opaque log head. */
 export class UnlinkRequirements {
  constructor(private readonly db:Database.Database){}
- check(queue?:KakaoUnlinkOutbox,required=false){
+ check(queue?:Pick<KakaoUnlinkOutbox,'available'|'bindingIdentity'|'witness'|'verifyPrefix'>,required=false){
   if(this.db.inTransaction)throw Error('UNLINK_REQUIREMENTS_NESTED');
   const old=this.db.prepare('SELECT binding_hash binding,known_sequence sequence,known_digest digest FROM unlink_queue_requirement WHERE id=1').get() as {binding:string;sequence:number;digest:string}|undefined;
   if(!queue){if(required||old)throw Error('UNLINK_QUEUE_REQUIRED');return;}
