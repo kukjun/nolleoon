@@ -1,3 +1,4 @@
+import {TravelLegacy} from './travel-legacy';
 import {TravelProfile,type TravelAccount} from './travel-profile';
 import {useEffect,useRef,useState} from 'react';
 import {Button,Status} from './design/components';
@@ -6,11 +7,11 @@ import {travelRoute} from './travel-route';
 import {TravelHome,TravelInvite,TravelRoom} from './travel-rooms';
 import './travel.css';
 export function TravelApp(){
- const [path,setPath]=useState(window.location.pathname);const [account,setAccount]=useState<TravelAccount|null>(null);const [state,setState]=useState<'loading'|'ready'|'error'>('loading');const [error,setError]=useState('');
+ const [path,setPath]=useState(window.location.pathname);const [legacy,setLegacy]=useState(false);const [account,setAccount]=useState<TravelAccount|null>(null);const [state,setState]=useState<'loading'|'ready'|'error'>('loading');const [error,setError]=useState('');
  const generation=useRef(0);const probeAbort=useRef<AbortController|null>(null);const [epoch,setEpoch]=useState(0);const [busy,setBusy]=useState(false);const [logoutFailed,setLogoutFailed]=useState(false);const pending=useRef(false);
  const route=travelRoute(path);
- function navigate(next:string){window.history.pushState({},'',next);setPath(next);setError('');}
- function clear(){generation.current++;probeAbort.current?.abort();setAccount(null);setEpoch(x=>x+1);setState('ready');}
+ function navigate(next:string){setLegacy(false);window.history.pushState({},'',next);setPath(next);setError('');}
+ function clear(){setLegacy(false);generation.current++;probeAbort.current?.abort();setAccount(null);setEpoch(x=>x+1);setState('ready');}
  async function probe(){
   const ticket=++generation.current;probeAbort.current?.abort();const controller=new AbortController();probeAbort.current=controller;const timer=setTimeout(()=>controller.abort(),6000);
   // Hide protected content until the account has been revalidated on foreground/history restore.
@@ -20,7 +21,7 @@ export function TravelApp(){
  }
  useEffect(()=>{
   void probe();
-  const pop=()=>{setPath(window.location.pathname);void probe();};const foreground=()=>{if(document.visibilityState==='visible')void probe();};const focus=()=>void probe();
+  const pop=()=>{setLegacy(false);setPath(window.location.pathname);void probe();};const foreground=()=>{if(document.visibilityState==='visible')void probe();};const focus=()=>void probe();
   window.addEventListener('popstate',pop);window.addEventListener('pageshow',focus);window.addEventListener('focus',focus);document.addEventListener('visibilitychange',foreground);
   return()=>{generation.current++;probeAbort.current?.abort();window.removeEventListener('popstate',pop);window.removeEventListener('pageshow',focus);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',foreground);};
  },[]);
@@ -31,8 +32,8 @@ export function TravelApp(){
  {error&&<p role="alert" className="field-error">{error}</p>}{logoutFailed&&<Button loading={busy} onPress={logout}>로그아웃 다시 시도</Button>}
  {state==='loading'?<Status live>계정을 확인하고 있어요…</Status>:state==='error'?<section className="travel-card"><h1>연결을 확인해 주세요</h1><Button onPress={probe}>다시 시도</Button></section>:<>
  {!account&&<section className="travel-card"><span className="eyebrow">TRAVEL TOGETHER</span><h1>{route.page==='invite'?'여행방에 초대받았어요':'우리 여행의 놀이방'}</h1><p>카카오로 로그인하고 친구들과 여행방을 함께 사용해요. 다른 기기에서도 내 여행방으로 돌아올 수 있어요.</p>{loginState==='cancelled'&&<Status live>로그인을 취소했어요. 초대는 그대로 유지돼요.</Status>}{loginState==='failed'&&<Status live tone="warning">로그인을 완료하지 못했어요. 다시 시도해 주세요.</Status>}{route.page!=='invalid'&&<Button loading={busy} onPress={login}>카카오로 로그인</Button>}<p className="travel-muted">카카오 친구 목록이나 프로필 사진을 자동으로 가져오지 않아요.</p></section>}
- {account&&route.page==='home'&&<TravelProfile key={`${epoch}:profile`} account={account} onSaved={setAccount} onIdentityLost={clear}/>}
- {route.page==='invite'?<TravelInvite key={`${epoch}:${path}`} token={route.token} authenticated={!!account} onEntered={id=>navigate(`/travel/rooms/${id}`)} onIdentityLost={clear}/>:account&&route.page==='home'?<TravelHome key={epoch} onOpen={id=>navigate(`/travel/rooms/${id}`)} onIdentityLost={clear}/>:account&&route.page==='room'?<TravelRoom key={`${epoch}:${path}`} roomId={route.roomId} onHome={()=>navigate('/travel')} onIdentityLost={clear}/>:route.page==='invalid'?<section className="travel-card"><h1>올바르지 않은 링크예요</h1><Button onPress={()=>navigate('/travel')}>내 여행방으로</Button></section>:null}
+ {account&&((route.page==='home'&&!legacy)||route.page==='invite')&&<TravelProfile key={`${epoch}:profile`} account={account} onSaved={setAccount} onIdentityLost={clear}/>}
+ {route.page==='invite'?<TravelInvite key={`${epoch}:${path}`} token={route.token} authenticated={!!account} onEntered={id=>navigate(`/travel/rooms/${id}`)} onIdentityLost={clear}/>:account&&route.page==='home'?legacy?<TravelLegacy key={epoch} onClose={()=>setLegacy(false)} onIdentityLost={clear}/>:<><TravelHome key={epoch} onOpen={id=>navigate(`/travel/rooms/${id}`)} onIdentityLost={clear}/><Button variant="secondary" onPress={()=>setLegacy(true)}>이전 브라우저 기록 연결</Button></>:account&&route.page==='room'?<TravelRoom key={`${epoch}:${path}`} roomId={route.roomId} onHome={()=>navigate('/travel')} onIdentityLost={clear}/>:route.page==='invalid'?<section className="travel-card"><h1>올바르지 않은 링크예요</h1><Button onPress={()=>navigate('/travel')}>내 여행방으로</Button></section>:null}
  </>}
  <footer className="travel-muted"><a href="/">기존 브라우저 게임으로</a></footer></main></div>;
 }

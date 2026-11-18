@@ -4,13 +4,13 @@ import {Avatar} from './avatar';
 import {avatarPresets,presetLabel} from './avatar-presets';
 import {defaultAvatar,requestAvatar,validateAvatarFile,type AvatarProfile} from './api/avatar-client';
 import {cropAvatar} from './avatar-crop';
-export function AvatarPicker({onBusyChange,onSaved}:{onBusyChange?:(busy:boolean)=>void;onSaved?:(avatar:AvatarProfile)=>void}){
+export function AvatarPicker({onBusyChange,onSaved,apiBase='/api/avatar',onIdentityLost}:{apiBase?:'/api/avatar'|'/api/account/avatar';onIdentityLost?:()=>void;onBusyChange?:(busy:boolean)=>void;onSaved?:(avatar:AvatarProfile)=>void}){
  const [edited,setEdited]=useState(false);const [saved,setSaved]=useState(defaultAvatar);const [choice,setChoice]=useState('preset-01');const [open,setOpen]=useState(false);const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [file,setFile]=useState<File|null>(null);const [preview,setPreview]=useState('');const [zoom,setZoom]=useState(1);const [x,setX]=useState(0.5);const [y,setY]=useState(0.5);const [cropping,setCropping]=useState(false);const prepared=useRef<File|null>(null);const alive=useRef(false);const request=useRef<AbortController|null>(null);const lock=useRef(false);const uploadId=useId();const callbacks=useRef({onBusyChange,onSaved});callbacks.current={onBusyChange,onSaved};
  useEffect(()=>{callbacks.current.onBusyChange?.(saving||open);},[saving,open]);
  useEffect(()=>{alive.current=true;void load();return()=>{alive.current=false;request.current?.abort();callbacks.current.onBusyChange?.(false);};},[]);
  async function load(preserveChoice=false){
   request.current?.abort();const controller=new AbortController();request.current=controller;const timer=setTimeout(()=>controller.abort(),6000);setLoading(true);
-  try{const result=await requestAvatar('/api/avatar',undefined,controller.signal);if(!alive.current||request.current!==controller)return;if(result.ok){setSaved(result.data);if(!preserveChoice)setChoice(result.data.presetId??'preset-01');setError('');}else setError(result.message);}
+  try{const result=await requestAvatar(apiBase,undefined,controller.signal);if(!alive.current||request.current!==controller)return;if(result.ok){setSaved(result.data);if(!preserveChoice)setChoice(result.data.presetId??'preset-01');setError('');}else{if(apiBase==='/api/account/avatar'&&result.code==='SESSION_REQUIRED')onIdentityLost?.();setError(result.message);}}
   finally{clearTimeout(timer);if(alive.current&&request.current===controller)setLoading(false);}
  }
  useEffect(()=>{
@@ -25,10 +25,10 @@ export function AvatarPicker({onBusyChange,onSaved}:{onBusyChange?:(busy:boolean
   if(lock.current||cropping||loading||!edited)return;const upload=prepared.current;if(file&&!upload){setError('사진 미리보기를 먼저 확인해 주세요.');return;}
   lock.current=true;setSaving(true);setError('');request.current?.abort();const controller=new AbortController();request.current=controller;const timer=setTimeout(()=>controller.abort(),10000);
   try{
-   const result=await requestAvatar(file?'/api/avatar/image':'/api/avatar',file?{file:upload!,expectedRevision:saved.revision}:{presetId:choice,expectedRevision:saved.revision},controller.signal);
+   const result=await requestAvatar(file?`${apiBase}/image`:apiBase,file?{file:upload!,expectedRevision:saved.revision}:{presetId:choice,expectedRevision:saved.revision},controller.signal);
    if(!alive.current)return;
-   if(result.ok){setSaved(result.data);setChoice(result.data.presetId??'preset-01');setFile(null);setOpen(false);setNotice('캐릭터를 저장했어요.');callbacks.current.onSaved?.(result.data);window.dispatchEvent(new Event('avatar-updated'));}
-   else{setError(result.code==='STATE_CONFLICT'?'다른 화면에서 캐릭터가 바뀌었어요. 최신 캐릭터를 불러온 뒤 다시 골라 주세요.':result.message);}
+   if(result.ok){setSaved(result.data);setChoice(result.data.presetId??'preset-01');setFile(null);setOpen(false);setNotice('캐릭터를 저장했어요.');callbacks.current.onSaved?.(result.data);window.dispatchEvent(new Event(apiBase==='/api/account/avatar'?'account-avatar-updated':'avatar-updated'));}
+   else{if(apiBase==='/api/account/avatar'&&result.code==='SESSION_REQUIRED')onIdentityLost?.();setError(result.code==='STATE_CONFLICT'?'다른 화면에서 캐릭터가 바뀌었어요. 최신 캐릭터를 불러온 뒤 다시 골라 주세요.':result.message);}
   }finally{clearTimeout(timer);lock.current=false;if(alive.current)setSaving(false);}
  }
  const chosen:AvatarProfile={kind:'preset',presetId:choice,revision:0,imageUrl:null};
