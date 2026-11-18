@@ -15,3 +15,8 @@ Native endpoint/실제 Kakao/실기기는 미검증이다. 변경은 games 디�
 
 ## 독립 리뷰 후 identity 교체 보완
 같은 Widget key에서 room/run만 바뀌면 옛 private projection이 남던 실제 RED를 재현했다. didUpdateWidget이 room/run/repository/viewer/accountScope 변경을 감지해 이전 controller·poll·요청·intent를 폐기하고 새로 읽는다. accountScope는 필수 비어있지 않은 문자열이며 동일 repository의 계정/세션 교체에도 갱신해야 한다. callback 인스턴스 변경만으로 입력을 초기화하지 않고 현재 widget callback을 호출한다. 이전 configure 완료는 새 계정/방에 명령을 보낼 수 없다. 추가5개+기존10개=15 PASS, 변경 파일 analyze issue0. team WIP는 이 보안 수정 커밋에 포함하지 않는다.
+
+## 불확실 명령의 세션 수명 소유자
+`GameScreen.pendingCommands`는 필수이며 인증 세션 상위에서 만든 `PendingGameCommands`를 같은 계정의 route remount에 재사용해야 한다. 앱 조립 담당이 로그아웃·계정 교체에 `clear()`한다. owner는 메모리 전용이고 디스크에 개인 명령을 저장하지 않는다. accountScope 변경은 옛 intent를 버린다. background/route dispose는 DTO를 지우지만 응답이 불확실한 immutable intent를 owner에 남겨, 돌아와 GET 확인 후 사용자 명시 retry만 같은 requestId/bytes로 전송한다. 새 명령으로 대체하거나 자동 offline 재생하지 않는다. 권한 상실과 로그아웃은 제거한다.
+
+신규 owner 계약 부재 RED 후 accepted-response 지연→background→controller remount→명시 retry exact bytes, 새 계정 및 logout 제거 회귀를 추가했다. 공통17개 PASS, scoped analyze issue0. 이 owner를 앱에 실제 연결하는 것은 별도 조립 게이트다.

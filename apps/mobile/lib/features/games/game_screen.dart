@@ -14,6 +14,7 @@ class GameScreen extends StatefulWidget {
     this.runId,
     this.viewerMembershipId,
     required this.accountScope,
+    required this.pendingCommands,
     required this.onSessionLost,
     this.configure,
     this.play,
@@ -28,6 +29,7 @@ class GameScreen extends StatefulWidget {
 
   /// Change on account/session replacement even when reusing a repository.
   final String accountScope;
+  final PendingGameCommands pendingCommands;
   final VoidCallback onSessionLost;
   final Future<JsonMap?> Function(BuildContext, String, List<String>)?
   configure;
@@ -53,6 +55,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _replaceController() {
     controller = GameController(
       widget.repository,
+      pendingCommands: widget.pendingCommands,
+      accountScope: widget.accountScope,
       onSessionLost: () => widget.onSessionLost(),
     )..addListener(_changed);
     if (_lifecycle != AppLifecycleState.resumed) {
@@ -68,7 +72,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         oldWidget.runId != widget.runId ||
         !identical(oldWidget.repository, widget.repository) ||
         oldWidget.viewerMembershipId != widget.viewerMembershipId ||
-        oldWidget.accountScope != widget.accountScope) {
+        oldWidget.accountScope != widget.accountScope ||
+        !identical(oldWidget.pendingCommands, widget.pendingCommands)) {
       _configEpoch++;
       _configuring = false;
       selected.clear();

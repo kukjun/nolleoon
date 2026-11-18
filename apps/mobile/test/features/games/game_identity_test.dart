@@ -1,3 +1,5 @@
+import 'package:nolleoon_mobile/features/games/game_controller.dart';
+
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
@@ -9,6 +11,8 @@ import 'package:nolleoon_mobile/features/games/game_screen.dart';
 import 'games_test.dart' show FakeTransport, run, ok;
 
 void main() {
+  late PendingGameCommands owner;
+  setUp(() => owner = PendingGameCommands());
   test('empty identity scope rejected in all build modes', () {
     final t = FakeTransport();
     final r = GameRepository(
@@ -20,6 +24,7 @@ void main() {
     );
     expect(
       () => GameScreen(
+        pendingCommands: owner,
         accountScope: '',
         repository: r,
         roomId: 'room-a',
@@ -46,6 +51,7 @@ void main() {
       );
       Widget screen(String room, String id) => MaterialApp(
         home: GameScreen(
+          pendingCommands: owner,
           accountScope: 'synthetic-account',
           key: const ValueKey('game'),
           repository: repo,
@@ -89,6 +95,7 @@ void main() {
     );
     Widget screen(String scope) => MaterialApp(
       home: GameScreen(
+        pendingCommands: owner,
         key: const ValueKey('same'),
         repository: repo,
         accountScope: scope,
@@ -129,6 +136,7 @@ void main() {
       );
       Widget screen(GameRepository r, VoidCallback lost) => MaterialApp(
         home: GameScreen(
+          pendingCommands: owner,
           accountScope: 'synthetic-account',
           key: const ValueKey('same'),
           repository: r,
@@ -184,6 +192,7 @@ void main() {
     );
     Widget screen(String scope) => MaterialApp(
       home: GameScreen(
+        pendingCommands: owner,
         key: const ValueKey('same'),
         repository: repo,
         accountScope: scope,

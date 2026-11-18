@@ -6,8 +6,52 @@ import '../../data/api_client.dart';
 import '../../data/wire_models.dart';
 import 'game_repository.dart';
 
+/// Memory-only owner: keep above routes for one authenticated session; clear on logout.
+class PendingGameCommands {
+  String? _account;
+  final Map<String, MutationIntent> _entries = {};
+  void bind(String account) {
+    if (_account != account) {
+      clear();
+      _account = account;
+    }
+  }
+
+  bool owns(String account) => _account == account;
+  String _key(String room, String? run) => '$room/${run ?? "new"}';
+  MutationIntent? read(String account, String room, String? run) =>
+      owns(account)
+      ? (_entries[_key(room, run)] ?? _entries[_key(room, null)])
+      : null;
+  void save(String account, MutationIntent intent) {
+    if (!owns(account)) return;
+    _entries[_key(intent.parameters['roomId']!, intent.parameters['runId'])] =
+        intent;
+  }
+
+  void remove(String account, MutationIntent? intent) {
+    if (!owns(account) || intent == null) return;
+    final key = _key(intent.parameters['roomId']!, intent.parameters['runId']);
+    if (identical(_entries[key], intent)) _entries.remove(key);
+  }
+
+  void clear() {
+    _entries.clear();
+    _account = null;
+  }
+}
+
 class GameController extends ChangeNotifier {
-  GameController(this.repository, {this.onSessionLost});
+  GameController(
+    this.repository, {
+    this.onSessionLost,
+    PendingGameCommands? pendingCommands,
+    this.accountScope = 'controller-local',
+  }) : pendingCommands = pendingCommands ?? PendingGameCommands() {
+    this.pendingCommands.bind(accountScope);
+  }
+  final PendingGameCommands pendingCommands;
+  final String accountScope;
   final GameRepository repository;
   final VoidCallback? onSessionLost;
   RunDto? run;
@@ -25,7 +69,10 @@ class GameController extends ChangeNotifier {
   }
 
   bool _current(int generation) =>
-      !_disposed && foreground && generation == _generation;
+      !_disposed &&
+      foreground &&
+      generation == _generation &&
+      pendingCommands.owns(accountScope);
   void _stop() {
     _generation++;
     _poll?.cancel();
@@ -35,10 +82,15 @@ class GameController extends ChangeNotifier {
     busy = false;
   }
 
-  void _clear() {
+  void _dropIntent() {
+    pendingCommands.remove(accountScope, _pending);
+    _pending = null;
+  }
+
+  void _clear({bool intent = true}) {
     run = null;
     room = null;
-    _pending = null;
+    if (intent) _dropIntent();
   }
 
   void _schedule() {
@@ -80,6 +132,7 @@ class GameController extends ChangeNotifier {
           ? '이 게임에 접근할 수 없어요.'
           : '연결을 확인하고 다시 시도해 주세요.';
       if (unauthorized) {
+        pendingCommands.clear();
         foreground = false;
         _stop();
         _notify();
@@ -97,9 +150,10 @@ class GameController extends ChangeNotifier {
 
   Future<void> open(String room, String? id) async {
     _stop();
-    _clear();
+    _clear(intent: false);
     roomId = room;
     runId = id;
+    _pending = pendingCommands.read(accountScope, room, id);
     error = null;
     await refresh();
   }
@@ -133,6 +187,7 @@ class GameController extends ChangeNotifier {
       throw ArgumentError('Intent belongs to another game');
     }
     _pending = intent;
+    pendingCommands.save(accountScope, intent);
     await retry();
   }
 
@@ -146,12 +201,12 @@ class GameController extends ChangeNotifier {
           run = result;
           runId = result.runId;
           room = null;
-          _pending = null;
+          _dropIntent();
         }
       } catch (e) {
         if (!_current(generation)) return;
         if (e is ApiFailure && e.status == 409) {
-          _pending = null;
+          _dropIntent();
           run = null;
           room = null;
           await _read(cancel, generation);
@@ -163,7 +218,7 @@ class GameController extends ChangeNotifier {
             e.status != null &&
             e.status! >= 400 &&
             e.status! < 500) {
-          _pending = null;
+          _dropIntent();
         }
         rethrow;
       }
@@ -175,7 +230,7 @@ class GameController extends ChangeNotifier {
     foreground = value;
     if (!value) {
       _stop();
-      _clear();
+      _clear(intent: false);
       error = null;
       _notify();
     } else {
@@ -188,6 +243,7 @@ class GameController extends ChangeNotifier {
     foreground = false;
     _stop();
     _clear();
+    pendingCommands.clear();
     roomId = null;
     runId = null;
     error = '다시 로그인해 주세요.';
@@ -197,7 +253,8 @@ class GameController extends ChangeNotifier {
   @override
   void dispose() {
     _stop();
-    _clear();
+    _clear(intent: false);
+    _pending = null;
     _disposed = true;
     super.dispose();
   }

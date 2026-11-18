@@ -1,3 +1,5 @@
+import 'package:nolleoon_mobile/features/games/game_controller.dart';
+
 import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
@@ -9,6 +11,8 @@ import 'package:nolleoon_mobile/features/games/game_screen.dart';
 import 'games_test.dart' show FakeTransport, run, ok;
 
 void main() {
+  late PendingGameCommands owner;
+  setUp(() => owner = PendingGameCommands());
   testWidgets(
     'shell never pretends game-specific UI exists and background hides snapshot',
     (tester) async {
@@ -23,6 +27,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: GameScreen(
+            pendingCommands: owner,
             accountScope: 'synthetic-account',
             repository: repo,
             roomId: 'room-a',
@@ -68,6 +73,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: GameScreen(
+          pendingCommands: owner,
           accountScope: 'synthetic-account',
           repository: repo,
           roomId: 'room-a',

@@ -210,6 +210,70 @@ void main() {
     expect(c.run, isNull);
     expect(c.hasPendingIntent, false);
   });
+  test('uncertain accepted command survives background and route remount with exact intent', () async {
+    c.dispose();
+    final owner = PendingGameCommands();
+    c = GameController(repo, pendingCommands: owner, accountScope: 'account-a');
+    await c.open('room-a', 'run-a');
+    final delayed = Completer<TransportResponse>();
+    t.handler = (_) => delayed.future;
+    final sending = c.submit(
+      repo.command(ApiOperation.startRun, 'room-a', 'run-a', 1),
+    );
+    await Future<void>.delayed(Duration.zero);
+    final original = t.requests.last.body;
+    await c.setForeground(false);
+    expect(c.run, isNull);
+    expect(c.hasPendingIntent, true);
+    delayed.complete(ok(run(2)));
+    await sending;
+    c.dispose();
+    c = GameController(repo, pendingCommands: owner, accountScope: 'account-a');
+    t.handler = (_) async => ok(run(2));
+    await c.open('room-a', 'run-a');
+    expect(c.hasPendingIntent, true);
+    expect(t.requests.where((r) => r.method == 'POST').length, 1);
+    await c.retry();
+    expect(t.requests.last.body, original);
+    expect(c.hasPendingIntent, false);
+  });
+  test(
+    'new account and explicit logout erase pending commands from shared owner',
+    () async {
+      c.dispose();
+      final owner = PendingGameCommands();
+      c = GameController(
+        repo,
+        pendingCommands: owner,
+        accountScope: 'account-a',
+      );
+      await c.open('room-a', 'run-a');
+      t.handler = (_) async => throw const ApiFailure(FailureKind.network);
+      await c.submit(repo.command(ApiOperation.startRun, 'room-a', 'run-a', 1));
+      expect(c.hasPendingIntent, true);
+      c.dispose();
+      c = GameController(
+        repo,
+        pendingCommands: owner,
+        accountScope: 'account-b',
+      );
+      t.handler = (_) async => ok(run());
+      await c.open('room-a', 'run-a');
+      expect(c.hasPendingIntent, false);
+      t.handler = (_) async => throw const ApiFailure(FailureKind.network);
+      await c.submit(repo.command(ApiOperation.startRun, 'room-a', 'run-a', 1));
+      c.sessionLost();
+      c.dispose();
+      c = GameController(
+        repo,
+        pendingCommands: owner,
+        accountScope: 'account-b',
+      );
+      t.handler = (_) async => ok(run());
+      await c.open('room-a', 'run-a');
+      expect(c.hasPendingIntent, false);
+    },
+  );
   testWidgets(
     'setup room polls at 10 seconds until a server active run exists',
     (tester) async {
