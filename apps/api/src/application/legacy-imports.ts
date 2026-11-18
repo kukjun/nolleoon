@@ -21,7 +21,7 @@ export class LegacyImports {
   const anchorId=cursor===undefined?undefined:id(cursor);
   return this.uow.run(r=>{this.account(r,accountId);const sessionId=this.proof(r,legacyToken,this.clock.now());const anchor=anchorId?this.ownedRun(r,sessionId,anchorId):undefined;
    const rows=r.party.history(sessionId,anchor?{createdAt:anchor.createdAt,id:anchor.id}:null,21),page=rows.slice(0,20);
-   return {items:page.filter(run=>run.status!=='active').map(run=>{const link=r.legacyLinks.find(run.id,sessionId);return {runId:run.id,type:run.type,status:run.status,linkState:link?(link.accountId===accountId?'linked':'unavailable'):'available'};}),nextCursor:rows.length>20?page.at(-1)!.id:null};
+   return {items:page.filter(run=>run.status!=='active').map(run=>{const link=r.legacyLinks.find(run.id,sessionId);return {runId:run.id,type:run.type,status:run.status,createdAt:run.createdAt,linkState:link?(link.accountId===accountId?'linked':'unavailable'):'available'};}),nextCursor:rows.length>20?page.at(-1)!.id:null};
   });
  }
  import(accountId:string,legacyToken:unknown,input:unknown){
@@ -33,7 +33,7 @@ export class LegacyImports {
  }
  list(accountId:string,cursor?:unknown){
   const anchorId=cursor===undefined?undefined:id(cursor);
-  return this.uow.run(r=>{this.account(r,accountId);const anchor=anchorId?r.legacyLinks.findOwned(anchorId,accountId):undefined;if(anchorId&&!anchor)throw new DomainFailure('NOT_FOUND');const rows=r.legacyLinks.byAccount(accountId,anchor?{linkedAt:anchor.linkedAt,id:anchor.id}:null,21),page=rows.slice(0,20);return {items:page.map(link=>{const run=this.ownedRun(r,link.legacySessionId,link.runId);return {id:link.id,runId:run.id,type:run.type,status:run.status};}),nextCursor:rows.length>20?page.at(-1)!.id:null};});
+  return this.uow.run(r=>{this.account(r,accountId);const anchor=anchorId?r.legacyLinks.findOwned(anchorId,accountId):undefined;if(anchorId&&!anchor)throw new DomainFailure('NOT_FOUND');const rows=r.legacyLinks.byAccount(accountId,anchor?{linkedAt:anchor.linkedAt,id:anchor.id}:null,21),page=rows.slice(0,20);return {items:page.map(link=>{const run=this.ownedRun(r,link.legacySessionId,link.runId);return {id:link.id,runId:run.id,type:run.type,status:run.status,createdAt:run.createdAt};}),nextCursor:rows.length>20?page.at(-1)!.id:null};});
  }
  detail(accountId:string,value:unknown){
   const linkId=id(value);return this.uow.run(r=>{this.account(r,accountId);const link=r.legacyLinks.findOwned(linkId,accountId);if(!link)throw new DomainFailure('NOT_FOUND');const run=this.ownedRun(r,link.legacySessionId,link.runId);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');const actor={id:link.legacySessionId};

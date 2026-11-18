@@ -29,3 +29,14 @@ test('keyset preview/list pagination uses owned anchors and observer links keep 
  const first=f.legacy.preview(f.a,f.tokens[0]),second=f.legacy.preview(f.a,f.tokens[0],first.nextCursor);assert.equal(first.items.length,20);assert.equal(second.items.length,6);assert.equal(new Set([...first.items,...second.items].map(x=>x.runId)).size,26);
  f.legacy.import(f.a,f.tokens[0],{runIds:ids.slice(0,20)});f.legacy.import(f.a,f.tokens[0],{runIds:ids.slice(20)});const one=f.legacy.list(f.a),two=f.legacy.list(f.a,one.nextCursor);assert.equal(one.items.length,20);assert.equal(two.items.length,6);assert.equal(new Set([...one.items,...two.items].map(x=>x.id)).size,26);assert.throws(()=>f.legacy.list(f.b,one.nextCursor),e=>e.code==='NOT_FOUND');const detail=f.legacy.detail(f.a,one.items[0].id);assert.equal(detail.party.result,null);assert.equal(detail.party.self.eligible,false);
 });
+
+test('preview and linked list expose original run creation time only, never import time or private content',async t=>{
+ const f=await setup(t);f.setNow(1234);const run=f.team();f.setNow(5678);
+ const preview=f.legacy.preview(f.a,f.tokens[0]).items[0];
+ assert.equal(preview.createdAt,1234);
+ assert.deepEqual(Object.keys(preview).sort(),['createdAt','linkState','runId','status','type']);
+ f.legacy.import(f.a,f.tokens[0],{runIds:[run]});f.reopen();
+ const linked=f.legacy.list(f.a).items[0];assert.equal(linked.createdAt,1234);
+ assert.deepEqual(Object.keys(linked).sort(),['createdAt','id','runId','status','type']);
+ assert.equal(f.legacy.preview(f.b,f.tokens[3]).items.length,0);
+});

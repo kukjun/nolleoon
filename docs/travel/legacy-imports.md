@@ -23,3 +23,9 @@ schema13은 `account_legacy_links`만 추가한다. `(run_id, legacy_session_id)
 현재 source에서 build/lint/layers 통과, 전체 unit87/API121/DB70 통과(0 skip/todo). 기존 schema11 고정 시험 실패는 별도 schema 담당의 manifest 기반 검증/backup 보강을 통합하여 해소했다. 새 schema13에서도 schema9/schema11 원본 보존 회귀를 유지했다.
 
 확인 범위: 선택/중복/타계정 선점/위조·소실·만료 cookie, 같은 판 다른 정당한 참가자, 원자적 실패, 닫힌 방 원본 table 값 동일, 재개방, 26개 pagination, 관전자 비공개, 세 가지 중단 원인, HTTP CSRF/401/404/409. 실제 브라우저 선택 UI와 두 기기 실서비스/카카오 연동은 이번 서버 작업에서 미실행이다. UI가 없다는 점을 숨기고 #134 전체 완료로 처리하지 않는다.
+
+### 목록의 시작 일시
+
+미리보기와 연결된 기록 목록의 각 항목에 `createdAt`(UTC epoch milliseconds)을 반환한다. 원본 `game_runs.created_at`을 그대로 읽으며, 연결한 시각이나 조회 시각으로 바꾸지 않는다. UI는 이를 **시작 일시**로 표시한다. 공통 원본에는 종료 시각이 저장되어 있지 않으므로 `finishedAt`을 만들어 내지 않는다. 기존 쿠키/계정 및 참가 권한 검증, 페이지 순서와 커서는 그대로이며 사건 제목·벌칙·다른 참가자 정보는 목록에 추가하지 않는다.
+
+검증: 추가 native/HTTP 단언이 필드 미구현으로 실패한 뒤, 원본 시각 전달로 관련 native 8 + HTTP 1 시험이 통과했다. 원본 1234 → 연결 시각 5678 → DB 재개방 후에도 1234를 반환하며 목록 필드 allowlist와 비참가자 빈 목록을 확인했다.
