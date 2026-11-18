@@ -62,7 +62,6 @@ await pb.getByRole('button',{name:/우리끼리 재판/}).click();
 await expect(pb.getByRole('heading',{name:'참가자 탈퇴로 상세가 삭제됐어요'})).toBeVisible();
 await pb.screenshot({path:'artifacts/deletion-ui/real-redacted-trial-390.png',fullPage:true});
 await pb.getByRole('button',{name:'결과 확인 · 로비로'}).click();
-await pb.getByRole('button',{name:'여행방 로비로',exact:true}).click();
 await pb.locator('summary').filter({hasText:'방 관리 ·'}).click();
 await pb.getByRole('button',{name:'여행방 삭제 안내'}).click();
 await pb.getByRole('button',{name:'여행방 삭제 확인',exact:true}).click();
