@@ -33,6 +33,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   int _screenEpoch = 0;
   bool _childRoute = false;
   bool _backPending = false;
+  DialogRoute<bool>? _discardRoute;
   final title = TextEditingController();
   DateTime? start, end;
   @override
@@ -79,6 +80,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
       if (oldWidget.accountId != widget.accountId) {
         oldWidget.createRecovery?.clear();
       }
+      _cancelDiscard();
       controller.removeListener(_changed);
       controller.dispose();
       _childRoute = false;
@@ -97,7 +99,10 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) _screenEpoch++;
+    if (state != AppLifecycleState.resumed) {
+      _screenEpoch++;
+      _cancelDiscard();
+    }
     controller.setForeground(
       state == AppLifecycleState.resumed && !_childRoute,
     );
@@ -105,6 +110,8 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _screenEpoch++;
+    _cancelDiscard();
     WidgetsBinding.instance.removeObserver(this);
     controller.removeListener(_changed);
     controller.dispose();
@@ -149,8 +156,21 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   String? _dateText(DateTime? d) => d == null
       ? null
       : '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  void _cancelDiscard() {
+    final route = _discardRoute;
+    _discardRoute = null;
+    _backPending = false;
+    if (route?.isActive ?? false) route!.navigator?.removeRoute(route);
+  }
+
   Future<void> _back() async {
     if (_backPending) return;
+    final epoch = _screenEpoch, captured = controller;
+    bool current() =>
+        mounted &&
+        epoch == _screenEpoch &&
+        identical(captured, controller) &&
+        controller.foreground;
     _backPending = true;
     try {
       if (creating &&
@@ -158,7 +178,14 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
               start != null ||
               end != null ||
               controller.pendingCreate)) {
-        final leave = await showDialog<bool>(
+        late final DialogRoute<bool> route;
+        void complete(bool value) {
+          if (current() && identical(route, _discardRoute) && route.isActive) {
+            route.navigator?.removeRoute(route, value);
+          }
+        }
+
+        route = DialogRoute<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('목록으로 돌아갈까요?'),
@@ -169,27 +196,34 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () => complete(false),
                 child: const Text('계속 작성'),
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () => complete(true),
                 child: const Text('목록으로'),
               ),
             ],
           ),
         );
-        if (!mounted || leave != true) return;
+        _discardRoute = route;
+        final leave = await Navigator.of(
+          context,
+          rootNavigator: true,
+        ).push(route);
+        if (identical(_discardRoute, route)) _discardRoute = null;
+        if (!current() || leave != true) return;
       }
+      if (!current()) return;
       setState(() {
         creating = false;
         title.clear();
         start = null;
         end = null;
       });
-      await controller.backToList();
+      await captured.backToList();
     } finally {
-      _backPending = false;
+      if (current()) _backPending = false;
     }
   }
 
