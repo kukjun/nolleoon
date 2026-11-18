@@ -1,3 +1,4 @@
+import {DomainFailure} from '../domain/failure.js';
 import {actOnTrial,maintainTrial,prepareTrial,projectTrial,type TravelTrialState} from './travel-trial.js';
 import type {TravelGameContext,TravelGameEngine,TravelTransition} from './ports/travel-engine.js';
 function state(value:unknown):TravelTrialState{return value as TravelTrialState;}
@@ -7,7 +8,7 @@ export class TravelTrialEngine implements TravelGameEngine {
  readonly type='trial' as const;
  prepare(settings:unknown,c:TravelGameContext){return {settings,state:prepareTrial(settings,c.participantIds)};}
  start(_settings:unknown,value:unknown,c:TravelGameContext){return transition(actOnTrial(state(value),{action:'start'},context(c)));}
- action(_settings:unknown,value:unknown,command:unknown,c:TravelGameContext){return transition(actOnTrial(state(value),command,context(c)));}
+ action(_settings:unknown,value:unknown,command:unknown,c:TravelGameContext){if(command&&typeof command==='object'&&(command as {action?:unknown}).action==='start')throw new DomainFailure('STATE_CONFLICT');return transition(actOnTrial(state(value),command,context(c)));}
  maintain(_settings:unknown,value:unknown,c:TravelGameContext){
   if(c.status!=='active')return null;const before=state(value),after=maintainTrial(before,c.now);
   return JSON.stringify(before)===JSON.stringify(after)?null:transition(after);

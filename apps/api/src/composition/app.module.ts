@@ -1,3 +1,6 @@
+import {TravelTeamEngine,TravelDrawEngine} from '../application/travel-team-draw-engines.js';
+import {TravelTrialEngine} from '../application/travel-trial-engine.js';
+import {TravelMenuEngine} from '../application/travel-menu-engine.js';
 import {TravelRooms} from '../application/travel-rooms.js';
 import {TravelRuns} from '../application/travel-runs.js';
 import type {TravelGameEngine} from '../application/ports/travel-engine.js';
@@ -49,7 +52,7 @@ export class AppModule {
     const random=config.random??new SecureRandom();
     return {module:AppModule,controllers:[TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:TravelRooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
-      {provide:TravelRuns,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRuns(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.travelEngines??[],random)},
+      {provide:TravelRuns,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRuns(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.travelEngines??[new TravelTeamEngine(random),new TravelDrawEngine(random),new TravelTrialEngine(),new TravelMenuEngine(random)],random)},
       {provide:AccountAuth,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider)},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
       {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth],useFactory:(sessions:BrowserSessions,accounts:AccountAuth)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts)},

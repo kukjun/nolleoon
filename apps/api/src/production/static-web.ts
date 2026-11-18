@@ -27,7 +27,8 @@ export function staticWeb(webRoot:string,dbPath:string){
   response.setHeader('X-Content-Type-Options','nosniff');
   const path=request.url.split('?')[0]!;
   if(path==='/api'||path.startsWith('/api/')){next();return;}
-  const file=files.get(path==='/'?'/index.html':path);
+  const travelRoute=/^\/travel\/?$/.test(path)||/^\/travel\/(rooms|invite)\/[A-Za-z0-9_-]{1,128}$/.test(path);
+  const file=files.get(path==='/'||travelRoute?'/index.html':path);
   if(!file||!['GET','HEAD'].includes(request.method)){response.status(404).json({code:'NOT_FOUND',message:'찾을 수 없습니다.'});return;}
   if(path.startsWith('/assets/'))response.setHeader('Cache-Control','public, max-age=31536000, immutable');
   response.setHeader('Content-Type',file.type);response.status(200).send(request.method==='HEAD'?undefined:file.bytes);
