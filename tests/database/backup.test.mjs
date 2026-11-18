@@ -1,3 +1,5 @@
+import {emptyRestoreJournals} from '../support/restore-journals.mjs';
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import { openSqlite, migrate } from '../../apps/api/dist/infrastructure/sqlite/index.js';
-import { backupDatabase, restoreDatabase } from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import { backupDatabase } from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 async function fixture(t) {
  const root=await mkdtemp(join(tmpdir(),'trip-backup-')); t.after(()=>rm(root,{recursive:true,force:true}));
  const source=join(root,'source.sqlite'); const db=openSqlite(source); migrate(db); t.after(()=>{if(db.open)db.close();});
@@ -65,9 +67,9 @@ test('최종 경로 symlink는 거절하고 상위 symlink는 실제 경로로 �
 
 test('CLI 실제 backup/restore 성공과 기존 대상 실패는 경로·내용을 출력하지 않는다',async t=>{
  const {root,source,dest}=await fixture(t);
- const cli=new URL('../../tools/storage/backup.mjs',import.meta.url);
+ const cli=new URL('../../tools/storage/backup.mjs',import.meta.url);const {control}=emptyRestoreJournals(root);
  for(const [command,input,output,code] of [['backup',source,dest,0],['restore',dest,join(root,'cli-restored.sqlite'),0],['restore',source,dest,1]]){
-  const run=spawnSync(process.execPath,[cli.pathname,command,input,output],{encoding:'utf8',timeout:10000});
+  const run=spawnSync(process.execPath,[cli.pathname,command,input,output,...(command==='restore'?[control]:[])],{encoding:'utf8',timeout:10000});
   assert.equal(run.status,code,run.stderr);
   const text=run.stdout+run.stderr;
   for(const hidden of [root,source,dest,'synthetic'])assert.equal(text.includes(hidden),false);

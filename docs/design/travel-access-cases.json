@@ -1,0 +1,11 @@
+[
+ {"name":"anonymous invite preview only","member":false,"participant":false,"administrator":false,"open":true,"general":false,"trial":false,"start":false,"end":false},
+ {"name":"late member sees general not trial","member":true,"participant":false,"administrator":false,"open":true,"general":true,"trial":false,"start":true,"end":false},
+ {"name":"participant in open room","member":true,"participant":true,"administrator":false,"open":true,"general":true,"trial":true,"start":true,"end":false},
+ {"name":"admin cannot bypass trial participation","member":true,"participant":false,"administrator":true,"open":true,"general":true,"trial":false,"start":true,"end":true},
+ {"name":"admin also participant","member":true,"participant":true,"administrator":true,"open":true,"general":true,"trial":true,"start":true,"end":true},
+ {"name":"former participant loses access","member":false,"participant":true,"administrator":false,"open":true,"general":false,"trial":false,"start":false,"end":false},
+ {"name":"closed room retains current participant read access","member":true,"participant":true,"administrator":false,"open":false,"general":true,"trial":true,"start":false,"end":false},
+ {"name":"closed room member not participant","member":true,"participant":false,"administrator":false,"open":false,"general":true,"trial":false,"start":false,"end":false},
+ {"name":"stale administrator is not current member","member":false,"participant":true,"administrator":true,"open":true,"general":false,"trial":false,"start":false,"end":false}
+]

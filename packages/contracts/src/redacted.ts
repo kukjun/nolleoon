@@ -1,0 +1,1 @@
+export interface RedactedGame {kind:'trial'|'team'|'draw'|'menu';redacted:true;summary:{participantCount:number;teams?:{team:number;count:number}[];revealed?:{winnerCount:number;notWinnerCount:number};rounds?:{number:1|2;guilty:number;notGuilty:number;abstain:number;total:number}[];responseCount?:number}}

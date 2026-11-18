@@ -1,0 +1,2 @@
+export interface RoomDeletionEntry {operationId:string;roomId:string;action:'delete'|'restore'|'purge';at:number;deletionVersion:number;deletedAt?:number;purgeAfter?:number;previousStatus?:'open'|'closed';administratorAccountId?:string}
+export interface RoomDeletionLedger {record(event:RoomDeletionEntry):RoomDeletionEntry;lookup(operationId:string):RoomDeletionEntry|undefined;entries():RoomDeletionEntry[]}

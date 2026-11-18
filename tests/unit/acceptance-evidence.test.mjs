@@ -61,5 +61,22 @@ test('both Party gates require real nonzero clean counts and matching frozen sou
    const x=complete();mutate(x.gates.find(g=>g.id===id));const result=audit(x);assert.equal(result.status,'incomplete');assert.ok(result.missing.includes(id));assert.equal(result.verified,false);
   }
  }
- const result=audit(complete());assert.equal(result.status,'ready-for-human-review');assert.equal(result.acceptedCount,18);assert.equal(result.verified,false);
+ const result=audit(complete());assert.equal(result.status,'ready-for-human-review');assert.equal(result.acceptedCount,20);assert.equal(result.verified,false);
+});
+
+test('기존 MVP/Party 증거만으로 여행방 UI·전체 여정 검사를 생략할 수 없다',()=>{
+ const x=complete();x.gates=x.gates.filter(g=>!['travel-browser','travel-e2e'].includes(g.id));const result=audit(x);
+ assert.equal(result.status,'incomplete');assert.deepEqual(result.missing,['travel-browser','travel-e2e']);assert.equal(result.verified,false);
+});
+test('여행방 두 gate는 알려진 필수 시험이며 동일 RC·시간창·nonzero 무실패 증거를 요구한다',()=>{
+ for(const id of ['travel-browser','travel-e2e']){
+  assert.ok(requiredGates.includes(id));
+  for(const mutate of [g=>delete g.counts,g=>{g.counts.total=0;g.counts.passed=0;},...['failed','skipped','todo','flaky','cancelled'].map(key=>g=>{g.counts[key]=1;}),g=>{g.counts.total=2;},g=>{g.counts.passed=-1;},g=>{g.counts.total=1.5;},g=>{g.commit='b'.repeat(40);},g=>{g.status='failed';},g=>{g.status='not-run';},g=>{g.evidenceRef='';},g=>{g.observedAt='2026-11-15T00:00:00.000Z';},g=>{g.observedAt='2026-11-17T11:00:00.001Z';},g=>{g.observedAt='invalid';}]){
+   const x=complete();mutate(x.gates.find(g=>g.id===id));const result=audit(x);
+   assert.equal(result.status,'incomplete');assert.ok(result.missing.includes(id));assert.equal(result.verified,false);
+  }
+  const missing=complete();missing.gates=missing.gates.filter(g=>g.id!==id);assert.deepEqual(audit(missing).missing,[id]);
+  const duplicate=complete();duplicate.gates.push({...duplicate.gates.find(g=>g.id===id)});assert.equal(audit(duplicate).status,'incomplete');
+ }
+ const result=audit(complete());assert.equal(result.status,'ready-for-human-review');assert.equal(result.acceptedCount,20);assert.deepEqual(result.missing,[]);assert.equal(result.issues.includes('unknown-gate'),false);assert.equal(result.verified,false);
 });

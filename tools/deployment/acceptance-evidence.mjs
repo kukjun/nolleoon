@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-export const requiredGates = Object.freeze(['lint','layers','build','typecheck','unit','api','database','durability-backup-restore','browser-feature','gameplay-e2e','party-browser','party-e2e','mobile-emulation','independent-review','physical-ios','physical-android','external-deployment','remote-ci']);
-const testGates = new Set(['unit','api','database','durability-backup-restore','browser-feature','gameplay-e2e','party-browser','party-e2e','mobile-emulation']);
+export const requiredGates = Object.freeze(['lint','layers','build','typecheck','unit','api','database','durability-backup-restore','browser-feature','gameplay-e2e','party-browser','party-e2e','travel-browser','travel-e2e','mobile-emulation','independent-review','physical-ios','physical-android','external-deployment','remote-ci']);
+const testGates = new Set(['unit','api','database','durability-backup-restore','browser-feature','gameplay-e2e','party-browser','party-e2e','travel-browser','travel-e2e','mobile-emulation']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = value => typeof value === 'string' && value.trim().length > 0;
 const sha = value => typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);

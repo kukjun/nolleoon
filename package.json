@@ -15,7 +15,7 @@
     "smoke:workspace": "node tools/workspace/smoke.mjs",
     "dev:web": "npm run dev -w @trip-court/web",
     "start:api": "npm run start -w @trip-court/api",
-    "lint": "eslint apps packages tools/harness tools/workspace tools/security tools/storage tools/deployment tests/harness tests/workspace tests/unit tests/integration tests/database tests/browser tests/support playwright.config.mjs playwright.party.config.mjs eslint.config.mjs",
+    "lint": "eslint apps packages tools/harness tools/workspace tools/security tools/storage tools/deployment tests/harness tests/workspace tests/unit tests/integration tests/database tests/browser tests/support playwright.config.mjs playwright.party.config.mjs playwright.travel.config.mjs eslint.config.mjs",
     "typecheck": "tsc -p packages/contracts/tsconfig.json --noEmit && tsc -p apps/api/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "test:unit": "node tools/harness/discovery.mjs tests/unit",
     "test:integration": "node tools/harness/discovery.mjs tests/integration",
@@ -24,7 +24,9 @@
     "test:e2e": "playwright test --reporter=json --grep @e2e",
     "test:mobile": "playwright test --reporter=json --grep @mobile",
     "test:party": "playwright test --config=playwright.party.config.mjs --reporter=json --grep-invert @party-e2e",
-    "test:party-e2e": "playwright test --config=playwright.party.config.mjs --reporter=json --grep @party-e2e"
+    "test:party-e2e": "playwright test --config=playwright.party.config.mjs --reporter=json --grep @party-e2e",
+    "test:travel": "playwright test --config=playwright.travel.config.mjs --reporter=json --grep-invert @travel-e2e",
+    "test:travel-e2e": "playwright test --config=playwright.travel.config.mjs --reporter=json --grep @travel-e2e"
   },
   "workspaces": [
     "apps/*",
@@ -39,6 +41,6 @@
     "@types/node": "24.19.2",
     "eslint": "10.15.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.72.2"
+    "typescript-eslint": "8.73.0"
   }
 }

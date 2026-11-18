@@ -20,3 +20,7 @@ test('client early rejects unsupported or oversize avatar files',()=>{
  assert.match(validateAvatarFile({type:'image/png',size:1048577}),/1MB/);
  assert.equal(validateAvatarFile({type:'image/webp',size:1024}),'');
 });
+test('account and travel image paths stay same-origin without relaxing remote URL rejection',()=>{
+ for(const imageUrl of ['/api/account/avatar/image?v=2','/api/travel-rooms/room-1/avatars/member-2/image?v=2'])assert.equal(validAvatar({kind:'image',presetId:null,revision:2,imageUrl}),true);
+ for(const imageUrl of ['https://evil.example/api/account/avatar/image','/api/travel-rooms/../avatars/m/image','//evil.example/photo'])assert.equal(validAvatar({kind:'image',presetId:null,revision:2,imageUrl}),false);
+});

@@ -1,0 +1,17 @@
+import {test,expect} from '@playwright/test';
+test('@travel-e2e deleting an active draw participant interrupts without revealing remaining lots',async({browser,baseURL})=>{
+ const contexts=[];let sequence=0;const id=()=>`active-delete-${++sequence}`;
+ const post=async(c,path,data)=>{const r=await c.request.post(path,{headers:{origin:baseURL,'x-trip-court-request':'1'},data});expect(r.status(),await r.text()).toBe(201);return r.json();};
+ const get=async(c,path)=>{const r=await c.request.get(path);expect(r.status()).toBe(200);return r.json();};
+ try{
+  for(const subject of [1951,1952,1953]){const c=await browser.newContext({baseURL,viewport:{width:390,height:844}});contexts.push(c);const login=await post(c,'/api/account/login',{returnTo:'/travel'});const state=new URL(login.authorizationUrl).searchParams.get('state');expect((await c.request.get(`/api/account/callback?state=${state}&code=synthetic-${subject}`)).status()).toBe(200);}
+  const[a,b,c]=contexts;let room=await post(a,'/api/travel-rooms',{requestId:id(),title:'진행 중 탈퇴 검증',startDate:null,endDate:null});const root='/api/travel-rooms/'+room.roomId;
+  const invite=await post(a,root+'/invite',{requestId:id(),expectedVersion:room.version});await post(b,'/api/travel-invites/'+invite.inviteToken+'/join',{requestId:id()});await post(c,'/api/travel-invites/'+invite.inviteToken+'/join',{requestId:id()});room=await get(a,root);
+  let run=await post(a,root+'/runs',{requestId:id(),expectedVersion:room.version,type:'draw',selectedMembershipIds:room.members.map(m=>m.membershipId),settings:{winnerCount:1,penaltyText:'공개되면 안 되는 합성 벌칙'}});const path=root+'/runs/'+run.runId;
+  run=await post(a,path+'/start',{requestId:id(),expectedVersion:run.version});run=await post(a,path+'/actions',{requestId:id(),expectedVersion:run.version,command:{kind:'reveal'}});expect(run.game.revealed).toHaveLength(1);const winnerCount=run.game.revealed[0].winner?1:0;
+  const page=await b.newPage();await page.goto('/travel');await page.getByRole('button',{name:'프로필 수정'}).click();await page.getByRole('button',{name:'계정 탈퇴 안내'}).click();await page.getByLabel('확인 문구').fill('계정 탈퇴');const response=page.waitForResponse(r=>r.url().endsWith('/api/account/delete'));await page.getByRole('button',{name:'계정 영구 탈퇴'}).click();expect((await response).status()).toBe(201);await expect(page.getByRole('button',{name:'카카오로 로그인'})).toBeVisible();
+  const result=await get(c,path);expect(result.status).toBe('interrupted');expect(result.game.redacted).toBe(true);expect(result.game.summary.revealed).toEqual({winnerCount,notWinnerCount:1-winnerCount});expect(JSON.stringify(result)).not.toMatch(/allocations|revealedIds|공개되면 안 되는/);
+  const rejected=await c.request.post(path+'/actions',{headers:{origin:baseURL,'x-trip-court-request':'1'},data:{requestId:id(),expectedVersion:result.version,command:{kind:'reveal'}}});expect(rejected.status()).toBe(409);expect((await get(c,path)).game.summary.revealed).toEqual(result.game.summary.revealed);
+  const remaining=await a.newPage();await remaining.goto('/travel/rooms/'+room.roomId);await remaining.getByRole('button',{name:'이 여행의 게임 기록'}).click();await remaining.getByRole('button',{name:/제비뽑기/}).click();await expect(remaining.getByRole('heading',{name:'참가자 탈퇴로 상세가 삭제됐어요'})).toBeVisible();await expect(remaining.getByRole('button',{name:'내 제비 공개'})).toHaveCount(0);await remaining.screenshot({path:'artifacts/deletion-ui/active-draw-deletion-390.png',fullPage:true});
+ }finally{for(const c of contexts)await c.close().catch(()=>{});}
+});

@@ -7,7 +7,7 @@ function record(x:unknown):x is Record<string,unknown>{return !!x&&typeof x==='o
 export function validAvatar(x:unknown):x is AvatarProfile {
  if(!record(x)||Object.keys(x).sort().join(',')!=='imageUrl,kind,presetId,revision'||!Number.isSafeInteger(x.revision)||Number(x.revision)<0)return false;
  return x.kind==='preset'?typeof x.presetId==='string'&&/^preset-(0[1-9]|10)$/.test(x.presetId)&&x.imageUrl===null:
- x.kind==='image'&&x.presetId===null&&typeof x.imageUrl==='string'&&/^\/api\/(?:avatar\/image|rooms\/[A-Za-z0-9_-]+\/avatars\/[A-Za-z0-9_-]+\/image)(?:\?(?:revision|v)=[0-9]+)?$/.test(x.imageUrl);
+ x.kind==='image'&&x.presetId===null&&typeof x.imageUrl==='string'&&/^\/api\/(?:(?:account\/)?avatar\/image|(?:travel-rooms|rooms)\/[A-Za-z0-9_-]+\/avatars\/[A-Za-z0-9_-]+\/image)(?:\?(?:revision|v)=[0-9]+)?$/.test(x.imageUrl);
 }
 export function validateAvatarFile(file:{type:string;size:number}){
  if(!['image/png','image/jpeg','image/webp'].includes(file.type))return 'PNG, JPG, WebP 사진만 사용할 수 있어요.';
@@ -20,7 +20,7 @@ async function response<T>(path:string,init:RequestInit,valid:(x:unknown)=>x is 
   const res=await fetcher(path,{credentials:'same-origin',cache:'no-store',...init});const body:unknown=await res.json();
   if(res.ok&&valid(body))return {ok:true,data:body};
   if(!res.ok&&record(body)&&record(body.error)&&typeof body.error.code==='string'&&(errorCodes as readonly string[]).includes(body.error.code)){
-   const code=body.error.code as ErrorCode;if(code==='SESSION_REQUIRED')lost();return {ok:false,code,message:errorMessages[code]};
+   const code=body.error.code as ErrorCode;if(code==='SESSION_REQUIRED'&&!path.startsWith('/api/account/')&&!path.startsWith('/api/travel-rooms/'))lost();return {ok:false,code,message:errorMessages[code]};
   }
   return {ok:false,code:'INVALID_RESPONSE',message:'아바타 응답을 확인하지 못했어요. 다시 시도해 주세요.'};
  }catch{return {ok:false,code:'NETWORK_ERROR',message:'아바타를 불러오지 못했어요. 다시 시도해 주세요.'};}

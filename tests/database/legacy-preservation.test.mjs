@@ -1,7 +1,8 @@
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,rm,writeFile} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {openSqlite} from '../../apps/api/dist/infrastructure/sqlite/index.js';
-import {backupDatabase,restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import {backupDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 import {seedLegacyNine,legacyRows} from '../support/legacy-nine.mjs';
 test('합성 schema9의 신원·열린방·진행 재판·완료 기록은 온라인 백업과 새 경로 복원에서 보존된다',async t=>{
  const root=await mkdtemp(join(tmpdir(),'party-legacy-'));t.after(()=>rm(root,{recursive:true,force:true}));const source=join(root,'source.sqlite'),backup=join(root,'backup.sqlite'),restored=join(root,'restored.sqlite');const db=openSqlite(source);t.after(()=>db.open&&db.close());seedLegacyNine(db);

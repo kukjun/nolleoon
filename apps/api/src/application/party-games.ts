@@ -1,3 +1,4 @@
+import {legacyRedactedGame} from './legacy-redacted-projection.js';
 import {balancedTeams,allocateLots} from '../domain/party-allocation.js';
 import {DomainFailure} from '../domain/failure.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
@@ -94,6 +95,7 @@ export class PartyGames {
   const id=identifier(value);
   return this.run(r=>{const room=roomByCode(r,code),run=this.authorizedRun(r,actor,id);if(run.roomId!==room.id)throw new DomainFailure('NOT_FOUND');const view=this.projectRun(r,run,actor,true);if(!view)throw new DomainFailure('FORBIDDEN');return view;});
  }
+ historyProjection(r:Repositories,actor:{id:string},id:string){const run=this.authorizedRun(r,actor,id);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');return this.projectRun(r,run,actor,true);}
  private authorizedRun(r:Repositories,actor:{id:string},id:string):RunRecord{
   const run=r.party.run(id);if(!run)throw new DomainFailure('NOT_FOUND');
   if(!r.party.participants(id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id))throw new DomainFailure('FORBIDDEN');return run;
@@ -110,6 +112,8 @@ export class PartyGames {
  private projectRun(r:Repositories,run:RunRecord,actor:{id:string},historical=false){
   // Interrupted trial disclosure stays exclusively in the legacy policy-aware adapter.
   if(run.type==='trial'&&run.status==='interrupted')return null;
+  const deleted=legacyRedactedGame(r,run.id,run.type);
+  if(deleted){const allowed=r.party.participants(run.id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id&&(run.type==='trial'||p.eligible));if(!allowed)return null;return {runId:run.id,type:run.type,status:run.status,version:run.version,participants:[],self:{eligible:false,revealed:false},settings:{teamCount:0,winnerCount:0,penaltyText:''},result:null,blockedPolicy:null,redacted:deleted};}
   const all=r.party.participants(run.id),own=all.filter(p=>r.members.find(p.memberId)?.sessionId===actor.id);
   const current=r.members.active(run.roomId).find(m=>m.sessionId===actor.id);
   const subject=historical?own:own.filter(p=>p.memberId===current?.id);
