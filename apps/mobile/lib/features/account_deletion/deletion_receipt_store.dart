@@ -134,8 +134,18 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   final FlutterSecureStorage _storage;
   final DateTime Function() _now;
   static const key = 'nolleoon.native.deletion-receipt.v1';
+  // One queue for this key across remounted adapter instances in this isolate.
+  // Root owns a single store; no background isolate writes are supported.
+  static Future<void> _tail = Future<void>.value();
+  static Future<T> _serialized<T>(Future<T> Function() operation) {
+    final result = _tail.then((_) => operation());
+    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return result;
+  }
+
   @override
-  Future<DeletionReceipt?> read() async {
+  Future<DeletionReceipt?> read() => _serialized(_read);
+  Future<DeletionReceipt?> _read() async {
     final raw = await _storage.read(key: key);
     if (raw == null) return null;
     // Invalid/expired data is not silently accepted as permission to log in.
@@ -144,10 +154,12 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   }
 
   @override
-  Future<void> write(DeletionReceipt receipt) async {
+  Future<void> write(DeletionReceipt receipt) =>
+      _serialized(() => _write(receipt));
+  Future<void> _write(DeletionReceipt receipt) async {
     final raw = receipt.encode();
     DeletionReceipt.decode(raw, now: _now());
-    final existing = await read();
+    final existing = await _read();
     if (existing != null &&
         (existing.accountScope != receipt.accountScope ||
             existing.requestId != receipt.requestId ||
@@ -166,7 +178,8 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   }
 
   @override
-  Future<void> clear() async {
+  Future<void> clear() => _serialized(_clear);
+  Future<void> _clear() async {
     await _storage.delete(key: key);
     if (await _storage.read(key: key) != null) {
       throw StateError('Deletion receipt not cleared');

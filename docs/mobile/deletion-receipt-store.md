@@ -18,3 +18,9 @@
 pending 생성 시 원래 bearer의 SHA-256 `tokenDigest`를 계산하고 confirmed에서도 같은 digest만 유지한다. root의 별도 local-only cleanup은 현재 secure session token의 digest가 일치하거나 token이 없을 때만 정리하며, 다른 새 session은 건드리지 않는다. digest도 로그나 서버로 보내지 않는다. 이전 v1 데이터는 자동 승격하지 않고 명시 오류로 차단한다. 아직 배포되지 않은 스키마 변경이다.
 
 기존 lock에 있던 dart.dev의 [crypto 3.0.8](https://pub.dev/packages/crypto/versions/3.0.8)을 같은 버전 direct exact dependency로 선언했다. 직접 해시를 구현하지 않았고 다른 dependency version/hash는 바꾸지 않았다. pending token/digest 불일치, confirmed raw token 부재, v1 거절 추가 회귀 포함 scoped16 PASS.
+
+## 독립 리뷰 수정: 지연 쓰기의 bearer 부활 방지
+
+같은 저장 키의 read/check/write와 clear를 인스턴스 간 static queue로 직렬화한다. 이전 pending 쓰기가 지연되어 confirmed 저장이나 clear 뒤에 완료되는 순서 역전을 방지한다. 실패한 작업도 이후 queue를 영구 차단하지 않는다. root는 한 isolate의 저장 owner만 사용하며 별도 background isolate/extension 쓰기는 지원하지 않는다.
+
+독립 리뷰의 지연 platform write 재현을 실제 RED로 확인한 뒤, 다른 adapter 인스턴스에서 confirmed/clear를 요청하는 회귀 두 개로 GREEN을 확인했다. targeted18 PASS, scoped analyze clean. OS 권한/실제 secure store 실행을 주장하지 않는다.
