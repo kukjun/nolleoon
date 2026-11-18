@@ -190,4 +190,40 @@ void main() {
     expect(find.text('여행자 (나)'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+  testWidgets('date-only draft requires confirmation and cancel retains date', (
+    tester,
+  ) async {
+    final t = f.FakeTransport();
+    t.handler = (r) async => f.ok({'items': [], 'nextCursor': null});
+    await tester.pumpWidget(
+      MaterialApp(
+        home: RoomsScreen(
+          repository: RoomsRepository(
+            ApiClient(
+              transport: t,
+              resolver: const NativeRoutes(),
+              accessToken: () async => 'synthetic',
+            ),
+          ),
+          onSessionLost: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('새 여행방 만들기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('시작일: 선택 안 함'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('시작일: 선택 안 함'), findsNothing);
+    await tester.tap(find.byTooltip('목록으로'));
+    await tester.pumpAndSettle();
+    expect(find.text('목록으로 돌아갈까요?'), findsOneWidget);
+    await tester.tap(find.text('계속 작성'));
+    await tester.pumpAndSettle();
+    expect(find.text('시작일: 선택 안 함'), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

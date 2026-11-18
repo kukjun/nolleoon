@@ -88,7 +88,11 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
     if (_backPending) return;
     _backPending = true;
     try {
-      if (creating && (title.text.isNotEmpty || controller.pendingCreate)) {
+      if (creating &&
+          (title.text.isNotEmpty ||
+              start != null ||
+              end != null ||
+              controller.pendingCreate)) {
         final leave = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
