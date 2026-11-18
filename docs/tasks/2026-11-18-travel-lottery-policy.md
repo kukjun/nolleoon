@@ -16,3 +16,5 @@
 제비 command는 `{kind:'reveal'}`뿐이며 대상 membershipId를 받아 타인을 뒤집는 경로가 없다. generic service는 maintain을 요청 전 별도 커밋하여 deadline 도달이 실패한 flip rollback으로 취소되지 않도록 해야 한다. presence 갱신 전 timeout을 적용하고 missing/current:false 미공개 대상은 정책 미정 blocked로 처리한다. terminal maintain은 null이므로 기존 endedAt을 덮어쓰지 않는다.
 
 engine4개+policy5개+기존allocation2개=11/11 PASS, API build 및 대상 ESLint PASS. 구현 전 engine module missing RED. foundation이 참조한 account-auth port 의존 두 커밋을 별도 수용해 빌드했고 auth 구현은 변경하지 않았다. 전체 API/DB/history race는 generic service 통합 후 아직 검증 필요.
+
+입력 호환 수정: 500개 emoji가 JS UTF-16 .length 때문에 거절되는 unit RED를 확인했다. 기존 제비처럼 Unicode code point 수500 기준과 줄바꿈/CR/tab 제외 Cc/Cf 거절을 적용했다. unit engine5개 PASS. 실제 HTTP 팀/제비 검증은 별도 추가 중이며 generic pre-touch timeout 결함을 10분 복귀 GET에서 재현했다.
