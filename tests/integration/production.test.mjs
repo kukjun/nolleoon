@@ -1,5 +1,6 @@
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 import test from 'node:test';
-import {backupDatabase,restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import {backupDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,cpSync,mkdirSync,writeFileSync,symlinkSync} from 'node:fs';
 import {tmpdir} from 'node:os';

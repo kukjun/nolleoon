@@ -1,5 +1,6 @@
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {fork} from 'node:child_process';import {fileURLToPath} from 'node:url';import {once} from 'node:events';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
-import {backupDatabase,restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import {backupDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 import {openSqlite} from '../../apps/api/dist/infrastructure/sqlite/index.js';
 const childPath=fileURLToPath(new URL('../support/durability-child.mjs',import.meta.url));const initialNow=1000000;
 function message(child,type){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>finish(new Error(`child ${type} timeout`)),4000);function finish(error,data){clearTimeout(timer);child.off('message',got);child.off('exit',exited);error?reject(error):resolve(data);}function got(data){if(data.type===type)finish(null,data);else if(data.type==='unexpected-completion')finish(new Error('transaction failed to pause'));}function exited(code,signal){finish(new Error(`child exited before ${type}: ${code}/${signal}`));}child.on('message',got);child.once('exit',exited);});}

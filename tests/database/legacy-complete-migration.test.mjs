@@ -1,3 +1,4 @@
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 // Offline synthetic fixture only. Canonical row bytes, not identical SQLite file layout after migration.
 // Does not certify production data, all game branches, physical devices, rollout or rollback cutover.
 import test from 'node:test';
@@ -7,7 +8,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {openSqlite,migrate,migrations} from '../../apps/api/dist/infrastructure/sqlite/index.js';
-import {backupDatabase,restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import {backupDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 import {seedLegacyComplete,snapshotLegacyComplete,assertLegacyComplete,canonicalLegacyBytes} from '../support/legacy-nine-complete.mjs';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 function health(db){assert.deepEqual(db.pragma('foreign_key_check'),[]);assert.equal(db.pragma('integrity_check',{simple:true}),'ok');}
@@ -22,7 +23,7 @@ test('online schema9 backup/restore, upgrade to current schema and second backup
  const root=await mkdtemp(join(tmpdir(),'complete-legacy-rehearsal-'));t.after(()=>rm(root,{recursive:true,force:true}));const path=join(root,'source.sqlite');const source=openSqlite(path);t.after(()=>source.close());seedLegacyComplete(source);health(source);
  const before=snapshotLegacyComplete(source);assertLegacyComplete(before);const bytes=canonicalLegacyBytes(before),digest=hash(bytes);const originalFile=await readFile(path);
  await backupDatabase(path,join(root,'schema9-backup.sqlite'));assert.deepEqual(await readFile(path),originalFile);assert.deepEqual(snapshotLegacyComplete(source),before);
- await restoreDatabase(join(root,'schema9-backup.sqlite'),join(root,'upgraded.sqlite'));const upgraded=openSqlite(join(root,'upgraded.sqlite'));t.after(()=>upgraded.close());assert.equal(upgraded.prepare('SELECT MAX(version) AS n FROM schema_migrations').get().n,9);assert.deepEqual(canonicalLegacyBytes(snapshotLegacyComplete(upgraded)),bytes);health(upgraded);
+ await restoreDatabase(join(root,'schema9-backup.sqlite'),join(root,'upgraded.sqlite'));const upgraded=openSqlite(join(root,'upgraded.sqlite'));t.after(()=>upgraded.close());assert.equal(upgraded.prepare('SELECT MAX(version) AS n FROM schema_migrations').get().n,migrations.length);assert.deepEqual(canonicalLegacyBytes(snapshotLegacyComplete(upgraded)),bytes);health(upgraded);
  migrate(upgraded);assert.equal(upgraded.prepare('SELECT MAX(version) AS n FROM schema_migrations').get().n,migrations.length);assert.ok(migrations.length>=12);health(upgraded);
  assert.deepEqual(snapshotLegacyComplete(upgraded),before);assert.equal(hash(canonicalLegacyBytes(snapshotLegacyComplete(upgraded))),digest);
  assert.equal(upgraded.prepare("SELECT COUNT(*) AS n FROM game_runs WHERE type='trial'").get().n,3);

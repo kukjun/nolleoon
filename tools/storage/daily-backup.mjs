@@ -16,7 +16,7 @@ export async function dailyBackup({source,directory,now=Date.now(),prune=false,b
   for(const entry of await readdir(root)){if(!/^trip-\d{4}-\d{2}-\d{2}\.sqlite$/.test(entry))continue;const candidate=await stat(join(root,entry));if(candidate.dev===sourceInfo.dev&&candidate.ino===sourceInfo.ino)throw Error('SOURCE_ALIASES_BACKUP');}
   const bindingPath=join(root,'.source-binding.json'),binding={owner,sourcePath,device:sourceInfo.dev,inode:sourceInfo.ino};
   try{const info=await lstat(bindingPath);if(!info.isFile()||info.isSymbolicLink())throw Error('INVALID_BINDING');if(JSON.stringify(JSON.parse(await readFile(bindingPath,'utf8')))!==JSON.stringify(binding))throw Error('SOURCE_CHANGED');}
-  catch(error){if(error.code!=='ENOENT')throw error;if((await readdir(root)).some(name=>/^trip-\d{4}-\d{2}-\d{2}\.sqlite(?:\.json)?$/.test(name)))throw Error('BINDING_MISSING');await writeFile(bindingPath,JSON.stringify(binding),{flag:'wx',mode:0o600});}
+  catch(error){if(error.code!=='ENOENT')throw error;if((await readdir(root)).some(name=>/^trip-\d{4}-\d{2}-\d{2}\.sqlite(?:\.json)?$/.test(name)))throw Error('BINDING_MISSING',{cause:error});await writeFile(bindingPath,JSON.stringify(binding),{flag:'wx',mode:0o600});}
   const today=day(now),name=`trip-${today}.sqlite`,target=join(root,name),manifest=target+'.json';
   let existing=false;
   try{await lstat(target);existing=true;}catch(e){if(e.code!=='ENOENT')throw e;}

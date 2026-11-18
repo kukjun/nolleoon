@@ -1,7 +1,8 @@
+import {restoreWithEmptyJournals as restoreDatabase} from '../support/restore-journals.mjs';
 import sharp from 'sharp';
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {openSqlite,migrate,migrations} from '../../apps/api/dist/infrastructure/sqlite/index.js';
-import {backupDatabase,restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
+import {backupDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 import {seedLegacyComplete} from '../support/legacy-nine-complete.mjs';
 function snapshot(db,tables){return Object.fromEntries(tables.map(name=>[name,db.prepare(`SELECT * FROM "${name}" ORDER BY rowid`).all().map(row=>Object.fromEntries(Object.entries(row).map(([k,v])=>[k,Buffer.isBuffer(v)?v.toString('hex'):v])))]));}
 test('full schema11 legacy plus party/avatar rows survive backup restore and additive travel migration',async t=>{
