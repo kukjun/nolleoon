@@ -13,8 +13,27 @@ class RoomsCreateRecovery {
   RoomsCreateRecovery(this.accountId);
   final String accountId;
   MutationIntent? _intent;
+  Map<String, Object?>? _unsent;
+  int _generation = 0;
+  int get generation => _generation;
+  Map<String, Object?>? get unsentDraft => _unsent;
+  void rememberDraft(int generation, String title, String? start, String? end) {
+    if (generation != _generation || _intent != null) return;
+    _unsent = Map.unmodifiable({
+      'title': title,
+      'startDate': start,
+      'endDate': end,
+    });
+  }
+
+  void discardDraft() {
+    _unsent = null;
+    _generation++;
+  }
+
   void clear() {
     _intent = null;
+    discardDraft();
   }
 
   @override
@@ -120,6 +139,7 @@ class RoomsController extends ChangeNotifier {
           : '연결을 확인하고 다시 시도해 주세요.';
       if (unauthorized) {
         _create = null;
+        createRecovery?.clear();
         onSessionLost?.call();
       }
     } finally {
@@ -183,6 +203,7 @@ class RoomsController extends ChangeNotifier {
     items = const [];
     nextCursor = null;
     _create = null;
+    createRecovery?.discardDraft();
     error = null;
     await refresh();
   }
@@ -195,6 +216,7 @@ class RoomsController extends ChangeNotifier {
         final result = await repository.create(_create!, cancel: cancel);
         if (_current(generation)) {
           _create = null;
+          createRecovery?.discardDraft();
           roomId = result.roomId;
           room = result;
           items = const [];

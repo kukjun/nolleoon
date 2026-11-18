@@ -29,6 +29,8 @@ class RoomsScreen extends StatefulWidget {
 class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   late RoomsController controller;
   bool creating = false;
+  int _draftGeneration = 0;
+  int _screenEpoch = 0;
   bool _childRoute = false;
   bool _backPending = false;
   final title = TextEditingController();
@@ -41,6 +43,8 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   }
 
   void _bindController() {
+    _screenEpoch++;
+    _draftGeneration = widget.createRecovery?.generation ?? 0;
     creating = false;
     title.clear();
     start = null;
@@ -51,7 +55,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
       accountId: widget.accountId,
       createRecovery: widget.createRecovery,
     );
-    final draft = controller.pendingDraft;
+    final draft = controller.pendingDraft ?? widget.createRecovery?.unsentDraft;
     if (draft != null) {
       creating = true;
       title.text = draft['title'] as String;
@@ -70,7 +74,11 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
   void didUpdateWidget(covariant RoomsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.accountId != widget.accountId ||
-        oldWidget.initialRoomId != widget.initialRoomId) {
+        oldWidget.initialRoomId != widget.initialRoomId ||
+        !identical(oldWidget.createRecovery, widget.createRecovery)) {
+      if (oldWidget.accountId != widget.accountId) {
+        oldWidget.createRecovery?.clear();
+      }
       controller.removeListener(_changed);
       controller.dispose();
       _childRoute = false;
@@ -89,6 +97,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _screenEpoch++;
     controller.setForeground(
       state == AppLifecycleState.resumed && !_childRoute,
     );
@@ -103,20 +112,36 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  void _rememberDraft() {
+    if (creating && !controller.pendingCreate) {
+      widget.createRecovery?.rememberDraft(
+        _draftGeneration,
+        title.text,
+        _dateText(start),
+        _dateText(end),
+      );
+    }
+  }
+
   Future<void> _date(bool first) async {
+    final epoch = _screenEpoch;
     final selected = await showDatePicker(
       context: context,
       initialDate: (first ? start : end) ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (mounted && selected != null) {
+    if (mounted &&
+        selected != null &&
+        epoch == _screenEpoch &&
+        controller.foreground) {
       setState(() {
         if (first) {
           start = selected;
         } else {
           end = selected;
         }
+        _rememberDraft();
       });
     }
   }
@@ -223,7 +248,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                         enabled: !controller.busy && !controller.pendingCreate,
                         maxLength: 80,
                         decoration: const InputDecoration(labelText: '여행방 이름'),
-                        onChanged: (_) => setState(() {}),
+                        onChanged: (_) => setState(_rememberDraft),
                       ),
                       const Text('여행 날짜는 나중에 정해도 괜찮아요.'),
                       OutlinedButton(
@@ -245,6 +270,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                               : () => setState(() {
                                   start = null;
                                   end = null;
+                                  _rememberDraft();
                                 }),
                           child: const Text('날짜 선택 지우기'),
                         ),
@@ -281,7 +307,12 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                         label: '새 여행방 만들기',
                         enabled: !controller.busy,
                         onPressed: () async {
-                          setState(() => creating = true);
+                          setState(() {
+                            creating = true;
+                            _draftGeneration =
+                                widget.createRecovery?.generation ?? 0;
+                            _rememberDraft();
+                          });
                         },
                       ),
                       const SizedBox(height: 20),
