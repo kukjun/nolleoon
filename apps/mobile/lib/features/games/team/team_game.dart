@@ -9,21 +9,28 @@ Future<JsonMap?> teamSetup(
   Map<String, String> names = const {},
 }) => showDialog<JsonMap>(
   context: context,
-  builder: (_) => _TeamSetup(
+  builder: (dialogContext) => TeamSetupForm(
     selected: List.unmodifiable(selected),
     names: Map.unmodifiable(names),
+    onComplete: (value) => Navigator.pop(dialogContext, value),
   ),
 );
 
-class _TeamSetup extends StatefulWidget {
-  const _TeamSetup({required this.selected, required this.names});
+class TeamSetupForm extends StatefulWidget {
+  const TeamSetupForm({
+    super.key,
+    required this.selected,
+    this.names = const {},
+    required this.onComplete,
+  });
+  final ValueChanged<JsonMap?> onComplete;
   final List<String> selected;
   final Map<String, String> names;
   @override
-  State<_TeamSetup> createState() => _TeamSetupState();
+  State<TeamSetupForm> createState() => _TeamSetupState();
 }
 
-class _TeamSetupState extends State<_TeamSetup> {
+class _TeamSetupState extends State<TeamSetupForm> {
   int teams = 2;
   bool submitted = false;
   @override
@@ -64,7 +71,7 @@ class _TeamSetupState extends State<_TeamSetup> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => widget.onComplete(null),
           child: const Text('취소'),
         ),
         FilledButton(
@@ -72,7 +79,7 @@ class _TeamSetupState extends State<_TeamSetup> {
               ? null
               : () {
                   setState(() => submitted = true);
-                  Navigator.pop(context, <String, Object?>{'teamCount': teams});
+                  widget.onComplete(<String, Object?>{'teamCount': teams});
                 },
           child: const Text('설정 적용'),
         ),

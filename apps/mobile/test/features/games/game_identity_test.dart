@@ -162,7 +162,7 @@ void main() {
   testWidgets('late configuration cannot submit into a new account screen', (
     tester,
   ) async {
-    final settings = Completer<Map<String, Object?>?>();
+    late ValueChanged<Map<String, Object?>?> completeSettings;
     final t = FakeTransport()
       ..handler = (_) async => ok({
         'roomId': 'room-a',
@@ -198,7 +198,10 @@ void main() {
         accountScope: scope,
         roomId: 'room-a',
         onSessionLost: () {},
-        configure: (_, _, _) => settings.future,
+        configure: (_, _, _, done) {
+          completeSettings = done;
+          return const AlertDialog(content: Text('private-config'));
+        },
       ),
     );
     await tester.pumpWidget(screen('old'));
@@ -211,7 +214,8 @@ void main() {
     await tester.pumpWidget(screen('new'));
     await tester.pump();
     await tester.pump();
-    settings.complete({'teamCount': 2});
+    completeSettings({'teamCount': 2});
+    expect(find.text('private-config'), findsNothing);
     await tester.pump();
     await tester.pump();
     expect(t.requests.where((r) => r.method != 'GET'), isEmpty);

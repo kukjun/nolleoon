@@ -31,7 +31,14 @@ class GameScreen extends StatefulWidget {
   final String accountScope;
   final PendingGameCommands pendingCommands;
   final VoidCallback onSessionLost;
-  final Future<JsonMap?> Function(BuildContext, String, List<String>)?
+
+  /// Build a form inside the shell-owned dialog; do not push another route.
+  final Widget Function(
+    BuildContext,
+    String,
+    List<String>,
+    ValueChanged<JsonMap?>,
+  )?
   configure;
   final Widget Function(BuildContext, RunDto, GameController)? play;
   @override
@@ -42,7 +49,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late GameController controller;
   String kind = 'team';
   final selected = <String>{};
-  bool _configuring = false;
+  Object? _configurationToken;
+  DialogRoute<JsonMap>? _configurationRoute;
+  bool get _configuring => _configurationToken != null;
   int _configEpoch = 0;
   AppLifecycleState _lifecycle = AppLifecycleState.resumed;
   @override
@@ -74,8 +83,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         oldWidget.viewerMembershipId != widget.viewerMembershipId ||
         oldWidget.accountScope != widget.accountScope ||
         !identical(oldWidget.pendingCommands, widget.pendingCommands)) {
-      _configEpoch++;
-      _configuring = false;
+      _cancelConfiguration();
       selected.clear();
       kind = 'team';
       controller.removeListener(_changed);
@@ -92,7 +100,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _lifecycle = state;
     if (state != AppLifecycleState.resumed) {
-      _configEpoch++;
+      _cancelConfiguration();
       selected.clear();
       kind = 'team';
     }
@@ -103,30 +111,59 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _cancelConfiguration();
     WidgetsBinding.instance.removeObserver(this);
     controller.removeListener(_changed);
     controller.dispose();
     super.dispose();
   }
 
+  void _cancelConfiguration() {
+    _configEpoch++;
+    _configurationToken = null;
+    final route = _configurationRoute;
+    _configurationRoute = null;
+    if (route?.isActive ?? false) route!.navigator?.removeRoute(route);
+  }
+
   Future<void> _create() async {
-    final room = controller.room;
-    final configure = widget.configure;
+    final room = controller.room, configure = widget.configure;
     if (room == null || configure == null || controller.busy || _configuring) {
       return;
     }
-    final ids = List<String>.unmodifiable(selected);
-    final type = kind;
-    final epoch = ++_configEpoch;
-    _configuring = true;
+    final ids = List<String>.unmodifiable(selected), type = kind;
+    final epoch = ++_configEpoch, token = Object();
+    _configurationToken = token;
     await controller.setForeground(false);
+    if (!mounted ||
+        !identical(token, _configurationToken) ||
+        _lifecycle != AppLifecycleState.resumed) {
+      return;
+    }
     JsonMap? settings;
+    late final DialogRoute<JsonMap> route;
+    void complete(JsonMap? value) {
+      if (!mounted ||
+          !identical(token, _configurationToken) ||
+          !identical(route, _configurationRoute) ||
+          !route.isActive) {
+        return;
+      }
+      route.navigator?.removeRoute(route, value);
+    }
+
+    route = DialogRoute<JsonMap>(
+      context: context,
+      builder: (context) => configure(context, type, ids, complete),
+    );
+    _configurationRoute = route;
     try {
-      if (mounted) settings = await configure(context, type, ids);
-    } catch (_) {
-      settings = null;
+      settings = await Navigator.of(context, rootNavigator: true).push(route);
     } finally {
-      if (epoch == _configEpoch) _configuring = false;
+      if (identical(token, _configurationToken)) {
+        _configurationToken = null;
+        _configurationRoute = null;
+      }
     }
     if (!mounted ||
         epoch != _configEpoch ||

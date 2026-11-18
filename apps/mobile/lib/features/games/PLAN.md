@@ -22,3 +22,8 @@ Native endpoint/실제 Kakao/실기기는 미검증이다. 변경은 games 디�
 신규 owner 계약 부재 RED 후 accepted-response 지연→background→controller remount→명시 retry exact bytes, 새 계정 및 logout 제거 회귀를 추가했다. 공통17개 PASS, scoped analyze issue0. 이 owner를 앱에 실제 연결하는 것은 별도 조립 게이트다.
 
 추가 방어: owner가 새 계정에 bind된 뒤 dispose 전인 옛 controller에서도 새 Bearer로 명령이 나갈 수 있던 단독 RED를 확인했다. 응답 수락뿐 아니라 dispatch 직전에도 owner의 accountScope 일치를 확인한다. 신규1+공통17+team7=25 PASS, games analyze issue0. 검증 이후 변경은 동일 if문의 lint용 braces뿐이다.
+
+## 설정 모달 소유권 보완 (최신 configure 계약)
+설정 대기 중 inactive가 epoch만 바꾸고 configuring을 영구 true로 남기던 독립 리뷰 RED를 재현했다. 기존 Future callback이 임의 root dialog를 띄우는 계약은 폐기했다. 최신 `configure(context, kind, ids, onComplete)`는 설정 Widget을 반환하며 새 route를 push하지 않는다. GameScreen이 정확한 DialogRoute를 소유하여 inactive/identity 교체/dispose에서 그 route만 제거한다. token identity로 옛 completion/finally가 새 설정을 취소·전송하지 못한다. 일반 취소/Back은 null 완료 후 GET 복귀한다. TeamSetupForm을 builder에 반환하고 standalone teamSetup helper는 앱 셸 밖에서만 사용한다.
+
+신규 lifecycle/overlay2개 + 기존25개=27 PASS. same-key 계정교체 시험도 private 모달 제거를 검증한다. games scoped analyze issue0. registry 연결 담당에게 breaking configure 계약을 전달했다.
