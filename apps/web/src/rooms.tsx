@@ -1,3 +1,4 @@
+import {LegacyRedacted} from './legacy-redacted';
 import {AvatarPicker} from './avatar-picker';
 import {AvatarProvider,MemberAvatar} from './avatar';
 import {useEffect,useRef,useState} from 'react';
@@ -93,6 +94,7 @@ export function Rooms({onJoined,onIdentityLost}:{onJoined?:(joined:boolean)=>voi
  const closeControl=room?.self.isHost&&!room.closed&&!excluded?<CloseRoom key={`close:${room.self.memberId}`} room={room} onClosed={snapshot=>{if(currentMember.current===snapshot.self.memberId)setRoom(previous=>mergeRoomSnapshot(previous,snapshot));}}/>:null;
  const leaveControl=room&&!room.closed?<LeaveRoom key={`leave:${room.self.memberId}`} code={room.inviteCode} memberId={room.self.memberId} onLeft={didLeave}/>:null;
  if(left)return <section className="room-content"><h2>방에서 나왔어요</h2><p>이전 참여는 종료됐어요. 다시 참여해도 진행 중 게임의 투표 권한은 복구되지 않아요.</p><Button onPress={()=>setLeft(false)}>다시 참여하기</Button><p><a href="/">홈으로 돌아가기</a></p></section>;
+ if(room?.redacted)return <section className="room-content"><LegacyRedacted game={room.redacted}/>{nextControl}{previousControl}{leaveControl}</section>;
  if(room?.closed)return <AvatarProvider code={room.inviteCode}><ClosedPartyResult code={room.inviteCode} legacy={room.game?.status==='result'?<><Status>방이 닫혔어요. 완료된 결과는 유지돼요.</Status><ResultView room={room} error={error} onRefresh={refresh}/></>:<section className="room-content"><h2>방이 닫혔어요</h2><p>{room.interrupted?'진행 중인 재판은 판결 없이 중단됐어요.':'이 방에서는 더 이상 참여하거나 게임을 진행할 수 없어요.'}</p>{room.interruption?.caseText&&<><h3>중단된 사건</h3><p>{room.interruption.caseText}</p></>}<a href="/">홈으로 돌아가기</a></section>}/></AvatarProvider>;
  if(room){
   const link=new URL(location.href);link.search='';link.searchParams.set('room',room.inviteCode);

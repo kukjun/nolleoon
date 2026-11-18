@@ -1,3 +1,4 @@
+import {validRedactedGame} from './travel-redacted.ts';
 import {errorCodes,errorMessages,type ErrorCode,type PartySnapshot,type PartyRun,type PartyReceipt,type PartyGameType} from '@trip-court/contracts';
 import {identityLoss} from './identity-generation.ts';
 export type PartyCommand={kind:'selection';expectedVersion:number;type:PartyGameType;teamCount:number;winnerCount:number;penaltyText:string}|{kind:'start';requestId:string;expectedSelectionVersion:number}|{kind:'next';requestId:string;fromRunId:string;expectedSelectionVersion:number}|{kind:'reveal';runId:string;requestId:string};
@@ -9,6 +10,8 @@ const count=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>=0;
 const kind=(v:unknown)=>v==='trial'||v==='team'||v==='draw';
 const policy=(v:unknown)=>v===null||v==='unrevealed-member-left';
 export function isPartyRun(v:unknown):v is PartyRun{
+ if(record(v)&&Object.hasOwn(v,'redacted')){const {redacted,...raw}=v;return validRedactedGame(redacted)&&redacted.kind===raw.type&&Array.isArray(raw.participants)&&raw.participants.length===0&&raw.result===null&&record(raw.settings)&&raw.settings.penaltyText===''&&isPartyRun(raw);}
+
  if(!record(v)||!keys(v,['runId','type','status','version','participants','self','settings','result','blockedPolicy'])||!text(v.runId)||!kind(v.type)||!['active','completed','interrupted'].includes(String(v.status))||!count(v.version)||!policy(v.blockedPolicy)||!Array.isArray(v.participants)||!record(v.self)||!keys(v.self,['eligible','revealed'])||typeof v.self.eligible!=='boolean'||typeof v.self.revealed!=='boolean'||!record(v.settings)||!keys(v.settings,['teamCount','winnerCount','penaltyText'])||!count(v.settings.teamCount)||!count(v.settings.winnerCount)||typeof v.settings.penaltyText!=='string')return false;
  const ids=new Set<string>();for(const p of v.participants){if(!record(p)||!keys(p,['memberId','nickname','eligible'])||!text(p.memberId)||typeof p.nickname!=='string'||typeof p.eligible!=='boolean'||ids.has(p.memberId))return false;ids.add(p.memberId);}
  if(v.result===null)return true;

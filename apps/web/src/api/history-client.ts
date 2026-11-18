@@ -14,7 +14,7 @@ function isList(value:unknown):value is PersonalHistoryPage{
  });
 }
 function isDetail(value:unknown,gameId:string):value is PersonalHistoryDetail{
- if(!record(value)||!keys(value,['gameId','game','interrupted','interruption','ongoing'])||value.gameId!==gameId||typeof value.interrupted!=='boolean')return false;
+ if(!record(value)||!keys(value,['gameId','game','interrupted','interruption','ongoing',...(Object.hasOwn(value,'redacted')?['redacted']:[])])||value.gameId!==gameId||typeof value.interrupted!=='boolean')return false;
  if(value.ongoing!==null)return !value.interrupted&&value.game===null&&value.interruption===null&&record(value.ongoing)&&keys(value.ongoing,['caseText'])&&typeof value.ongoing.caseText==='string';
  return isCompletedOrInterruptedHistory(value,gameId);
 }

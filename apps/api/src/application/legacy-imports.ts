@@ -1,3 +1,4 @@
+import {legacyRedactedGame} from './legacy-redacted-projection.js';
 import type {UnitOfWork,Repositories} from './ports/storage.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
 import {SessionRequired} from './browser-sessions.js';
@@ -36,7 +37,7 @@ export class LegacyImports {
   return this.uow.run(r=>{this.account(r,accountId);const anchor=anchorId?r.legacyLinks.findOwned(anchorId,accountId):undefined;if(anchorId&&!anchor)throw new DomainFailure('NOT_FOUND');const rows=r.legacyLinks.byAccount(accountId,anchor?{linkedAt:anchor.linkedAt,id:anchor.id}:null,21),page=rows.slice(0,20);return {items:page.map(link=>{const run=this.ownedRun(r,link.legacySessionId,link.runId);return {id:link.id,runId:run.id,type:run.type,status:run.status,createdAt:run.createdAt};}),nextCursor:rows.length>20?page.at(-1)!.id:null};});
  }
  detail(accountId:string,value:unknown){
-  const linkId=id(value);return this.uow.run(r=>{this.account(r,accountId);const link=r.legacyLinks.findOwned(linkId,accountId);if(!link)throw new DomainFailure('NOT_FOUND');const run=this.ownedRun(r,link.legacySessionId,link.runId);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');const actor={id:link.legacySessionId};
+  const linkId=id(value);return this.uow.run(r=>{this.account(r,accountId);const link=r.legacyLinks.findOwned(linkId,accountId);if(!link)throw new DomainFailure('NOT_FOUND');const run=this.ownedRun(r,link.legacySessionId,link.runId);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');const actor={id:link.legacySessionId};const summary=legacyRedactedGame(r,run.id,run.type);if(summary){const permitted=r.party.participants(run.id).some(p=>r.members.find(p.memberId)?.sessionId===link.legacySessionId&&(run.type==='trial'||p.eligible));if(!permitted)throw new DomainFailure('FORBIDDEN');return {id:link.id,runId:run.id,party:null,court:null,redacted:summary};}
    return {id:link.id,runId:run.id,party:this.party.historyProjection(r,actor,run.id),court:run.type==='trial'?{...this.rooms.historyProjection(r,actor,r.rooms.find(run.roomId)!,run.id,this.clock.now()),ongoing:null}:null};
   });
  }

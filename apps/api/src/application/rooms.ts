@@ -1,3 +1,4 @@
+import {legacyRedactedGame} from './legacy-redacted-projection.js';
 import { closeRoom } from './room-closure.js';
 import { assignVacantHost } from './host-transfer.js';
 import type { RandomSource } from './ports/random.js';
@@ -299,6 +300,8 @@ export class Rooms {
       throw new DomainFailure('FORBIDDEN');
     if (!['result', 'interrupted'].includes(game.status))
       throw new DomainFailure('STATE_CONFLICT');
+    const summary=legacyRedactedGame(r,gameId,'trial');
+    if(summary)return {gameId,game:null,interrupted:game.status==='interrupted',interruption:null,redacted:summary};
     const snapshot = this.snapshot(r, room, actor.id, now, gameId);
     return {
       gameId,
@@ -396,6 +399,8 @@ export class Rooms {
     const participation =
       participants.find((p) => p.memberId === self.id) ??
       (!active ? participants.find((p) => historicalIds.includes(p.memberId)) : undefined);
+    const redactedSummary=candidate?legacyRedactedGame(r,candidate.id,'trial'):null;
+    if(redactedSummary&&!participation)throw new DomainFailure('FORBIDDEN');
     const firstRound = candidate
       ? (r.rounds.find(candidate.id, 2) ?? r.rounds.find(candidate.id, 1))
       : undefined;
@@ -517,19 +522,20 @@ export class Rooms {
       nextGame: { canPrepare, fromGameId: canPrepare ? latest!.id : null },
       historyGameId,
       closed: room.status === 'closed',
-      interruption,
+      interruption:redactedSummary?null:interruption,
       interrupted,
       roomId: room.id,
-      game,
+      game:redactedSummary?null:game,
+      ...(redactedSummary?{redacted:redactedSummary}:{}),
       start,
-      consent,
+      consent:redactedSummary?{...consent,status:'pending' as const,defendantMemberId:null,canDecide:false}:consent,
       roleRevision: privateMetadata ? 0 : (room.roleRevision ?? 0),
       rosterEditable: preparing && room.status === 'open' && !r.games.hasActive(room.id),
-      draft,
+      draft:redactedSummary?{...draft,caseText:'',penaltyText:''}:draft,
       version: room.version,
       inviteCode: room.inviteCode,
       self: { memberId: self.id, isHost: self.id === room.hostMemberId },
-      members: (room.status === 'closed' ? [] : members).map((m) => ({
+      members: (room.status === 'closed'||redactedSummary ? [] : members).map((m) => ({
         memberId: m.id,
         nickname: m.nickname,
         role:

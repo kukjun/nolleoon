@@ -15,6 +15,7 @@ function authorized(r:Repositories,sessionId:string,id:string){
  return game;
 }
 function summary(r:Repositories,game:GameRecord){
+ if(r.accountDeletion.legacySummary(game.id))return {gameId:game.id,state:game.status==='interrupted'?'interrupted' as const:'completed' as const,caseText:null,outcome:null};
  if(game.status==='interrupted')return {gameId:game.id,state:'interrupted' as const,caseText:r.interruptions.find(game.id)?.cause==='room-closed'?game.caseText:null,outcome:null};
  if(game.status!=='result')return {gameId:game.id,state:'ongoing' as const,caseText:game.caseText,outcome:null};
  const settlement=r.settlements.find(game.id,2)??r.settlements.find(game.id,1);
