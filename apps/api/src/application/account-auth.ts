@@ -12,7 +12,7 @@ export function accountReturnPath(value:unknown):string {
 }
 function publicAccount(a:AccountRecord,r:AccountAuthRepository){return {avatar:accountAvatarView(accountAvatar(r,a)),id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
 export class AccountAuth {
- constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider){}
+ constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider,private readonly beforeContinuation?:()=>void){}
  private current(r:AccountAuthRepository,token:unknown,now:number){
   const session=opaque(token)?r.findSession(this.codec.hash(token)):undefined;
   const account=session?r.findAccount(session.accountId):undefined;
@@ -50,6 +50,7 @@ export class AccountAuth {
   let identity:{subject:string};
   try{identity=await this.provider.exchange(code as string);}catch{this.uow.run(({accountAuth:r})=>r.consumeAttempt(stateHash));throw new DomainFailure('TEMPORARILY_UNAVAILABLE');}
   if(!identity||typeof identity.subject!=='string'||!/^\d{1,30}$/.test(identity.subject)){this.uow.run(({accountAuth:r})=>r.consumeAttempt(stateHash));throw new DomainFailure('FORBIDDEN');}
+  try{this.beforeContinuation?.();}catch{throw new DomainFailure('TEMPORARILY_UNAVAILABLE');}
   return this.uow.run(({accountAuth:r})=>{
    const latest=r.findAttempt(stateHash),now=this.clock.now();
    if(!latest||latest.status!=='exchanging'||latest.expiresAt<=now||!r.consumeAttempt(stateHash))throw new DomainFailure('FORBIDDEN');

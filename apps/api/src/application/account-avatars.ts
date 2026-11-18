@@ -8,7 +8,7 @@ export const ACCOUNT_AVATAR_QUOTA=16*1024*1024;
 function identifier(value:string){if(!/^[-A-Za-z0-9_]{1,100}$/.test(value))throw new DomainFailure('NOT_FOUND');return value;}
 function revision(value:unknown){if(!Number.isSafeInteger(value)||Number(value)<0)throw new DomainFailure('INVALID_INPUT');return value as number;}
 export class AccountAvatars {
- constructor(private readonly uow:UnitOfWork,private readonly images:AvatarImageProcessor,private readonly clock:Clock){}
+ constructor(private readonly uow:UnitOfWork,private readonly images:AvatarImageProcessor,private readonly clock:Clock,private readonly beforeContinuation?:()=>void){}
  private active(r:Repositories,actor:AccountAvatarActor){const a=r.accountAuth.findAccount(actor.accountId),session=r.accountAuth.findSession(actor.sessionHash);if(a?.status!=='active'||!session||session.accountId!==a.id||session.revokedAt!==null||session.expiresAt<=this.clock.now())throw new SessionRequired();return a;}
  get(actor:AccountAvatarActor){return this.uow.run(r=>accountAvatarView(accountAvatar(r.accountAuth,this.active(r,actor))));}
  private save(actor:AccountAvatarActor,expected:number,presetId:string|null,imageBytes:Uint8Array|null){return this.uow.run(r=>{
@@ -26,7 +26,7 @@ export class AccountAvatars {
  }
  async upload(actor:AccountAvatarActor,expected:unknown,bytes:Uint8Array,mime:string){
   const rev=revision(expected);this.uow.run(r=>this.active(r,actor));
-  if(bytes.byteLength<1||bytes.byteLength>1048576)throw new DomainFailure('PAYLOAD_TOO_LARGE');const thumbnail=await this.images.thumbnail(bytes,mime);if(thumbnail.byteLength<1||thumbnail.byteLength>65536)throw new DomainFailure('INVALID_INPUT');return this.save(actor,rev,null,thumbnail);
+  if(bytes.byteLength<1||bytes.byteLength>1048576)throw new DomainFailure('PAYLOAD_TOO_LARGE');const thumbnail=await this.images.thumbnail(bytes,mime);try{this.beforeContinuation?.();}catch{throw new DomainFailure('TEMPORARILY_UNAVAILABLE');}if(thumbnail.byteLength<1||thumbnail.byteLength>65536)throw new DomainFailure('INVALID_INPUT');return this.save(actor,rev,null,thumbnail);
  }
  ownImage(actor:AccountAvatarActor){return this.uow.run(r=>{const image=accountAvatar(r.accountAuth,this.active(r,actor),true).imageBytes;if(!image)throw new DomainFailure('NOT_FOUND');return image;});}
  private members(r:Repositories,actor:AccountAvatarActor,roomId:string){
