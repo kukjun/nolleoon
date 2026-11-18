@@ -18,10 +18,10 @@ export function summarizeDeletedRun(run:TravelRun,participantCount:number):Redac
  return summary;
 }
 /** Used by live deletion and verified-ledger replay on a private restore copy. */
-export function applyAccountDeletion(r:Repositories,entry:AccountDeletionEntry):void {
+export function applyAccountDeletion(r:Repositories,entry:AccountDeletionEntry,options:{restore?:boolean}={}):void {
  for(const id of entry.runIds){const run=r.travel.run(id);if(!run)continue;const existing=r.accountDeletion.summary(id);const count=r.travel.participants(id).length;r.accountDeletion.redactRun(id,existing??summarizeDeletedRun(run,count));}
  // Legacy scrub is a separately reviewed adapter, bounded by authoritative explicit run IDs.
- r.accountDeletion.redactLegacy(entry);
+ r.accountDeletion.redactLegacy(entry,options.restore===true);
  r.accountDeletion.scrubIdentity(entry);
 }
 export class AccountDeletion {

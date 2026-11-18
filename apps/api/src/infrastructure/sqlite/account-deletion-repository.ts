@@ -19,7 +19,7 @@ export function accountDeletionRepository(sql:SqlAccess,db:Database.Database):Ac
  execute("UPDATE travel_runs SET settings_json='{}',state_json='{}',result_json=NULL,selected_membership_ids_json='[]',status=CASE WHEN status IN ('draft','active') THEN 'interrupted' ELSE status END,version=version+1 WHERE id=@id AND (settings_json!='{}' OR state_json!='{}' OR result_json IS NOT NULL OR selected_membership_ids_json!='[]' OR status IN ('draft','active'))",{id});
  execute("UPDATE travel_requests SET intent='redacted',result_json='{}' WHERE instr(intent,@id)>0 OR instr(result_json,@id)>0",{id});
  },
- redactLegacy:entry=>scrubLegacyRuns(db,entry.legacyRunIds.map(runId=>({runId,departingSessionIds:entry.legacyProofs.filter(p=>p.runId===runId).map(p=>p.sessionId)})),entry.createdAt),
+ redactLegacy:(entry,allowActiveForRestore=false)=>scrubLegacyRuns(db,entry.legacyRunIds.map(runId=>({runId,departingSessionIds:entry.legacyProofs.filter(p=>p.runId===runId).map(p=>p.sessionId)})),entry.createdAt,{allowActiveForRestore}),
  scrubIdentity:entry=>{
  execute('INSERT OR IGNORE INTO account_deletions VALUES (@operationId,@accountId,@createdAt)',entry);
  execute('INSERT OR IGNORE INTO account_deletion_receipts SELECT token_hash,@operationId,expires_at FROM account_sessions WHERE account_id=@accountId',{operationId:entry.operationId,accountId:entry.accountId});

@@ -13,6 +13,6 @@ export interface AccountDeletionRepository {
  summary(runId:string):RedactedRunSummary|undefined;
  legacySummary(runId:string):RedactedRunSummary|undefined;
  redactRun(runId:string,summary:RedactedRunSummary):void;
- redactLegacy(entry:AccountDeletionEntry):void;
+ redactLegacy(entry:AccountDeletionEntry,allowActiveForRestore?:boolean):void;
  scrubIdentity(entry:AccountDeletionEntry):void;
 }

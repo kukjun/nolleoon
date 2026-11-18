@@ -1,6 +1,9 @@
 import type {RoomDeletionLedger} from '../application/ports/room-deletion.js';
 import {RoomDeletionMonitor} from '../infrastructure/sessions/room-deletion-monitor.js';
 import {TravelRoomDeletion} from '../application/travel-room-deletion.js';
+import {AccountDeletion} from '../application/account-deletion.js';
+import type {DeletionLedger} from '../application/ports/account-deletion.js';
+import {AccountDeletionController} from '../presentation/account-deletion.controller.js';
 import {TravelTeamEngine,TravelDrawEngine} from '../application/travel-team-draw-engines.js';
 import {TravelTrialEngine} from '../application/travel-trial-engine.js';
 import {TravelMenuEngine} from '../application/travel-menu-engine.js';
@@ -52,20 +55,21 @@ class StorageResources {
   }
   onModuleDestroy() { if(this.db.open) this.db.close(); }
 }
-export interface AppConfiguration { roomDeletionLedger?:RoomDeletionLedger; roomDeletionMonitor?:boolean; travelEngines?:readonly TravelGameEngine[]; kakaoProvider?:KakaoIdentityProvider; dbPath: string; publicOrigin: string; clock?: Clock; random?: RandomSource; presenceMonitor?: boolean; settlementMonitor?: boolean }
+export interface AppConfiguration { deletionLedger?:DeletionLedger; roomDeletionLedger?:RoomDeletionLedger; roomDeletionMonitor?:boolean; travelEngines?:readonly TravelGameEngine[]; kakaoProvider?:KakaoIdentityProvider; dbPath: string; publicOrigin: string; clock?: Clock; random?: RandomSource; presenceMonitor?: boolean; settlementMonitor?: boolean }
 @Module({})
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();const imageProcessor=new SharpAvatarProcessor();
-    return {module:AppModule,controllers:[AccountAvatarController,LegacyImportsController,TravelDeletedRoomsController,TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
+    return {module:AppModule,controllers:[AccountDeletionController,AccountAvatarController,LegacyImportsController,TravelDeletedRoomsController,TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:RoomDeletionMonitor,inject:[TravelRoomDeletion],useFactory:(deletion:TravelRoomDeletion)=>new RoomDeletionMonitor(deletion,config.roomDeletionMonitor??true)},
       {provide:TravelRoomDeletion,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRoomDeletion(resources.uow,config.clock??new SystemClock(),config.roomDeletionLedger)},
+      {provide:AccountDeletion,inject:[STORAGE],useFactory:(resources:StorageResources)=>{const deletion=new AccountDeletion(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.deletionLedger);deletion.reconcile();return deletion;}},
       {provide:TravelRooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:TravelRuns,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRuns(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.travelEngines??[new TravelTeamEngine(random),new TravelDrawEngine(random),new TravelTrialEngine(),new TravelMenuEngine(random)],random)},
       {provide:LegacyImports,inject:[STORAGE,PartyGames,Rooms],useFactory:(resources:StorageResources,party:PartyGames,rooms:Rooms)=>new LegacyImports(resources.uow,config.clock??new SystemClock(),new SecureTokens(),party,rooms)},
       {provide:AccountAuth,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider)},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
-      {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth,TravelRoomDeletion],useFactory:(sessions:BrowserSessions,accounts:AccountAuth,deletion:TravelRoomDeletion)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts,()=>deletion.reconcile())},
+      {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth,TravelRoomDeletion,AccountDeletion],useFactory:(sessions:BrowserSessions,accounts:AccountAuth,rooms:TravelRoomDeletion,accountDeletion:AccountDeletion)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts,()=>{rooms.reconcile();accountDeletion.reconcile();})},
       {provide:AccountAvatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAvatars(resources.uow,imageProcessor,config.clock??new SystemClock())},
       {provide:Avatars,inject:[STORAGE],useFactory:(resources:StorageResources)=>new Avatars(resources.uow,imageProcessor)},
       {provide:APP_FILTER,useClass:ApiErrorFilter},
