@@ -55,6 +55,6 @@ export function actOnTrial(state:TravelTrialState,input:unknown,ctx:TrialContext
 }
 export function projectTrial(state:TravelTrialState,actor:string,currentParticipants:string[]){
  if(!state.participants.includes(actor)||!currentParticipants.includes(actor))fail('FORBIDDEN');
- return {phase:state.phase,caseText:state.caseText,penaltyText:state.penaltyText,durationSeconds:state.durationSeconds,defendantMembershipId:state.defendantMembershipId,consent:state.consent,roundNumber:state.roundNumber,deadline:state.deadline,submittedCount:state.votes.length,self:{voted:state.votes.some(v=>v.membershipId===actor),isDefendant:actor===state.defendantMembershipId},defenses:structuredClone(state.defenses),rounds:structuredClone(state.rounds),outcome:state.outcome};
+ return {phase:state.phase,caseText:state.caseText,penaltyText:state.penaltyText,durationSeconds:state.durationSeconds,defendantMembershipId:state.defendantMembershipId,consent:state.consent,roundNumber:state.roundNumber,deadline:state.deadline,submittedCount:state.votes.length,self:{voted:state.votes.some(v=>v.membershipId===actor),vote:(()=>{const own=state.votes.find(v=>v.membershipId===actor);return own?{choice:own.choice,reason:own.reason}:null;})(),isDefendant:actor===state.defendantMembershipId},defenses:structuredClone(state.defenses),rounds:structuredClone(state.rounds),outcome:state.outcome};
 }
 

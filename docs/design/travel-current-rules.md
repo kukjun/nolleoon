@@ -19,7 +19,7 @@
 
 ## 권한 모델
 
-Account → TravelMembership → GameParticipant를 구분한다. 현재 멤버 검사와 당시 참가자 검사를 모두 한다. 동일 계정의 다른 기기는 같은 멤버/표로 취급한다. 다시 가입한 새 membership에 이전 재판 권한을 자동 연결하지 않는다. 비참가 진행자는 단계 제어와 민감 상세 열람을 구분하고 투표/변론을 대신하지 않는다.
+Account → TravelMembership → GameParticipant를 구분한다. 현재 멤버 검사와 당시 참가자 검사를 모두 한다. 동일 계정의 다른 기기는 같은 멤버/표로 취급한다. #119 결정 전 임시 보호로, 다시 가입한 새 membership에 이전 재판 권한을 자동 연결하지 않는다. 이는 재가입 후 권한 복구의 최종 정책 확정이 아니다. 비참가 진행자는 단계 제어와 민감 상세 열람을 구분하고 투표/변론을 대신하지 않는다.
 
 ## 미정·출시 차단 경계
 
@@ -50,3 +50,18 @@ Account → TravelMembership → GameParticipant를 구분한다. 현재 멤버 
 | 통합/인수 | #141–144 | 정확한 RC 전체 E2E, 실물/외부와 mock 구분 |
 
 완료 상태는 GitHub AC와 실행 증거로 추적한다. 문서나 한 단위 테스트의 통과를 전체 완료로 보지 않는다.
+
+## 상태 전이와 반례
+
+| 대상 | 이전 → 이후 | 허용 조건 | 반드시 거부/보류 |
+|---|---|---|---|
+| 여행방 | 없음 → open | 로그인 계정 생성 | 비로그인 생성 |
+| 여행방 | open → closed | 현재 관리자, 진행 판 없음 | 비관리자 또는 active 판 중 종료는 gate |
+| 여행방 | closed → open | 현재 관리자 | 비관리자 재활성화 |
+| 소속 | current → current | offline/재시작/10분 경과 | presence로 소속 삭제 금지 |
+| 소속 | current → left/removed | 승인된 나가기/추방, 관리자 이양 선행 | 마지막 관리자/활성 판 예외 gate |
+| 판 | 없음 → draft | 현재 멤버, open 방, 다른 draft/active 없음 | 종료 방/동시 두 판 |
+| 판 | draft → active/terminal | 진행자, 게임별 준비 조건, 선택 명단 동결 | late join 참가 편입 |
+| 제비 | active → incomplete | 미공개 참가자 단절 10분 경과 | 자동 뒤집기/당첨 재배정 |
+
+문서의 여행방 활성/종료는 저장 상태 `open/closed`를 뜻하며 게임의 `draft/active/completed/incomplete/interrupted`와 다르다. 공개 권한 반례는 [기계 판독 사례](travel-access-cases.json), 문서 무결성 시험은 `tests/docs/travel-policy.test.mjs`에 고정한다. 이는 실제 HTTP 권한 시험을 대체하지 않는다.
