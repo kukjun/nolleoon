@@ -1,7 +1,7 @@
 import {createHash,randomUUID} from 'node:crypto';
 import {realpathSync,lstatSync,readFileSync,openSync,closeSync,writeFileSync,fsyncSync,renameSync,unlinkSync} from 'node:fs';
 import {dirname,isAbsolute,resolve} from 'node:path';
-export interface DeletionEntry{operationId:string;accountId:string;runIds:string[];legacyRunIds:string[];legacyProofs:{runId:string;sessionId:string}[];createdAt:number}
+export interface DeletionEntry{operationId:string;accountId:string;runIds:string[];legacyRunIds:string[];legacyProofs:{runId:string;sessionId:string}[];createdAt:number;roomDeletions?:{roomId:string;deletedAt:number;purgeAfter:number;deletionVersion:number;previousStatus:'open'|'closed';administratorAccountId:string}[]}
 type Anchor={sequence:number;digest:string};
 type Row<T>=Anchor&{previous:string;entry:T};
 const initial:Anchor={sequence:0,digest:'0'.repeat(64)};
@@ -9,9 +9,16 @@ const digest=(previous:string,sequence:number,entry:unknown)=>createHash('sha256
 function entry(value:unknown):DeletionEntry{
  if(!value||typeof value!=='object')throw Error('LEDGER_INVALID');const v=value as Record<string,unknown>;
  const id=(x:unknown):x is string=>typeof x==='string'&&/^[-A-Za-z0-9_]{1,100}$/.test(x);
- if(Object.keys(v).sort().join(',')!=='accountId,createdAt,legacyProofs,legacyRunIds,operationId,runIds'||!id(v.operationId)||!id(v.accountId)||!Array.isArray(v.runIds)||!v.runIds.every(id)||new Set(v.runIds).size!==v.runIds.length||!Array.isArray(v.legacyRunIds)||!v.legacyRunIds.every(id)||new Set(v.legacyRunIds).size!==v.legacyRunIds.length||!Number.isSafeInteger(v.createdAt)||(v.createdAt as number)<0)throw Error('LEDGER_INVALID');
+ const hasRooms=Object.hasOwn(v,'roomDeletions');
+ const expectedKeys=hasRooms?'accountId,createdAt,legacyProofs,legacyRunIds,operationId,roomDeletions,runIds':'accountId,createdAt,legacyProofs,legacyRunIds,operationId,runIds';
+ if(Object.keys(v).sort().join(',')!==expectedKeys||!id(v.operationId)||!id(v.accountId)||!Array.isArray(v.runIds)||!v.runIds.every(id)||new Set(v.runIds).size!==v.runIds.length||!Array.isArray(v.legacyRunIds)||!v.legacyRunIds.every(id)||new Set(v.legacyRunIds).size!==v.legacyRunIds.length||!Number.isSafeInteger(v.createdAt)||(v.createdAt as number)<0)throw Error('LEDGER_INVALID');
  if(!Array.isArray(v.legacyProofs)||!v.legacyProofs.every(p=>p&&typeof p==='object'&&Object.keys(p).sort().join(',')==='runId,sessionId'&&id(p.runId)&&id(p.sessionId)&&(v.legacyRunIds as string[]).includes(p.runId))||new Set(v.legacyProofs.map(p=>p.runId+'|'+p.sessionId)).size!==v.legacyProofs.length)throw Error('LEDGER_INVALID');
- return {operationId:v.operationId,accountId:v.accountId,runIds:[...v.runIds],legacyRunIds:[...v.legacyRunIds],legacyProofs:v.legacyProofs.map(p=>({runId:p.runId,sessionId:p.sessionId})),createdAt:v.createdAt as number};
+ let roomDeletions:DeletionEntry['roomDeletions'];
+ if(hasRooms){
+  if(!Array.isArray(v.roomDeletions)||!v.roomDeletions.every(r=>r&&typeof r==='object'&&Object.keys(r).sort().join(',')==='administratorAccountId,deletedAt,deletionVersion,previousStatus,purgeAfter,roomId'&&id(r.roomId)&&r.administratorAccountId===v.accountId&&r.deletedAt===v.createdAt&&Number.isSafeInteger(r.purgeAfter)&&r.purgeAfter===(v.createdAt as number)+604800000&&Number.isSafeInteger(r.deletionVersion)&&r.deletionVersion>0&&['open','closed'].includes(r.previousStatus))||new Set(v.roomDeletions.map(r=>r.roomId)).size!==v.roomDeletions.length)throw Error('LEDGER_INVALID');
+  roomDeletions=v.roomDeletions.map(r=>({roomId:r.roomId,deletedAt:r.deletedAt,purgeAfter:r.purgeAfter,deletionVersion:r.deletionVersion,previousStatus:r.previousStatus,administratorAccountId:r.administratorAccountId}));
+ }
+ return {operationId:v.operationId,accountId:v.accountId,runIds:[...v.runIds],legacyRunIds:[...v.legacyRunIds],legacyProofs:v.legacyProofs.map(p=>({runId:p.runId,sessionId:p.sessionId})),createdAt:v.createdAt as number,...(hasRooms?{roomDeletions}: {})};
 }
 function regular(path:string){const s=lstatSync(path);if(!s.isFile()||s.isSymbolicLink())throw Error('LEDGER_INVALID');}
 function syncWrite(path:string,value:string,flags='wx'){const fd=openSync(path,flags,0o600);try{writeFileSync(fd,value);fsyncSync(fd);}finally{closeSync(fd);}}
