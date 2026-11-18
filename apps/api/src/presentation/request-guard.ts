@@ -20,7 +20,7 @@ export class RequestGuard implements CanActivate {
   const now=this.clock.now();const write=request.method!=='GET';
   const limits:[string,number][]=[[`${identity}:${write?'write':'read'}`,actor?(write?180:600):120]];
   if(actor&&write&&(/^\/api\/rooms\/?$/.test(path)||path.endsWith('/join')))limits.push([`${identity}:room-entry`,30]);
-  if(write&&path==='/api/avatar/image')limits.push([`${identity}:avatar-image`,6]);
+  if(write&&['/api/avatar/image','/api/account/avatar/image'].includes(path))limits.push([`${identity}:avatar-image`,6]);
   for(const [key,limit] of limits){const result=this.budget.consume(key,limit,now);if(!result.allowed){response.setHeader('Retry-After',String(result.retryAfter));throw new HttpException('요청이 너무 많습니다.',429);}}
   return true;
  }

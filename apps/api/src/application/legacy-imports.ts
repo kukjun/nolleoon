@@ -37,7 +37,7 @@ export class LegacyImports {
  }
  detail(accountId:string,value:unknown){
   const linkId=id(value);return this.uow.run(r=>{this.account(r,accountId);const link=r.legacyLinks.findOwned(linkId,accountId);if(!link)throw new DomainFailure('NOT_FOUND');const run=this.ownedRun(r,link.legacySessionId,link.runId);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');const actor={id:link.legacySessionId};
-   return {id:link.id,runId:run.id,party:this.party.historyProjection(r,actor,run.id),court:run.type==='trial'?this.rooms.historyProjection(r,actor,r.rooms.find(run.roomId)!,run.id,this.clock.now()):null};
+   return {id:link.id,runId:run.id,party:this.party.historyProjection(r,actor,run.id),court:run.type==='trial'?{...this.rooms.historyProjection(r,actor,r.rooms.find(run.roomId)!,run.id,this.clock.now()),ongoing:null}:null};
   });
  }
 }

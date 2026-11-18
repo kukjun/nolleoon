@@ -25,11 +25,11 @@
 
 ## HTTP 계약
 
-- `GET /api/account/session`: cookie 없음 `{authenticated:false}`, 유효하면 `{authenticated:true,account:{id,displayName,presetId,revision}}`, 변조/만료는 401.
+- `GET /api/account/session`: cookie 없음 `{authenticated:false}`, 유효하면 `{authenticated:true,account:{id,displayName,presetId,revision,avatar}}`, 변조/만료는 401.
 - `POST /api/account/login {returnTo}`: Origin/JSON/고정 CSRF header 검사 후 `{authorizationUrl}`. UI는 full navigation. returnTo는 정확한 `/travel` 또는 `/travel/invite/<20–128자 URL-safe 토큰>`만 가능하다.
 - `GET /api/account/callback`: code/state는 서버가 소비하고 검증된 내부 경로로 303. 오류/취소는 `login=failed|cancelled`만 전달하며 원문 오류·code·token을 전달하지 않는다. 검증 불가능한 state는 `/travel`로만 돌아간다. no-store/no-referrer.
 - `POST /api/account/logout {}`: 현재 cookie 및 같은 브라우저 흐름에 발급된 account sessions 폐기와 진행 중 인증 무효화. 익명 쿠키는 지우지 않는다.
-- `POST /api/account/profile {expectedRevision,displayName,presetId}`: CAS 수정. 앱이 정한 이름과 10개 기본 아바타만 제공. 계정 사진 업로드는 이 단계에 없으며 기존 익명 사진 기능과 데이터를 변경하지 않는다.
+- `POST /api/account/profile {expectedRevision,displayName,presetId}`: CAS 수정. 앱이 정한 이름과 10개 기본 아바타를 제공한다. 후속 [계정 사진](account-avatars.md) 확장에서는 명시 업로드 사진을 별도 저장한다. 이름만 수정할 때 사진을 유지하고 preset 실제 변경은 사진을 교체한다. 기존 익명 사진 데이터는 변경하지 않는다.
 
 변경 POST는 `X-Trip-Court-Request: 1`, 정확한 Origin, application/json을 요구한다. callback은 외부 top-level GET이므로 flow cookie만 Secure/HttpOnly/SameSite=Lax, account cookie는 Secure/HttpOnly/SameSite=Strict다. 둘 다 __Host- prefix, Path=/, Domain 없음.
 

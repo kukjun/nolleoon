@@ -1,8 +1,11 @@
-import type {AccountAuthRepository,AccountRecord,AccountSessionRecord,OAuthAttempt} from '../../application/ports/account-auth.js';
+import type {AccountAvatarRecord,AccountAuthRepository,AccountRecord,AccountSessionRecord,OAuthAttempt} from '../../application/ports/account-auth.js';
 export interface SqlAccess {execute(sql:string,params:object):void;find<T>(sql:string,...params:(string|number)[]):T|undefined;all<T>(sql:string,...params:(string|number)[]):T[]}
 export function accountRepository({execute,find}:SqlAccess):AccountAuthRepository {
  const changed=()=>find<{n:number}>('SELECT changes() n')!.n===1;
  return {
+ findAvatar:(id,includeImage=false)=>find<AccountAvatarRecord>(`SELECT account_id accountId,preset_id presetId,revision,${includeImage?'image_bytes':'NULL'} imageBytes FROM account_avatars WHERE account_id=?`,id),
+ totalAvatarBytes:()=>find<{n:number}>('SELECT COALESCE(SUM(length(image_bytes)),0) n FROM account_avatars')!.n,
+ saveAvatar:r=>execute('INSERT INTO account_avatars VALUES (@accountId,@presetId,@revision,@imageBytes) ON CONFLICT(account_id) DO UPDATE SET preset_id=excluded.preset_id,revision=excluded.revision,image_bytes=excluded.image_bytes',r),
  findAccount:id=>find<AccountRecord>('SELECT id,created_at createdAt,status,display_name displayName,preset_id presetId,revision FROM accounts WHERE id=?',id),
  insertAccount:r=>execute('INSERT INTO accounts VALUES (@id,@createdAt,@status,@displayName,@presetId,@revision)',r),
  updateProfile:(id,expectedRevision,displayName,presetId)=>{execute('UPDATE accounts SET display_name=@displayName,preset_id=@presetId,revision=revision+1 WHERE id=@id AND revision=@expectedRevision',{id,expectedRevision,displayName,presetId});return changed();},

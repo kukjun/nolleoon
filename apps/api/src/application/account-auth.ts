@@ -1,3 +1,4 @@
+import {accountAvatar,accountAvatarView} from './account-avatar-view.js';
 import {SessionRequired,type Clock,type TokenCodec} from './browser-sessions.js';
 import type {AccountAuthRepository,AccountAuthUnitOfWork,AccountRecord,KakaoIdentityProvider} from './ports/account-auth.js';
 import {DomainFailure} from '../domain/failure.js';
@@ -9,7 +10,7 @@ export function accountReturnPath(value:unknown):string {
  if(typeof value!=='string'||!(value==='/travel'||/^\/travel\/invite\/[A-Za-z0-9_-]{20,128}$/.test(value)))throw new DomainFailure('INVALID_INPUT');
  return value;
 }
-function publicAccount(a:AccountRecord){return {id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
+function publicAccount(a:AccountRecord,r:AccountAuthRepository){return {avatar:accountAvatarView(accountAvatar(r,a)),id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
 export class AccountAuth {
  constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider){}
  private current(r:AccountAuthRepository,token:unknown,now:number){
@@ -18,8 +19,8 @@ export class AccountAuth {
   if(!session||session.revokedAt!==null||session.expiresAt<=now||account?.status!=='active')throw new SessionRequired();
   return {session,account};
  }
- require(token?:string){return this.uow.run(({accountAuth:r})=>({accountId:this.current(r,token,this.clock.now()).account.id}));}
- session(token?:string){if(!token)return {authenticated:false as const};return this.uow.run(({accountAuth:r})=>({authenticated:true as const,account:publicAccount(this.current(r,token,this.clock.now()).account)}));}
+ require(token?:string){return this.uow.run(({accountAuth:r})=>{const current=this.current(r,token,this.clock.now());return {accountId:current.account.id,sessionHash:current.session.tokenHash};});}
+ session(token?:string){if(!token)return {authenticated:false as const};return this.uow.run(({accountAuth:r})=>({authenticated:true as const,account:publicAccount(this.current(r,token,this.clock.now()).account,r)}));}
  begin(returnTo:unknown,browserToken?:string,accountToken?:string){
   const returnPath=accountReturnPath(returnTo);if(!this.provider)throw new DomainFailure('TEMPORARILY_UNAVAILABLE');
   const browser=opaque(browserToken)?browserToken:this.codec.token(),state=this.codec.token(),now=this.clock.now();
@@ -61,7 +62,7 @@ export class AccountAuth {
    if(attempt.previousSessionHash)r.revokeSession(attempt.previousSessionHash,now);
    r.revokeBrowserSessions(browserHash,now);
    const token=this.codec.token();r.insertSession({browserHash,tokenHash:this.codec.hash(token),accountId:account.id,createdAt:now,expiresAt:now+ACCOUNT_SESSION_MS,revokedAt:null});
-   return {cancelled:false as const,returnPath:attempt.returnPath,token,account:publicAccount(account)};
+   return {cancelled:false as const,returnPath:attempt.returnPath,token,account:publicAccount(account,r)};
   });
  }
  logout(token?:string,browserToken?:string){this.uow.run(({accountAuth:r})=>{if(opaque(token))r.revokeSession(this.codec.hash(token),this.clock.now());if(opaque(browserToken)){r.invalidateAttempts(this.codec.hash(browserToken));r.revokeBrowserSessions(this.codec.hash(browserToken),this.clock.now());}});return {authenticated:false as const};}
@@ -70,6 +71,6 @@ export class AccountAuth {
   const b=input as Record<string,unknown>;
   if(Object.keys(b).sort().join(',')!=='displayName,expectedRevision,presetId'||typeof b.displayName!=='string'||!Number.isSafeInteger(b.expectedRevision)||(b.expectedRevision as number)<0||typeof b.presetId!=='string'||!/^preset-(0[1-9]|10)$/.test(b.presetId))throw new DomainFailure('INVALID_INPUT');
   const name=b.displayName.normalize('NFKC').trim();if(!name||[...name].length>20||control(name))throw new DomainFailure('INVALID_INPUT');
-  return this.uow.run(({accountAuth:r})=>{const a=this.current(r,token,this.clock.now()).account;if(!r.updateProfile(a.id,b.expectedRevision as number,name,b.presetId as string))throw new DomainFailure('STATE_CONFLICT');return {authenticated:true as const,account:publicAccount(r.findAccount(a.id)!)};});
+  return this.uow.run(({accountAuth:r})=>{const a=this.current(r,token,this.clock.now()).account;if(!r.updateProfile(a.id,b.expectedRevision as number,name,b.presetId as string))throw new DomainFailure('STATE_CONFLICT');if(b.presetId!==a.presetId){const avatar=accountAvatar(r,a);r.saveAvatar({accountId:a.id,presetId:b.presetId as string,revision:avatar.revision+1,imageBytes:null});}return {authenticated:true as const,account:publicAccount(r.findAccount(a.id)!,r)};});
  }
 }
