@@ -190,4 +190,29 @@ void main() {
       expect(pending.current?.uri.toString(), linkB);
     },
   );
+  test('suspend cancels late join publication and same account retries exact intent only explicitly', () async {
+    final response = Completer<TransportResponse>();
+    t.handler = (r) async => r.method == 'POST'
+        ? response.future
+        : ok({'available': true, 'loginRequired': true});
+    await c.open(linkA);
+    c.setAccount('a');
+    final joining = c.join();
+    await Future<void>.delayed(Duration.zero);
+    final original = t.requests.last.body;
+    c.suspend();
+    response.complete(ok(room()));
+    await joining;
+    expect(c.joined, isNull);
+    expect(pending.current, isNotNull);
+    expect(c.available, false);
+    c.setAccount('a');
+    await c.preview();
+    expect(t.requests.where((r) => r.method == 'POST').length, 1);
+    await c.join();
+    expect(t.requests.last.body, original);
+    expect(c.joined?.roomId, 'room-a');
+    c.suspend();
+    expect(c.joined, isNull);
+  });
 }

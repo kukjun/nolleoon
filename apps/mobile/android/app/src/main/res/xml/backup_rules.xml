@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Native credentials are preferences. Never back up any preferences. -->
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

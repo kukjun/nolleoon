@@ -41,7 +41,7 @@ class InvitesController extends ChangeNotifier {
       generation == _generation &&
       _intent != null &&
       identical(pending.current, _intent!.link);
-  Future<bool> open(String value) async {
+  Future<bool> open(String value, {bool load = true}) async {
     final intent = pending.accept(value);
     if (intent == null) return false;
     _stop();
@@ -50,8 +50,17 @@ class InvitesController extends ChangeNotifier {
     joined = null;
     _join = null;
     error = null;
-    await preview();
+    if (load) await preview();
     return true;
+  }
+
+  /// Lifecycle suspension retains only the account-bound mutation intent, not a result.
+  void suspend() {
+    _stop();
+    joined = null;
+    available = false;
+    error = null;
+    _notify();
   }
 
   void setAccount(String? id) {
