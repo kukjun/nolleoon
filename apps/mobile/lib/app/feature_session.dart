@@ -1,3 +1,6 @@
+import '../features/profile/photo_source.dart';
+import '../features/profile/photo_selection_owner.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -19,7 +22,7 @@ enum FeatureRoute {
 }
 
 /// Root-owned memory for ONE verified account. Contains navigation IDs and
-/// immutable uncertain commands, never room snapshots/photos. Only an explicit deletion flow may hold its original receipt credential.
+/// immutable uncertain commands, never room snapshots. An unfinished photo picker may hold at most 1MiB in memory until one verified consumption. Only an explicit deletion flow may hold its original receipt credential.
 class FeatureSession extends ChangeNotifier {
   FeatureSession(this.accountId, {DeletionRecovery? recoveredDeletion})
     : rooms = RoomsCreateRecovery(accountId),
@@ -33,6 +36,20 @@ class FeatureSession extends ChangeNotifier {
   final ManagementRecovery trash;
   final DeletionRecovery deletion;
   AccountDeletionRepository? deletionRepository;
+  PhotoSelectionOwner? photoSelection;
+  PhotoSelectionOwner? photoSource(ProfilePhotoSource? source) {
+    if (source == null) {
+      photoSelection?.dispose();
+      photoSelection = null;
+      return null;
+    }
+    if (!identical(photoSelection?.source, source)) {
+      photoSelection?.dispose();
+      photoSelection = PhotoSelectionOwner(accountId, source);
+    }
+    return photoSelection;
+  }
+
   final Map<String, ManagementRecovery> _management = {};
   FeatureRoute route = FeatureRoute.rooms;
   String? roomId, runId;
@@ -42,6 +59,7 @@ class FeatureSession extends ChangeNotifier {
   Future<void> open(FeatureRoute destination, {String? roomId, String? runId}) {
     _returned?.complete();
     _returned = Completer<void>();
+    if (destination != FeatureRoute.profile) photoSelection?.cancel();
     route = destination;
     if (roomId != null) this.roomId = roomId;
     this.runId = runId;
@@ -56,6 +74,7 @@ class FeatureSession extends ChangeNotifier {
   }
 
   void home() {
+    photoSelection?.cancel();
     route = FeatureRoute.rooms;
     runId = null;
     _returned?.complete();
@@ -64,6 +83,7 @@ class FeatureSession extends ChangeNotifier {
   }
 
   void clearPrivate() {
+    photoSelection?.cancel();
     rooms.clear();
     games.clear();
     trash.clear();
@@ -76,6 +96,7 @@ class FeatureSession extends ChangeNotifier {
   }
 
   void clear() {
+    photoSelection?.cancel();
     deletion.clear();
     deletionRepository?.forgetCredential();
     deletionRepository = null;
@@ -92,6 +113,8 @@ class FeatureSession extends ChangeNotifier {
 
   @override
   void dispose() {
+    photoSelection?.dispose();
+    photoSelection = null;
     deletion.clear();
     deletionRepository?.forgetCredential();
     deletionRepository = null;

@@ -1,3 +1,5 @@
+import '../features/profile/photo_source.dart';
+
 import 'dart:async';
 
 import 'invitation_links.dart';
@@ -27,8 +29,10 @@ class AuthGate extends StatefulWidget {
     required this.auth,
     required this.transport,
     required this.deletionReceiptStore,
+    this.photoSource,
     this.invitationLinks = const DisabledInvitationLinks(),
   });
+  final ProfilePhotoSource? photoSource;
   final DeletionReceiptStore deletionReceiptStore;
   final InvitationLinkSource invitationLinks;
   final AuthRepository auth;
@@ -488,6 +492,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             avatars: AvatarClient(transport: binary, accessToken: token),
             onSessionLost: widget.auth.resume,
             onDeleteAccount: _beginDeletion,
+            photoSource: scope.photoSource(widget.photoSource),
           ),
         ),
       ],

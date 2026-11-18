@@ -1,3 +1,5 @@
+import 'features/profile/photo_source.dart';
+import 'features/profile/native_photo_source.dart';
 import 'features/account_deletion/deletion_receipt_store.dart';
 import 'app/invitation_links.dart';
 
@@ -22,7 +24,9 @@ class MyApp extends StatefulWidget {
     this.transport,
     this.invitationLinks,
     this.deletionReceiptStore,
+    this.photoSource,
   });
+  final ProfilePhotoSource? photoSource;
   final DeletionReceiptStore? deletionReceiptStore;
   final InvitationLinkSource? invitationLinks;
   final AuthRepository? auth;
@@ -49,6 +53,14 @@ class _MyAppState extends State<MyApp> {
           defaultValue: false,
         ),
       );
+  late final ProfilePhotoSource? _photos =
+      widget.photoSource ??
+      configuredNativePhotoSource(
+        nativeConfigurationVerified: const bool.fromEnvironment(
+          'NATIVE_PHOTO_PLATFORM_VERIFIED',
+          defaultValue: false,
+        ),
+      );
   late final DeletionReceiptStore _receipts =
       widget.deletionReceiptStore ?? SecureDeletionReceiptStore();
   late final ApiTransport _transport =
@@ -69,6 +81,7 @@ class _MyAppState extends State<MyApp> {
       transport: _transport,
       invitationLinks: _links,
       deletionReceiptStore: _receipts,
+      photoSource: _photos,
     ),
   );
 }

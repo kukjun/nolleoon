@@ -1,3 +1,4 @@
+import '../features/profile/photo_source.dart';
 import '../features/room_avatars/room_avatar_widgets.dart';
 import '../features/room_avatars/room_avatars.dart';
 
@@ -43,11 +44,13 @@ class FeatureShell extends StatefulWidget {
     required this.avatars,
     required this.onSessionLost,
     required this.onDeleteAccount,
+    this.photoSource,
   });
   final FeatureSession session;
   final ApiClient api;
   final AvatarClient avatars;
   final VoidCallback onSessionLost;
+  final ProfilePhotoSource? photoSource;
   final VoidCallback onDeleteAccount;
   @override
   State<FeatureShell> createState() => _FeatureShellState();
@@ -69,6 +72,7 @@ class _FeatureShellState extends State<FeatureShell> {
         FeatureRoute.profile => ProfileScreen(
           accountScope: s.accountId,
           repository: profile,
+          photoSource: widget.photoSource,
           onSessionLost: widget.onSessionLost,
         ),
         FeatureRoute.trash => DeletedRoomsScreen(

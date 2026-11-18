@@ -70,3 +70,11 @@
 - analyze에서 import/중괄호 info 4개를 확인해 규칙을 약화하지 않고 소스 표현만 정리한 뒤 **No issues found**.
 - 실서버 native 로그인/OS permission·키체인/사진선택·딥링크·서명·APK/IPA 빌드는 수행하지 않았다. 모든 결과는 합성 transport 또는 기존 unit/widget 환경이며 운영 배포는 없다.
 - independent review의 후속 발견이 있으면 같은 기준으로 수정/재검증한다.
+
+### 사진 source 배선 누락 후속
+
+`main → AuthGate → FeatureSession → FeatureShell → ProfileScreen`에 `configuredNativePhotoSource`를 연결했다. 별도 `NATIVE_PHOTO_PLATFORM_VERIFIED`의 기본값은 false이며 실제 권한·플랫폼 설정 및 기기 검증 전 활성화하지 않는다. 테스트는 명시적 fake source만 주입한다.
+
+OS picker가 별도 Activity로 이동할 수 있으므로 root의 계정별 PhotoSelectionOwner가 미완료 선택만 메모리에서 전달한다. 결과는 1MiB 이하의 허용 이미지 입력만 보관하며 같은 계정을 새로 확인한 ProfileScreen에서 한 번 소비한다. 저장·자동 업로드 권한은 없고, 취소/로그아웃/다른 계정/루트 폐기 때 버퍼를 지운다. 기존 picker가 완료되기 전 중복 OS 선택 호출도 하지 않는다. 미리보기를 이미 소비한 뒤의 background에는 기존 private 화면/사진을 폐기한다.
+
+집중 검증: profile 및 root photo **28 PASS**. 실제 codec으로 합성 소유 WebP 선택→미리보기→명시 저장 전 upload 0→저장 후 Bearer 업로드 1, 서버 오류 시 성공 표시 없음, 취소, inactive→보류된 재인증 중 선택 완료→화면 없음→같은 계정 확인 후 새 화면 미리보기→명시 저장, 다른 계정의 늦은 입력 제거를 확인했다. Flutter 가상 비동기 영역에서 이미지 codec을 기다리지 못한 초기 fixture 실패는 실제 `runAsync` 영역의 프레임 처리로 고쳤으며 제품 판정 조건은 유지했다. 실제 Android/iOS picker 성공은 아직 별도 게이트다.
