@@ -18,6 +18,9 @@ class GameScreen extends StatefulWidget {
     required this.onSessionLost,
     this.configure,
     this.play,
+    this.restrictedControls,
+    this.editConfigure,
+    this.onRunAvailable,
   }) {
     if (accountScope.trim().isEmpty) {
       throw ArgumentError('Account scope required');
@@ -40,7 +43,16 @@ class GameScreen extends StatefulWidget {
     ValueChanged<JsonMap?>,
   )?
   configure;
+
+  /// Receives only an authorized draft snapshot; must not guess hidden settings.
+  final Widget Function(BuildContext, RunDto, ValueChanged<JsonMap?>)?
+  editConfigure;
+  final ValueChanged<String>? onRunAvailable;
   final Widget Function(BuildContext, RunDto, GameController)? play;
+
+  /// Minimal server-authorized trial phase controls, never private content.
+  final Widget Function(BuildContext, RunDto, GameController)?
+  restrictedControls;
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
@@ -48,6 +60,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late GameController controller;
   String kind = 'team';
+  String? _reportedRun;
   final selected = <String>{};
   Object? _configurationToken;
   DialogRoute<JsonMap>? _configurationRoute;
@@ -62,6 +75,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _replaceController() {
+    _reportedRun = null;
     controller = GameController(
       widget.repository,
       pendingCommands: widget.pendingCommands,
@@ -93,6 +107,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _changed() {
+    final id = controller.run?.runId;
+    if (mounted && id != null && id != _reportedRun) {
+      _reportedRun = id;
+      widget.onRunAvailable?.call(id);
+    }
     if (mounted) setState(() {});
   }
 
@@ -126,12 +145,30 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (route?.isActive ?? false) route!.navigator?.removeRoute(route);
   }
 
-  Future<void> _create() async {
+  Future<void> _create() => _configure();
+
+  Future<void> _configure({RunDto? editing}) async {
     final room = controller.room, configure = widget.configure;
-    if (room == null || configure == null || controller.busy || _configuring) {
+    if (controller.busy ||
+        controller.hasPendingIntent ||
+        _configuring ||
+        (editing == null && (room == null || configure == null)) ||
+        (editing != null &&
+            (widget.editConfigure == null ||
+                editing.data['status'] != 'draft' ||
+                editing.game == null ||
+                editing.game!.restricted ||
+                editing.game!.redacted ||
+                editing.data['facilitatorMembershipId'] !=
+                    widget.viewerMembershipId))) {
       return;
     }
-    final ids = List<String>.unmodifiable(selected), type = kind;
+    final ids = List<String>.unmodifiable(
+          editing == null
+              ? selected
+              : (editing.data['selectedMembershipIds'] as List).cast<String>(),
+        ),
+        type = editing?.data['type'] as String? ?? kind;
     final epoch = ++_configEpoch, token = Object();
     _configurationToken = token;
     await controller.setForeground(false);
@@ -154,7 +191,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     route = DialogRoute<JsonMap>(
       context: context,
-      builder: (context) => configure(context, type, ids, complete),
+      builder: (context) => editing == null
+          ? configure!(context, type, ids, complete)
+          : widget.editConfigure!(context, editing, complete),
     );
     _configurationRoute = route;
     try {
@@ -171,13 +210,37 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
     await controller.setForeground(true);
-    if (!mounted ||
-        epoch != _configEpoch ||
-        settings == null ||
-        controller.run != null ||
-        controller.room == null) {
+    if (!mounted || epoch != _configEpoch || settings == null) {
       return;
     }
+    if (editing != null) {
+      final latest = controller.run;
+      if (latest == null ||
+          latest.runId != editing.runId ||
+          latest.version != editing.version ||
+          latest.data['status'] != 'draft' ||
+          latest.game == null ||
+          latest.game!.restricted ||
+          latest.game!.redacted ||
+          latest.data['facilitatorMembershipId'] != widget.viewerMembershipId) {
+        setState(
+          () => controller.error = '상태가 바뀌었어요. 최신 설정을 확인한 뒤 다시 수정해 주세요.',
+        );
+        return;
+      }
+      await controller.submit(
+        widget.repository.command(
+          ApiOperation.editRun,
+          widget.roomId,
+          editing.runId,
+          editing.version,
+          selected: ids,
+          settings: settings,
+        ),
+      );
+      return;
+    }
+    if (controller.run != null || controller.room == null) return;
     await controller.submit(
       widget.repository.create(
         widget.roomId,
@@ -222,13 +285,27 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ),
               if (run.game?.redacted ?? false)
                 const Text('탈퇴로 삭제된 게임입니다. 개인 내용은 표시하지 않아요.')
-              else if (run.game?.restricted ?? false)
-                const Text('이 게임의 상세 내용은 볼 수 없어요.')
-              else if (widget.play != null)
+              else if (run.game?.restricted ?? false) ...[
+                const Text('이 게임의 상세 내용은 볼 수 없어요.'),
+                if (run.data['type'] == 'trial' &&
+                    canControl &&
+                    widget.restrictedControls != null)
+                  widget.restrictedControls!(context, run, controller),
+              ] else if (widget.play != null)
                 widget.play!(context, run, controller)
               else
                 const Text('게임 상태는 연결됐어요. 게임별 입력·결과 화면은 준비 중이에요.'),
               if (canControl && run.data['status'] == 'draft') ...[
+                if (run.game?.restricted ?? true)
+                  const Text('설정을 볼 수 없어 수정할 수 없어요. 준비 취소 후 새 게임을 만들어 주세요.')
+                else if (widget.editConfigure != null)
+                  OutlinedButton(
+                    onPressed: controller.busy || controller.hasPendingIntent
+                        ? null
+                        : () => _configure(editing: run),
+                    child: const Text('설정 수정'),
+                  ),
+
                 FilledButton(
                   onPressed: controller.busy || controller.hasPendingIntent
                       ? null
