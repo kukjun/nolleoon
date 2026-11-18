@@ -43,3 +43,11 @@ CLI는 `node tools/storage/backup.mjs restore <원본> <새대상> <control.json
 검증된 journal 파일이 임시 복원 디렉터리 밖에 있어도, 게시되는 DB에는 account/room 두 namespace의 **실제 authoritative 경로 binding hash와 확인한 prefix 길이/digest**를 기록한다. 복원 lock 안에서는 이미 검증한 entries 배열을 전달하고 native `entries()`를 다시 호출하지 않아 잠금 재진입을 피한다. 이후 기동 시 journal을 생략하거나 다른 경로/과거 prefix를 제출하면 실패한다. 빈 journal도 '선택 사항'이 아니라 길이 0인 필수 journal로 표시한다.
 
 이 보강의 RED는 복원 후 journal 없는 `LedgerRequirements.check()`가 성공한 실제 회귀였다. 수정 후 누락/한쪽 누락/다른 binding/줄어든 prefix는 거부되고 원래 journal은 통과했다. 실제 production entry도 복원 DB에 journal env가 없으면 기동 실패, 올바른 env를 전달하면 기존 세션/방을 다시 조회했다. 합성 helper는 enclosing test 임시 디렉터리 수명 동안 journal을 유지하며, 두 번 복원에도 동일 binding을 재사용한다. 운영 경로나 env는 변경하지 않았다.
+
+### 혼자 남은 방과 진행 게임이 있는 계정 탈퇴
+
+새 계정 삭제 intent는 선택적 `roomDeletions` 배열로 혼자 남은 관리자 방의 삭제 시각/7일 기한/삭제 버전/이전 상태/관리자 식별자를 함께 담는다. 별도 room journal을 먼저 커밋하고 계정 journal에 실패하는 이중 기록 경로를 만들지 않는다. 배열 없는 기존 journal의 정규화와 hash는 그대로 유지한다. 새 필드는 정확한 필드 집합, 계정=관리자, 삭제시각=계정 요청시각, 정확한 7일, 양의 버전, 방 ID 중복 없음을 검증한다.
+
+복원 시 진행 중이던 게임은 계정 삭제에 의해 중단·익명 수치로 정리되고, 아직 공개하지 않은 제비의 당첨 여부는 게시하지 않는다. 유예 방의 원래 purgeAfter를 보존하며 복원 시각으로 7일을 새로 시작하지 않는다.
+
+새 optional metadata 회귀는 구 validator의 `LEDGER_INVALID`에서 시작해 ledger 8/8로 통과했다. solo 방의 이전 백업 복원은 구 account apply에서 방이 열린 채 남아 실패했으며, 새 정책 적용 후 원래 purgeAfter 유지·계정 disabled·진행 제비 중단·원문 제거·미공개 당첨 수 0을 확인했다. 해당 통합 작업트리 native DB118/API148, fail/skip0, build/lint/layers가 통과했다. SQL 실패 뒤 단일 account intent로 방 pending과 계정 삭제가 함께 재생되는 기존 신규 정책 회귀도 포함한다. 운영 journal이나 실제 사용자 데이터는 다루지 않았다.
