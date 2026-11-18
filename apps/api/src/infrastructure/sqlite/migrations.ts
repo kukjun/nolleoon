@@ -1,3 +1,4 @@
+import {legacyLinksMigration} from './legacy-links-migration.js';
 import {travelMigration} from './travel-migration.js';
 import {partyMigration} from './party-migration.js';
 import {avatarMigration} from './avatar-migration.js';
@@ -105,4 +106,4 @@ CREATE TABLE next_preparation_receipts (
 ) STRICT;
 CREATE TRIGGER next_preparation_no_update BEFORE UPDATE ON next_preparation_receipts BEGIN SELECT RAISE(ABORT,'immutable preparation receipt'); END;
 CREATE TRIGGER next_preparation_no_delete BEFORE DELETE ON next_preparation_receipts BEGIN SELECT RAISE(ABORT,'immutable preparation receipt'); END;
-`},partyMigration,avatarMigration,travelMigration];
+`},partyMigration,avatarMigration,travelMigration,legacyLinksMigration];

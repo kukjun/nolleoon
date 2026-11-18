@@ -5,6 +5,8 @@ import {TravelRooms} from '../application/travel-rooms.js';
 import {TravelRuns} from '../application/travel-runs.js';
 import type {TravelGameEngine} from '../application/ports/travel-engine.js';
 import {TravelRoomsController,TravelInvitesController} from '../presentation/travel.controller.js';
+import {LegacyImports} from '../application/legacy-imports.js';
+import {LegacyImportsController} from '../presentation/legacy-imports.controller.js';
 import {AccountAuth} from '../application/account-auth.js';
 import {AccountController} from '../presentation/account.controller.js';
 import type {KakaoIdentityProvider} from '../application/ports/account-auth.js';
@@ -50,9 +52,10 @@ export interface AppConfiguration { travelEngines?:readonly TravelGameEngine[]; 
 export class AppModule {
   static register(config: AppConfiguration): DynamicModule {
     const random=config.random??new SecureRandom();
-    return {module:AppModule,controllers:[TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
+    return {module:AppModule,controllers:[LegacyImportsController,TravelRoomsController,TravelInvitesController,AccountController,PartyController,AvatarController,HistoryController,HealthController,SessionController,RoomsController],providers:[
       {provide:TravelRooms,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRooms(resources.uow,config.clock??new SystemClock(),new SecureTokens())},
       {provide:TravelRuns,inject:[STORAGE],useFactory:(resources:StorageResources)=>new TravelRuns(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.travelEngines??[new TravelTeamEngine(random),new TravelDrawEngine(random),new TravelTrialEngine(),new TravelMenuEngine(random)],random)},
+      {provide:LegacyImports,inject:[STORAGE,PartyGames,Rooms],useFactory:(resources:StorageResources,party:PartyGames,rooms:Rooms)=>new LegacyImports(resources.uow,config.clock??new SystemClock(),new SecureTokens(),party,rooms)},
       {provide:AccountAuth,inject:[STORAGE],useFactory:(resources:StorageResources)=>new AccountAuth(resources.uow,config.clock??new SystemClock(),new SecureTokens(),config.kakaoProvider)},
       {provide:PartyGames,inject:[STORAGE],useFactory:(resources:StorageResources)=>new PartyGames(resources.uow,config.clock??new SystemClock(),new SecureTokens(),random)},
       {provide:APP_GUARD,inject:[BrowserSessions,AccountAuth],useFactory:(sessions:BrowserSessions,accounts:AccountAuth)=>new RequestGuard(sessions,config.clock??new SystemClock(),accounts)},

@@ -94,6 +94,7 @@ export class PartyGames {
   const id=identifier(value);
   return this.run(r=>{const room=roomByCode(r,code),run=this.authorizedRun(r,actor,id);if(run.roomId!==room.id)throw new DomainFailure('NOT_FOUND');const view=this.projectRun(r,run,actor,true);if(!view)throw new DomainFailure('FORBIDDEN');return view;});
  }
+ historyProjection(r:Repositories,actor:{id:string},id:string){const run=this.authorizedRun(r,actor,id);if(run.status==='active')throw new DomainFailure('STATE_CONFLICT');return this.projectRun(r,run,actor,true);}
  private authorizedRun(r:Repositories,actor:{id:string},id:string):RunRecord{
   const run=r.party.run(id);if(!run)throw new DomainFailure('NOT_FOUND');
   if(!r.party.participants(id).some(p=>r.members.find(p.memberId)?.sessionId===actor.id))throw new DomainFailure('FORBIDDEN');return run;

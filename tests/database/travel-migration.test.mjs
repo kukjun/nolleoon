@@ -7,7 +7,7 @@ test('travel schema is additive, preserves legacy and separates account identiti
  const db=new Database(':memory:');db.pragma('foreign_keys=ON');
  try {migrate(db,migrations.slice(0,11));db.prepare('INSERT INTO sessions VALUES (?,?,?,?)').run('legacy','legacyhash',1,100);
  const before=db.prepare('SELECT * FROM sessions').all();migrate(db);
- assert.equal(db.prepare('SELECT MAX(version) v FROM schema_migrations').get().v,12);
+ assert.ok(migrations.length>=12);assert.equal(db.prepare('SELECT MAX(version) v FROM schema_migrations').get().v,migrations.at(-1).version);
  assert.deepEqual(db.prepare('SELECT * FROM sessions').all(),before);
  assert.equal(db.prepare('SELECT count(*) n FROM travel_rooms').get().n,0);
  db.exec("INSERT INTO accounts VALUES ('a',1,'active','여행자','preset-01',0); INSERT INTO provider_identities VALUES ('kakao','subject','a')");

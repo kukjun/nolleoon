@@ -1,4 +1,5 @@
 import type {TravelRepository} from './travel.js';
+import type {LegacyLinksRepository} from './legacy-links.js';
 import type {AccountAuthRepository} from './account-auth.js';
 import type {PartyRepository} from './party.js';
 import type {TallyOutcome} from '../../domain/tally.js';
@@ -21,6 +22,7 @@ export interface ClosureRecord {roomId:string;closedAt:number;closedByMemberId:s
 export interface NextReceipt {roomId:string;requestId:string;actorSessionId:string;fromGameId:string;expectedPreparationVersion:number;preparationVersion:number}
 export interface AvatarRecord {sessionId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 export interface Repositories {
+  legacyLinks:LegacyLinksRepository;
   accountAuth:AccountAuthRepository;
   travel:TravelRepository;
   avatars:{find(sessionId:string,includeImage?:boolean):AvatarRecord|undefined;totalImageBytes():number;save(record:AvatarRecord):void};

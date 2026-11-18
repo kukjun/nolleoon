@@ -288,23 +288,24 @@ export class Rooms {
     return this.run((r, now) => this.snapshot(r, this.findRoom(r, code), actor.id, now, gameId));
   }
   history(actor: { id: string }, code: string, gameId: string) {
-    return this.run((r, now) => {
-      const room = this.findRoom(r, code);
-      const game = r.games.find(gameId);
-      if (!game || game.roomId !== room.id) throw new DomainFailure('NOT_FOUND');
-      const ids = r.members.idsForSession(room.id, actor.id);
-      if (!r.participants.list(gameId).some((p) => ids.includes(p.memberId)))
-        throw new DomainFailure('FORBIDDEN');
-      if (!['result', 'interrupted'].includes(game.status))
-        throw new DomainFailure('STATE_CONFLICT');
-      const snapshot = this.snapshot(r, room, actor.id, now, gameId);
-      return {
-        gameId,
-        game: snapshot.game,
-        interrupted: snapshot.interrupted,
-        interruption: snapshot.interruption,
-      };
-    });
+    return this.run((r, now) => this.historyProjection(r, actor, this.findRoom(r, code), gameId, now));
+  }
+  // Reuse exact legacy disclosure rules without lifecycle writes for account-linked archive reads.
+  historyProjection(r: Repositories, actor: {id:string}, room: RoomRecord, gameId: string, now: number) {
+    const game = r.games.find(gameId);
+    if (!game || game.roomId !== room.id) throw new DomainFailure('NOT_FOUND');
+    const ids = r.members.idsForSession(room.id, actor.id);
+    if (!r.participants.list(gameId).some((p) => ids.includes(p.memberId)))
+      throw new DomainFailure('FORBIDDEN');
+    if (!['result', 'interrupted'].includes(game.status))
+      throw new DomainFailure('STATE_CONFLICT');
+    const snapshot = this.snapshot(r, room, actor.id, now, gameId);
+    return {
+      gameId,
+      game: snapshot.game,
+      interrupted: snapshot.interrupted,
+      interruption: snapshot.interruption,
+    };
   }
   private assertPreparation(r: Repositories, room: RoomRecord, expected: unknown) {
     if (!Number.isSafeInteger(expected) || Number(expected) < 0)
