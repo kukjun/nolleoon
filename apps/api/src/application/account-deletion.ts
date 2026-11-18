@@ -1,3 +1,4 @@
+import {applyRoomDeletionEvent,ROOM_DELETION_GRACE_MS} from './travel-room-deletion.js';
 import type {UnitOfWork,Repositories} from './ports/storage.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
 import {SessionRequired} from './browser-sessions.js';
@@ -58,6 +59,7 @@ export function applyAccountDeletion(r:Repositories,entry:AccountDeletionEntry,o
  for(const id of entry.runIds){const run=r.travel.run(id);if(!run)continue;const existing=r.accountDeletion.summary(id);const count=r.travel.participants(id).length;r.accountDeletion.redactRun(id,existing??summarizeDeletedRun(run,count));}
  // Legacy scrub is a separately reviewed adapter, bounded by authoritative explicit run IDs.
  r.accountDeletion.redactLegacy(entry,options.restore===true);
+ for(const pending of entry.roomDeletions??[])applyRoomDeletionEvent(r,{...pending,operationId:entry.operationId+':room:'+pending.roomId,action:'delete',at:entry.createdAt});
  r.accountDeletion.scrubIdentity(entry);
 }
 export class AccountDeletion {
@@ -67,6 +69,7 @@ export class AccountDeletion {
  const sessionHash=this.codec.hash(token),now=this.clock.now(),retry=r.accountDeletion.retry(sessionHash,now);if(retry){if(retry.operationId!==this.codec.hash(retry.accountId+':'+requestKey))throw new SessionRequired();return{deleted:true};}const session=r.accountAuth.findSession(sessionHash);if(!session||session.revokedAt!==null||session.expiresAt<=now)throw new SessionRequired();const a=r.accountAuth.findAccount(session.accountId);if(a?.status!=='active')throw new SessionRequired();if(r.accountDeletion.blocked(a.id))throw new DomainFailure('STATE_CONFLICT');
  const affected=r.accountDeletion.affectedRuns(a.id);for(const run of affected)if(!r.accountDeletion.summary(run.id))summarizeDeletedRun(run,r.travel.participants(run.id).length);
  const entry:AccountDeletionEntry={operationId:this.codec.hash(a.id+':'+requestKey),accountId:a.id,runIds:affected.map(run=>run.id).sort(),legacyRunIds:r.accountDeletion.linkedRuns(a.id).sort(),legacyProofs:r.accountDeletion.legacyProofs(a.id),createdAt:now};
+ const rooms=r.accountDeletion.soloRooms(a.id);if(rooms.length)entry.roomDeletions=rooms.map(room=>({roomId:room.id,deletedAt:now,purgeAfter:now+ROOM_DELETION_GRACE_MS,deletionVersion:room.version+1,previousStatus:room.status,administratorAccountId:a.id}));
  const canonical=this.ledger!.record(entry);applyAccountDeletion(r,canonical);return{deleted:true};
  });}
 }
