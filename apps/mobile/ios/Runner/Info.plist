@@ -4,6 +4,8 @@
 <dict>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>선택한 사진을 놀러온 프로필 미리보기에 사용해요. 저장을 눌러야 업로드돼요.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
