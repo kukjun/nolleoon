@@ -25,6 +25,8 @@ export function staticWeb(webRoot:string,dbPath:string){
  return (request:Request,response:Response,next:NextFunction)=>{
   response.setHeader('Cache-Control','no-store');
   response.setHeader('X-Content-Type-Options','nosniff');
+  // Invite tokens in document paths/query must not become same-origin or external Referer headers.
+  response.setHeader('Referrer-Policy','no-referrer');
   const path=request.url.split('?')[0]!;
   if(path==='/api'||path.startsWith('/api/')){next();return;}
   const travelRoute=/^\/travel\/?$/.test(path)||/^\/travel\/(rooms|invite)\/[A-Za-z0-9_-]{1,128}$/.test(path);
