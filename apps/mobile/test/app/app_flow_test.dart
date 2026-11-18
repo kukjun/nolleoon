@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -35,6 +36,46 @@ class Transport implements ApiTransport {
       }),
     );
   }
+}
+
+class PendingCreateTransport implements ApiTransport {
+  final creates = <String>[];
+  final first = Completer<TransportResponse>();
+  @override
+  Future<TransportResponse> send(
+    TransportRequest request,
+    CancellationToken cancel,
+  ) async {
+    if (request.method == 'POST') {
+      creates.add(request.body!);
+      if (creates.length == 1) return first.future;
+      return const TransportResponse(
+        503,
+        '{"error":{"code":"TEMPORARILY_UNAVAILABLE"}}',
+      );
+    }
+    return const TransportResponse(200, '{"items":[],"nextCursor":null}');
+  }
+}
+
+class SwitchBackend extends fakes.Backend {
+  String account = 'account-a';
+  @override
+  AuthSession get session => AuthSession(
+    token: 'synthetic-bearer',
+    expiresAt: DateTime.utc(2040),
+    accountId: account,
+    displayName: '테스트',
+  );
+}
+
+Future<void> startPendingCreate(WidgetTester tester) async {
+  await tester.tap(find.text('새 여행방 만들기'));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byType(TextField), '복귀할 여행방');
+  await tester.pump();
+  await tester.tap(find.widgetWithText(FilledButton, '여행방 만들기'));
+  await tester.pump();
 }
 
 void main() {
@@ -91,6 +132,94 @@ void main() {
       expect(store.value, null);
       expect(find.text('비공개 여행방'), findsNothing);
       await tester.pumpWidget(const SizedBox());
+      auth.dispose();
+    },
+  );
+  testWidgets(
+    'same account resumes uncertain create with identical intent and no automatic resend',
+    (tester) async {
+      final auth = AuthRepository(
+        identity: fakes.Provider(),
+        backend: SwitchBackend(),
+        store: fakes.Store()..value = 'saved',
+      );
+      final transport = PendingCreateTransport();
+      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpAndSettle();
+      await startPendingCreate(tester);
+      expect(transport.creates.length, 1);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      expect(find.text('복귀할 여행방'), findsNothing);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(transport.creates.length, 1);
+      expect(find.text('같은 요청 다시 확인'), findsOneWidget);
+      await tester.tap(find.text('같은 요청 다시 확인'));
+      await tester.pumpAndSettle();
+      expect(transport.creates.length, 2);
+      expect(transport.creates[1], transport.creates[0]);
+      transport.first.complete(const TransportResponse(503, '{}'));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      auth.dispose();
+    },
+  );
+  testWidgets(
+    'different verified account never inherits another accounts pending creation',
+    (tester) async {
+      final backend = SwitchBackend();
+      final auth = AuthRepository(
+        identity: fakes.Provider(),
+        backend: backend,
+        store: fakes.Store()..value = 'saved',
+      );
+      final transport = PendingCreateTransport();
+      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpAndSettle();
+      await startPendingCreate(tester);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+      backend.account = 'account-b';
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('같은 요청 다시 확인'), findsNothing);
+      expect(transport.creates.length, 1);
+      await startPendingCreate(tester);
+      await tester.pumpAndSettle();
+      expect(transport.creates.length, 2);
+      expect(
+        jsonDecode(transport.creates[1])['requestId'],
+        isNot(jsonDecode(transport.creates[0])['requestId']),
+      );
+      transport.first.complete(const TransportResponse(503, '{}'));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      auth.dispose();
+    },
+  );
+
+  testWidgets(
+    'explicit logout clears uncertain create even for next login to same account',
+    (tester) async {
+      final auth = AuthRepository(
+        identity: fakes.Provider(),
+        backend: SwitchBackend(),
+        store: fakes.Store()..value = 'saved',
+      );
+      final transport = PendingCreateTransport();
+      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpAndSettle();
+      await startPendingCreate(tester);
+      await tester.tap(find.text('로그아웃'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('카카오로 로그인'));
+      await tester.pumpAndSettle();
+      expect(find.text('같은 요청 다시 확인'), findsNothing);
+      expect(transport.creates.length, 1);
+      transport.first.complete(const TransportResponse(503, '{}'));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
       auth.dispose();
     },
   );

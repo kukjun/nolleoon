@@ -14,3 +14,11 @@
 - 실제 사용자 로그인/운영 API/네이티브 키/서명/association/배포 변경 없음.
 
 최종 Flutter checker는 49개 unit/widget PASS, pin/lock/format/analyze PASS. 뒤이어 native smoke에 합성 auth를 주입하여 실제 기기에서 이 시험을 실행하더라도 기존 보안 저장소/실계정/HTTP를 건드리지 않게 했고 format/analyze를 다시 통과했다. 이 smoke 자체는 네이티브 빌드 환경 gate 때문에 여전히 미실행이다.
+
+## 독립 리뷰: 서버 처리 여부가 불명확한 방 생성
+
+임시 비활성화 때 controller와 함께 생성 requestId가 사라져 다음 생성이 중복될 수 있는 실패를 실제 widget 회귀로 재현했다. 이제 계정별 `RoomsCreateRecovery`만 앱 범위 메모리에 보관한다. 명단/방 UI와 요청은 여전히 정리하고, 동일 계정 재검증 후 원래 생성 payload와 requestId의 수동 재확인만 허용한다. 자동 재전송은 없다. 다른 계정·명시적 로그아웃·세션 만료·앱 owner 폐기 시 이 복구 상태를 비운다. 아직 제출하지 않은 초안이나 프로세스 종료 이후 복구까지 보장하지 않는다.
+
+회귀는 응답이 보류된 첫 POST → inactive → 동일 계정 복귀 → 추가 POST 없음 → 수동 재확인의 본문 동일성을 검증한다. 다른 계정과 로그아웃 후 동일 계정 재로그인에는 이전 생성이 승계되지 않는 시험도 포함했다.
+
+이 수정까지 포함한 최종 checker: 54개 unit/widget, pin/lock/format/analyze 모두 PASS. 실제 네이티브 통합 및 운영 API 검증은 여전히 미실행이다.

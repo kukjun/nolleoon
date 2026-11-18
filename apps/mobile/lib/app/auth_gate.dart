@@ -6,6 +6,7 @@ import '../data/api_client.dart';
 import '../design/app_components.dart';
 import '../features/auth/auth_panel.dart';
 import '../features/rooms/rooms_repository.dart';
+import '../features/rooms/rooms_controller.dart';
 import '../features/rooms/rooms_screen.dart';
 
 /// The private subtree exists only for a freshly verified identity. Losing
@@ -20,6 +21,17 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   bool _foreground = true;
+  RoomsCreateRecovery? _recovery;
+  void _clearRecovery() {
+    _recovery?.clear();
+    _recovery = null;
+  }
+
+  Future<void> _logout() async {
+    _clearRecovery();
+    await widget.auth.logout();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +42,10 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
 
   void _changed() {
     if (!mounted) return;
+    if (widget.auth.phase == AuthPhase.signedOut ||
+        widget.auth.phase == AuthPhase.logoutFailed) {
+      _clearRecovery();
+    }
     if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,6 +67,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.auth.removeListener(_changed);
+    _clearRecovery();
     super.dispose();
   }
 
@@ -67,6 +84,10 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     if (widget.auth.phase != AuthPhase.signedIn || session == null) {
       return Scaffold(body: AuthPanel(auth: widget.auth));
     }
+    if (_recovery?.accountId != session.accountId) {
+      _clearRecovery();
+      _recovery = RoomsCreateRecovery(session.accountId);
+    }
     return Column(
       key: ValueKey(session.accountId),
       children: [
@@ -76,7 +97,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
             child: Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: widget.auth.logout,
+                onPressed: _logout,
                 style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                 child: const Text('로그아웃'),
               ),
@@ -86,6 +107,8 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
         Expanded(
           child: RoomsScreen(
             key: ValueKey('rooms:${session.accountId}'),
+            accountId: session.accountId,
+            createRecovery: _recovery,
             repository: RoomsRepository(
               ApiClient(
                 transport: widget.transport,
