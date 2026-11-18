@@ -27,4 +27,16 @@ trace에서 해당 준비 중 API GET은 약6–17ms였고 UI 클릭·렌더 안
 
 Playwright 내장 `--shard=1/2`, `--shard=2/2`와 동일 grep-invert를 사용한다. 계약 시험이 원래75 test/project ID 집합과 두 shard 합집합을 실제 `--list`로 비교하고 중복·누락·skip 예상 상태를 거부한다. 두 stage가 모두 성공해야 전체 성공이다. `npm run test:browser` 단독 명령은 원래 전체 suite를 실행한다.
 
-현재 코드 검증: harness30 PASS, focused4 PASS. 전체 두 shard의 실제 완주는 독립 리뷰 뒤 별도로 기록해야 하며 아직 이 문단만으로 75개 성공을 주장하지 않는다. 실기기/운영/다른 제품 gate 검증을 대체하지 않는다.
+## 독립 리뷰 뒤 실제 두 stage 실행
+
+검토된 `000a87c`에서 2026-11-18 17:33:32Z부터 원본 `runCheck(LEGACY_BROWSER_CHECKS)`를 순차 실행했다. 별도 CLI의 무제한 실행이 아니라 각360초 runner 제한을 그대로 적용했다.
+
+| stage | 실제 결과 | 소요 시간 | 실패 / skip / flaky |
+|---|---:|---:|---:|
+| browser-launch-1 | 39/39 PASS | 175.257초 | 0 / 0 / 0 |
+| browser-launch-2 | 36/36 PASS | 162.906초 | 0 / 0 / 0 |
+| 합계 | **75/75 PASS** | **338.163초** | **0 / 0 / 0** |
+
+실행 전 heavy Flutter 작업의 비교 창을 분리했고, 두 번째 stage 중 별도 worker의 짧은 Flutter widget 검사 예정 통지를 받았다. 공유 Mac의 일반 사용자 작업은 중지하지 않았다. 이 측정은 해당 시점의 결과이며, 이전612초와 다른 부하·개선 조건이므로 이후 항상338초 이내라고 보장하지 않는다.
+
+코드 검증은 harness30 PASS, focused4 PASS, lint PASS이며 독립 리뷰에서도 실제 CLI 집합75개 및 계약9개 PASS를 확인했다. 전체 제품 하네스, 실기기, 운영 검증은 이번 두 stage 결과와 별도이며 이를 제품 완료로 보고하지 않는다.
