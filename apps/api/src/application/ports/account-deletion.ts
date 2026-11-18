@@ -12,6 +12,7 @@ export interface AccountDeletionRepository {
  affectedRuns(accountId:string):TravelRun[];
  linkedRuns(accountId:string):string[];
  legacyProofs(accountId:string):{runId:string;sessionId:string}[];
+ nativeRetry(sessionHash:string,now:number):{accountId:string;operationId:string}|undefined;
  retry(sessionHash:string,now:number):{accountId:string;operationId:string}|undefined;
  summary(runId:string):RedactedRunSummary|undefined;
  legacySummary(runId:string):RedactedRunSummary|undefined;
