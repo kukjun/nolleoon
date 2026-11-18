@@ -1,3 +1,4 @@
+import {privacyLedgers} from '../../apps/api/dist/production/privacy-ledgers.js';
 // Test-only owned child: synthetic DB, fixed clock/random, loopback HTTP or paused real transaction.
 import 'reflect-metadata';
 import {realpathSync,lstatSync,existsSync} from 'node:fs';
@@ -29,7 +30,7 @@ if(config.mode==='crash'){
  });
  process.send({type:'ready'});
 }else{
- app=await NestFactory.create(AppModule.register({dbPath:config.dbPath,publicOrigin:'https://trip.example',clock,random}),{logger:false,abortOnError:false});app.setGlobalPrefix('api');await app.listen(0,'127.0.0.1');
+ app=await NestFactory.create(AppModule.register({...privacyLedgers(config.privacyEnv??{},config.dbPath),dbPath:config.dbPath,publicOrigin:'https://trip.example',clock,random}),{logger:false,abortOnError:false});app.setGlobalPrefix('api');await app.listen(0,'127.0.0.1');
  process.on('message',async message=>{if(message.type==='clock'){now=message.now;process.send({type:'clock',now});}else if(message.type==='stats')process.send({type:'stats',randomCalls});else if(message.type==='close'){await app.close();process.exit(0);}});
  process.send({type:'ready',url:await app.getUrl(),randomCalls});
 }

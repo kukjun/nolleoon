@@ -37,3 +37,9 @@ CLI는 `node tools/storage/backup.mjs restore <원본> <새대상> <control.json
 새 restore 무증거 호출은 기존 구현에서 성공해 회귀 시험이 실패했고, 필수 journal gate 추가 후 거부됐다. 원본은 불변인 채 최신 삭제 의도로 이전 계정 사진/이름/provider 정보가 복원되지 않는 것, 방 restore/purge와 계정 삭제가 섞여도 계정이 부활하지 않는 것, schema9 진행 중 legacy 재판이 명시된 proof에 한해 중단·삭제되고 다른 게임은 보존되는 것을 실제 SQLite 새 복원본으로 확인했다. 재구성된 복원 파일에 합성 이름/사진 marker 바이트가 없는 것도 확인했지만 forensic 물리 삭제 증명은 아니다.
 
 최종 해당 작업트리 검증: unit161/API143/nativeDB100, fail/skip 0; build/lint/layers 통과. 브라우저·운영 스케줄·실제 백업/삭제/복원·독립 외부 ledger 저장소는 실행하지 않았다. 기존 schema9/11 자료 비교와 hash 단언은 유지했고, 복원본은 삭제 적용을 위해 최신 스키마로 올라가므로 기존 복원본 version=9 단언만 최신 버전 기대값으로 바꿨다. 원본 schema9 불변 단언은 그대로다.
+
+### 복원본의 필수 journal 잠금표시(schema17)
+
+검증된 journal 파일이 임시 복원 디렉터리 밖에 있어도, 게시되는 DB에는 account/room 두 namespace의 **실제 authoritative 경로 binding hash와 확인한 prefix 길이/digest**를 기록한다. 복원 lock 안에서는 이미 검증한 entries 배열을 전달하고 native `entries()`를 다시 호출하지 않아 잠금 재진입을 피한다. 이후 기동 시 journal을 생략하거나 다른 경로/과거 prefix를 제출하면 실패한다. 빈 journal도 '선택 사항'이 아니라 길이 0인 필수 journal로 표시한다.
+
+이 보강의 RED는 복원 후 journal 없는 `LedgerRequirements.check()`가 성공한 실제 회귀였다. 수정 후 누락/한쪽 누락/다른 binding/줄어든 prefix는 거부되고 원래 journal은 통과했다. 실제 production entry도 복원 DB에 journal env가 없으면 기동 실패, 올바른 env를 전달하면 기존 세션/방을 다시 조회했다. 합성 helper는 enclosing test 임시 디렉터리 수명 동안 journal을 유지하며, 두 번 복원에도 동일 binding을 재사용한다. 운영 경로나 env는 변경하지 않았다.

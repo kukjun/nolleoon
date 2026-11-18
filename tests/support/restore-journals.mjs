@@ -1,4 +1,4 @@
-import {mkdtempSync,rmSync,writeFileSync} from 'node:fs';import {dirname,join} from 'node:path';
+import {mkdirSync,existsSync,writeFileSync} from 'node:fs';import {dirname,join} from 'node:path';
 import {DurableDeletionLedger,DurableRoomDeletionLedger,initializeDeletionLedger} from '../../apps/api/dist/infrastructure/deletion/durable-ledger.js';
 import {restoreDatabase} from '../../apps/api/dist/infrastructure/sqlite/backup.js';
 /** Synthetic fixtures explicitly attest no historical account/room deletions. Never production defaults. */
@@ -10,4 +10,11 @@ export function emptyRestoreJournals(directory){
  const control=join(directory,'restore-control.json');writeFileSync(control,JSON.stringify(config));
  return {options:{account:{journal:account,checkpoint:account.checkpointValue()},rooms:{journal:rooms,checkpoint:rooms.checkpointValue()}},control};
 }
-export async function restoreWithEmptyJournals(source,destination){const dir=mkdtempSync(join(dirname(destination),'.synthetic-empty-journals-'));try{return await restoreDatabase(source,destination,emptyRestoreJournals(dir).options);}finally{rmSync(dir,{recursive:true,force:true});}}
+export function fixtureRestoreEnvironment(destination){const dir=join(dirname(destination),'.synthetic-empty-journals');return {DELETION_LEDGER_PATH:join(dir,'account-ledger'),DELETION_LEDGER_CHECKPOINT:join(dir,'account-checkpoint'),ROOM_DELETION_LEDGER_PATH:join(dir,'room-ledger'),ROOM_DELETION_LEDGER_CHECKPOINT:join(dir,'room-checkpoint')};}
+export async function restoreWithEmptyJournals(source,destination){
+ // The enclosing test owns and removes dirname(destination), including these journals.
+ const dir=join(dirname(destination),'.synthetic-empty-journals');let options;
+ if(!existsSync(dir)){mkdirSync(dir);options=emptyRestoreJournals(dir).options;}
+ else{const account=new DurableDeletionLedger(join(dir,'account-ledger'),join(dir,'account-checkpoint')),rooms=new DurableRoomDeletionLedger(join(dir,'room-ledger'),join(dir,'room-checkpoint'));options={account:{journal:account,checkpoint:account.checkpointValue()},rooms:{journal:rooms,checkpoint:rooms.checkpointValue()}};}
+ return restoreDatabase(source,destination,options);
+}

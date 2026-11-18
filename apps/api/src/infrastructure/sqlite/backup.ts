@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import {LedgerRequirements} from '../deletion/ledger-requirements.js';
 import { createHash } from 'node:crypto';
 import { lstat, realpath, mkdtemp, rm, link, open } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join } from 'node:path';
@@ -93,7 +94,12 @@ export async function restoreDatabase(source:string,destination:string,options?:
     await backupDatabase(source,working);
     const db=new Database(working);
     try{
-     migrate(db);const uow=new SqliteUnitOfWork(db);
+     migrate(db);
+     new LedgerRequirements(db).check(
+      {entries:()=>accounts,bindingIdentity:()=>options.account.journal.bindingIdentity()},
+      {entries:()=>rooms,bindingIdentity:()=>options.rooms.journal.bindingIdentity()}
+     );
+     const uow=new SqliteUnitOfWork(db);
      uow.run(r=>{for(const event of rooms)applyRoomDeletionEvent(r,event);for(const event of accounts)applyAccountDeletion(r,event,{restore:true});});
      // Rebuild live pages on the PRIVATE copy, never mutate the source or running DB.
      db.exec('VACUUM');validate(db);
