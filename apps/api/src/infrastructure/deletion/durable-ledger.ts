@@ -69,6 +69,7 @@ function roomEntry(value:unknown):RoomDeletionEntry{
  const keys=v.action==='delete'?'action,administratorAccountId,at,deletedAt,deletionVersion,operationId,previousStatus,purgeAfter,roomId':'action,at,deletionVersion,operationId,roomId';
  if(Object.keys(v).sort().join(',')!==keys||!id(v.operationId)||!id(v.roomId)||!['delete','restore','purge'].includes(v.action)||!time(v.at)||!time(v.deletionVersion)||v.deletionVersion<1)throw Error('LEDGER_INVALID');
  if(v.action==='delete'&&(!time(v.deletedAt)||!time(v.purgeAfter)||v.purgeAfter!==v.deletedAt!+7*86400000||!id(v.administratorAccountId)||!['open','closed'].includes(v.previousStatus!)))throw Error('LEDGER_INVALID');
- return {...v};
+ const base={operationId:v.operationId,roomId:v.roomId,action:v.action,at:v.at,deletionVersion:v.deletionVersion};
+ return v.action==='delete'?{...base,deletedAt:v.deletedAt!,purgeAfter:v.purgeAfter!,previousStatus:v.previousStatus!,administratorAccountId:v.administratorAccountId!}:base;
 }
 export class DurableRoomDeletionLedger extends DurableJournal<RoomDeletionEntry>{constructor(path:string,checkpoint:string){super(path,checkpoint,roomEntry);}}
