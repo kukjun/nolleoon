@@ -12,6 +12,7 @@ enum ApiOperation {
   rooms,
   createRoom,
   room,
+  roomAvatars,
   updateRoom,
   roomStatus,
   previewInvite,
@@ -116,6 +117,7 @@ final class NativeRoutes implements ApiPathResolver {
   ResolvedRoute resolve(ApiOperation op, Map<String, String> parameters) {
     final needed = switch (op) {
       ApiOperation.room ||
+      ApiOperation.roomAvatars ||
       ApiOperation.updateRoom ||
       ApiOperation.roomStatus ||
       ApiOperation.issueInvite ||
@@ -177,6 +179,7 @@ final class NativeRoutes implements ApiPathResolver {
         'POST',
       ),
       ApiOperation.room => ResolvedRoute(room, 'GET'),
+      ApiOperation.roomAvatars => ResolvedRoute('$room/avatars', 'GET'),
       ApiOperation.updateRoom => ResolvedRoute(room, 'PATCH'),
       ApiOperation.roomStatus => ResolvedRoute('$room/status', 'POST'),
       ApiOperation.previewInvite => ResolvedRoute(
