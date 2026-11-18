@@ -1,3 +1,4 @@
+import 'features/account_deletion/deletion_receipt_store.dart';
 import 'app/invitation_links.dart';
 
 import 'package:material_ui/material_ui.dart';
@@ -15,7 +16,14 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, this.auth, this.transport, this.invitationLinks});
+  const MyApp({
+    super.key,
+    this.auth,
+    this.transport,
+    this.invitationLinks,
+    this.deletionReceiptStore,
+  });
+  final DeletionReceiptStore? deletionReceiptStore;
   final InvitationLinkSource? invitationLinks;
   final AuthRepository? auth;
   final ApiTransport? transport;
@@ -41,6 +49,8 @@ class _MyAppState extends State<MyApp> {
           defaultValue: false,
         ),
       );
+  late final DeletionReceiptStore _receipts =
+      widget.deletionReceiptStore ?? SecureDeletionReceiptStore();
   late final ApiTransport _transport =
       widget.transport ?? const IoApiTransport();
   @override
@@ -54,6 +64,11 @@ class _MyAppState extends State<MyApp> {
     title: '놀러온',
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
-    home: AuthGate(auth: _auth, transport: _transport, invitationLinks: _links),
+    home: AuthGate(
+      auth: _auth,
+      transport: _transport,
+      invitationLinks: _links,
+      deletionReceiptStore: _receipts,
+    ),
   );
 }

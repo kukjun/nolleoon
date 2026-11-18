@@ -1,3 +1,5 @@
+import 'receipt_fake.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:nolleoon_mobile/main.dart';
@@ -6,7 +8,7 @@ void main() {
   testWidgets(
     'initial screen identifies the app and does not pretend games or login are ready',
     (tester) async {
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(MyApp(deletionReceiptStore: ReceiptFake()));
       await tester.pumpAndSettle();
       expect(find.text('놀러온'), findsOneWidget);
       expect(find.textContaining('아직 카카오 로그인을'), findsOneWidget);
@@ -34,7 +36,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(MyApp(deletionReceiptStore: ReceiptFake()));
       await tester.pumpAndSettle();
       expect(find.textContaining('아직 카카오 로그인을'), findsOneWidget);
       expect(tester.takeException(), isNull);

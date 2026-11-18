@@ -18,6 +18,7 @@ class GameScreen extends StatefulWidget {
     required this.onSessionLost,
     this.configure,
     this.play,
+    this.supportedKinds = const {'team', 'draw', 'menu', 'trial'},
     this.restrictedControls,
     this.editConfigure,
     this.onRunAvailable,
@@ -27,6 +28,7 @@ class GameScreen extends StatefulWidget {
     }
   }
   final GameRepository repository;
+  final Set<String> supportedKinds;
   final String roomId;
   final String? runId, viewerMembershipId;
 
@@ -258,6 +260,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final room = controller.room;
     final canControl =
         run != null &&
+        widget.supportedKinds.contains(run.data['type']) &&
         widget.viewerMembershipId != null &&
         run.data['facilitatorMembershipId'] == widget.viewerMembershipId;
     return Scaffold(
@@ -345,9 +348,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     'menu': '메뉴 고르기',
                   }.entries)
                     ChoiceChip(
-                      label: Text(entry.value),
+                      label: Text(
+                        widget.supportedKinds.contains(entry.key)
+                            ? entry.value
+                            : '${entry.value} · 연결 대기',
+                      ),
                       selected: kind == entry.key,
-                      onSelected: controller.busy
+                      onSelected:
+                          controller.busy ||
+                              !widget.supportedKinds.contains(entry.key)
                           ? null
                           : (_) => setState(() => kind = entry.key),
                     ),
@@ -371,6 +380,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               FilledButton(
                 onPressed:
                     widget.configure == null ||
+                        !widget.supportedKinds.contains(kind) ||
                         controller.busy ||
                         selected.isEmpty
                     ? null

@@ -110,11 +110,13 @@ class DrawGameView extends StatelessWidget {
     required this.controller,
     this.viewerMembershipId,
     this.names = const {},
+    this.avatarBuilder,
   });
   final RunDto run;
   final GameController controller;
   final String? viewerMembershipId;
   final Map<String, String> names;
+  final Widget Function(String memberId)? avatarBuilder;
   Future<void> _reveal() async {
     final current = controller.run, game = controller.run?.game;
     if (current == null ||
@@ -210,7 +212,9 @@ class DrawGameView extends StatelessWidget {
             ),
           for (final item in revealed)
             ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+              leading:
+                  avatarBuilder?.call(item['membershipId'] as String) ??
+                  const CircleAvatar(child: Icon(Icons.person_outline)),
               title: Text(name(item['membershipId'] as String)),
               subtitle: Text(item['winner'] == true ? '당첨' : '통과'),
               trailing: item['membershipId'] == viewerMembershipId

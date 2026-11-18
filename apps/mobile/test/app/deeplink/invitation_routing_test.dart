@@ -1,3 +1,5 @@
+import '../../receipt_fake.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -73,7 +75,12 @@ void main() {
           transport = Transport(),
           links = Links(initial: linkA);
       await tester.pumpWidget(
-        MyApp(auth: auth, transport: transport, invitationLinks: links),
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+          invitationLinks: links,
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.text('여행방 초대'), findsOneWidget);
@@ -112,7 +119,12 @@ void main() {
       );
       final transport = Transport(), links = Links();
       await tester.pumpWidget(
-        MyApp(auth: auth, transport: transport, invitationLinks: links),
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+          invitationLinks: links,
+        ),
       );
       await tester.pumpAndSettle();
       for (final value in [
@@ -182,15 +194,18 @@ void main() {
       );
       final t = HoldingTransport(), links = Links(initial: linkA);
       await tester.pumpWidget(
-        MyApp(auth: auth, transport: t, invitationLinks: links),
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: t,
+          invitationLinks: links,
+        ),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('여행방 참가'));
       await tester.pump();
       final original = t.requests.singleWhere((r) => r.method == 'POST').body;
-      tester.binding.handleAppLifecycleStateChanged(
-        AppLifecycleState.paused,
-      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();
       expect(find.text('여행방 초대'), findsNothing);
       t.firstJoin.complete(TransportResponse(200, jsonEncode(room())));
@@ -199,9 +214,7 @@ void main() {
       final count = t.requests.length;
       await tester.pump(const Duration(seconds: 10));
       expect(t.requests.length, count);
-      tester.binding.handleAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
-      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
       expect(t.requests.where((r) => r.method == 'POST').length, 1);
       expect(find.text('합성 여행'), findsNothing);

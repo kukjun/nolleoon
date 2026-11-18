@@ -1,3 +1,5 @@
+import '../receipt_fake.dart';
+
 import 'dart:convert';
 import 'dart:async';
 
@@ -88,7 +90,13 @@ void main() {
         store: fakes.Store(),
       );
       final transport = Transport();
-      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpWidget(
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('비공개 여행방'), findsNothing);
       expect(transport.lists, 0);
@@ -114,7 +122,13 @@ void main() {
         backend: backend,
         store: store,
       );
-      await tester.pumpWidget(MyApp(auth: auth, transport: Transport()));
+      await tester.pumpWidget(
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: Transport(),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.text('비공개 여행방'), findsOneWidget);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -144,7 +158,13 @@ void main() {
         store: fakes.Store()..value = 'saved',
       );
       final transport = PendingCreateTransport();
-      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpWidget(
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+        ),
+      );
       await tester.pumpAndSettle();
       await startPendingCreate(tester);
       expect(transport.creates.length, 1);
@@ -175,7 +195,13 @@ void main() {
         store: fakes.Store()..value = 'saved',
       );
       final transport = PendingCreateTransport();
-      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpWidget(
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+        ),
+      );
       await tester.pumpAndSettle();
       await startPendingCreate(tester);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -208,7 +234,13 @@ void main() {
         store: fakes.Store()..value = 'saved',
       );
       final transport = PendingCreateTransport();
-      await tester.pumpWidget(MyApp(auth: auth, transport: transport));
+      await tester.pumpWidget(
+        MyApp(
+          deletionReceiptStore: ReceiptFake(),
+          auth: auth,
+          transport: transport,
+        ),
+      );
       await tester.pumpAndSettle();
       await startPendingCreate(tester);
       await tester.tap(find.text('로그아웃'));
