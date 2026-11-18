@@ -5,6 +5,7 @@ import 'dart:convert';
 /// in #162; this layer is only tested with injected synthetic transports.
 enum ApiOperation {
   authExchange,
+  deleteAccount,
   logout,
   session,
   profile,
@@ -159,6 +160,10 @@ final class NativeRoutes implements ApiPathResolver {
         '/api/native/account/session',
         'GET',
       ),
+      ApiOperation.deleteAccount => const ResolvedRoute(
+        '/api/native/account/delete',
+        'POST',
+      ),
       ApiOperation.profile => const ResolvedRoute(
         '/api/native/account/profile',
         'POST',
@@ -256,6 +261,7 @@ final class MutationIntent {
           ApiOperation.profile,
           ApiOperation.authExchange,
           ApiOperation.logout,
+          ApiOperation.deleteAccount,
           ApiOperation.createRoom,
           ApiOperation.joinInvite,
           ApiOperation.restoreRoom,
