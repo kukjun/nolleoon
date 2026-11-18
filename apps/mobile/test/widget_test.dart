@@ -7,10 +7,21 @@ void main() {
     'initial screen identifies the app and does not pretend games or login are ready',
     (tester) async {
       await tester.pumpWidget(const MyApp());
+      await tester.pumpAndSettle();
       expect(find.text('놀러온'), findsOneWidget);
-      expect(find.text('앱을 준비하고 있어요'), findsOneWidget);
-      expect(find.text('로그인과 여행방·게임 연결은 아직 준비 중이에요.'), findsOneWidget);
-      expect(find.text('카카오로 로그인'), findsNothing);
+      expect(find.textContaining('아직 카카오 로그인을'), findsOneWidget);
+      expect(find.text('로그인했어요.'), findsNothing);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.ancestor(
+                of: find.text('카카오로 로그인'),
+                matching: find.byType(FilledButton),
+              ),
+            )
+            .onPressed,
+        isNull,
+      );
       expect(find.byType(FloatingActionButton), findsNothing);
     },
   );
@@ -24,7 +35,8 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await tester.pumpWidget(const MyApp());
-      expect(find.text('앱을 준비하고 있어요'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('아직 카카오 로그인을'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
