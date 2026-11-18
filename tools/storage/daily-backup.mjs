@@ -23,7 +23,7 @@ export async function dailyBackup({source,directory,now=Date.now(),prune=false,b
   if(existing){await verified(root,name);}else{
    // The online backup function refuses existing destinations and verifies DB/schema.
    await backup(source,target);
-   await writeFile(manifest,JSON.stringify({owner,name,day:today,sha256:await hashFile(target)}),{flag:'wx',mode:0o600});
+   await writeFile(manifest,JSON.stringify({owner,name,day:today,createdAt:now,sha256:await hashFile(target)}),{flag:'wx',mode:0o600});
   }
   const candidates=[];
   for(const entry of await readdir(root)){
