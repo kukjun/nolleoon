@@ -1,15 +1,16 @@
 import {lstat,readFile,writeFile,unlink,open,readdir} from 'node:fs/promises';
 import {resolve,join,isAbsolute} from 'node:path';
 import {createHash} from 'node:crypto';
+import {createReadStream} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 const owner='trip-court-daily-backup-v1';
-const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+export async function hashFile(path){const hash=createHash('sha256');for await(const chunk of createReadStream(path,{highWaterMark:64*1024}))hash.update(chunk);return hash.digest('hex');}
 const day=now=>new Date(now).toISOString().slice(0,10);
 /** Explicit operator invocation only. No scheduler installation, no production defaults. */
 export async function dailyBackup({source,directory,now=Date.now(),prune=false,backup}){
  if(!isAbsolute(source)||!isAbsolute(directory)||!Number.isSafeInteger(now)||now<0)throw Error('INVALID_INPUT');
  const root=resolve(directory);if(!(await lstat(root)).isDirectory()||(await lstat(root)).isSymbolicLink())throw Error('INVALID_DIRECTORY');
- const lock=await open(join(root,'.daily-lock'),'wx');
+ const lock=await open(join(root,'.daily-lock'),'wx',0o600);
  try{
   const today=day(now),name=`trip-${today}.sqlite`,target=join(root,name),manifest=target+'.json';
   let existing=false;
@@ -17,7 +18,7 @@ export async function dailyBackup({source,directory,now=Date.now(),prune=false,b
   if(existing){await verified(root,name);}else{
    // The online backup function refuses existing destinations and verifies DB/schema.
    await backup(source,target);
-   await writeFile(manifest,JSON.stringify({owner,name,day:today,sha256:hash(await readFile(target))}),{flag:'wx'});
+   await writeFile(manifest,JSON.stringify({owner,name,day:today,sha256:await hashFile(target)}),{flag:'wx',mode:0o600});
   }
   const candidates=[];
   for(const entry of await readdir(root)){
@@ -36,7 +37,7 @@ async function verified(root,name){
  const file=join(root,name),meta=file+'.json';
  for(const path of [file,meta]){const s=await lstat(path);if(!s.isFile()||s.isSymbolicLink())throw Error('UNMANAGED_FILE');}
  const record=JSON.parse(await readFile(meta,'utf8'));
- if(record.owner!==owner||record.name!==name||record.day!==name.slice(5,15)||record.sha256!==hash(await readFile(file)))throw Error('UNMANAGED_FILE');
+ if(record.owner!==owner||record.name!==name||record.day!==name.slice(5,15)||record.sha256!==await hashFile(file))throw Error('UNMANAGED_FILE');
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  const [source,directory,flag,...extra]=process.argv.slice(2);
