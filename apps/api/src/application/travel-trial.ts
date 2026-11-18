@@ -43,6 +43,10 @@ export function actOnTrial(state:TravelTrialState,input:unknown,ctx:TrialContext
   if(!['guilty','not-guilty','abstain'].includes(String(b.choice))||typeof b.reason!=='string'||(b.choice!=='abstain'&&!b.reason.trim())||[...b.reason].length>2000||/[\p{Cc}\p{Cf}]/u.test(b.reason.replace(/[\n\r\t]/g,'')))fail('INVALID_INPUT');
   s.votes.push({membershipId:ctx.actor,choice:b.choice as Choice,reason:(b.reason as string).trim()});return s.votes.length===s.participants.length-1?settle(s):s;
  }
+ if(b.action==='duration'){
+  exact(b,['action','durationMinutes']);if(ctx.actor!==ctx.facilitator)fail('FORBIDDEN');if(s.phase!=='defense')fail('STATE_CONFLICT');
+  if(!Number.isInteger(b.durationMinutes)||Number(b.durationMinutes)<1||Number(b.durationMinutes)>10)fail('INVALID_INPUT');s.durationSeconds=Number(b.durationMinutes)*60;return s;
+ }
  exact(b,['action']);if(ctx.actor!==ctx.facilitator)fail('FORBIDDEN');
  if(b.action==='start'){if(s.phase!=='preparing'||s.consent!=='accepted')fail('STATE_CONFLICT');s.phase='defense';return s;}
  if(b.action==='final-defense'){if(s.phase!=='first-result')fail('STATE_CONFLICT');s.phase='final-defense';return s;}
@@ -53,3 +57,4 @@ export function projectTrial(state:TravelTrialState,actor:string,currentParticip
  if(!state.participants.includes(actor)||!currentParticipants.includes(actor))fail('FORBIDDEN');
  return {phase:state.phase,caseText:state.caseText,penaltyText:state.penaltyText,durationSeconds:state.durationSeconds,defendantMembershipId:state.defendantMembershipId,consent:state.consent,roundNumber:state.roundNumber,deadline:state.deadline,submittedCount:state.votes.length,self:{voted:state.votes.some(v=>v.membershipId===actor),isDefendant:actor===state.defendantMembershipId},defenses:structuredClone(state.defenses),rounds:structuredClone(state.rounds),outcome:state.outcome};
 }
+
