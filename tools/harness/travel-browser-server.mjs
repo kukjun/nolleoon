@@ -6,11 +6,15 @@ import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {AppModule} from '../../apps/api/dist/composition/app.module.js';
 import {staticWeb} from '../../apps/api/dist/production/static-web.js';
+import {DurableDeletionLedger,DurableRoomDeletionLedger,initializeDeletionLedger} from '../../apps/api/dist/infrastructure/deletion/durable-ledger.js';
 import {watchBrowserLease} from './browser-lease.mjs';
 const dir=mkdtempSync(join(tmpdir(),'travel-browser-'));
 const origin='http://127.0.0.1:4188',dbPath=join(dir,'synthetic.sqlite');
 const kakaoProvider={authorizationUrl:state=>'https://kauth.kakao.com/oauth/authorize?state='+state,exchange:async code=>{const match=/^synthetic-([0-9]+)(?:-[a-zA-Z0-9]+)?$/.exec(code);if(!match)throw Error('Synthetic identity only');return{subject:match[1]};}};
-const app=await NestFactory.create(AppModule.register({dbPath,publicOrigin:origin,kakaoProvider}),{logger:false,abortOnError:false});
+const accountJournal=join(dir,'account-deletions'),accountCheckpoint=join(dir,'account-checkpoint'),roomJournal=join(dir,'room-deletions'),roomCheckpoint=join(dir,'room-checkpoint');
+initializeDeletionLedger(accountJournal,accountCheckpoint);initializeDeletionLedger(roomJournal,roomCheckpoint);
+const deletionLedger=new DurableDeletionLedger(accountJournal,accountCheckpoint),roomDeletionLedger=new DurableRoomDeletionLedger(roomJournal,roomCheckpoint);
+const app=await NestFactory.create(AppModule.register({dbPath,publicOrigin:origin,kakaoProvider,deletionLedger,roomDeletionLedger}),{logger:false,abortOnError:false});
 app.setGlobalPrefix('api');app.use(staticWeb(resolve(import.meta.dirname,'../../apps/web/dist'),dbPath));await app.listen(4188,'127.0.0.1');
 let closing=false;
 async function close(){if(closing)return;closing=true;await app.close();rmSync(dir,{recursive:true,force:true});process.exit(0);}
