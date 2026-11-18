@@ -10,6 +10,9 @@ dependencies:
     sdk: flutter
   flutter_secure_storage: 11.2.0
   kakao_flutter_sdk_user: 2.1.0
+  image_picker: 1.2.4
+  image_picker_android: 0.8.13+25
+  image_picker_platform_interface: 2.11.2
   material_ui: 1.11.1
 dev_dependencies:
   flutter_test:
@@ -19,3 +22,5 @@ dev_dependencies:
   flutter_lints: 6.0.0
 flutter:
   uses-material-design: true
+  assets:
+    - assets/avatars/

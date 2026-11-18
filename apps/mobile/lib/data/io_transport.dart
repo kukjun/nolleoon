@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'avatar_client.dart';
+
 import 'api_client.dart';
 
 /// Standard-library HTTPS transport. No cookies, redirects, logs or persistence.
 /// Credential storage and native login are not implemented here.
-final class IoApiTransport implements ApiTransport {
+final class IoApiTransport implements ApiTransport, AvatarBinaryTransport {
   const IoApiTransport();
   @override
   Future<TransportResponse> send(
@@ -58,6 +60,46 @@ final class IoApiTransport implements ApiTransport {
       return TransportResponse(
         response.statusCode,
         utf8.decode(bytes, allowMalformed: false),
+      );
+    } finally {
+      finished = true;
+      client.close(force: true);
+    }
+  }
+
+  @override
+  Future<AvatarBinaryResponse> sendAvatar(
+    AvatarBinaryRequest request,
+    CancellationToken cancel,
+  ) async {
+    validateAvatarRequest(request);
+    if (cancel.isCancelled) throw const ApiFailure(FailureKind.cancelled);
+    final client = HttpClient();
+    HttpClientRequest? outgoing;
+    var finished = false;
+    cancel.whenCancelled.then((_) {
+      if (!finished) {
+        outgoing?.abort();
+        client.close(force: true);
+      }
+    });
+    try {
+      outgoing = await client.openUrl(request.method, request.uri);
+      outgoing.followRedirects = false;
+      if (cancel.isCancelled) throw const ApiFailure(FailureKind.cancelled);
+      request.headers.forEach(
+        (key, value) => outgoing!.headers.set(key, value),
+      );
+      if (request.body != null) outgoing.add(request.body!);
+      final response = await outgoing.close();
+      if (response.contentLength > 65536) {
+        throw const ApiFailure(FailureKind.invalidResponse);
+      }
+      final bytes = await collectAvatarBytes(response, cancel);
+      return AvatarBinaryResponse(
+        response.statusCode,
+        response.headers.contentType?.mimeType ?? '',
+        bytes,
       );
     } finally {
       finished = true;
