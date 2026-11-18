@@ -7,7 +7,7 @@ function transition(s:TravelTrialState):TravelTransition{return {status:s.phase=
 export class TravelTrialEngine implements TravelGameEngine {
  readonly type='trial' as const;
  prepare(settings:unknown,c:TravelGameContext){return {settings,state:prepareTrial(settings,c.participantIds)};}
- start(_settings:unknown,value:unknown,c:TravelGameContext){return transition(actOnTrial(state(value),{action:'start'},context(c)));}
+ start(_settings:unknown,value:unknown,c:TravelGameContext){const connected=new Set(c.connectedParticipantIds.filter(id=>c.participantIds.includes(id)));if(connected.size<3||!connected.has(state(value).defendantMembershipId))throw new DomainFailure('STATE_CONFLICT');return transition(actOnTrial(state(value),{action:'start'},context(c)));}
  action(_settings:unknown,value:unknown,command:unknown,c:TravelGameContext){if(command&&typeof command==='object'&&(command as {action?:unknown}).action==='start')throw new DomainFailure('STATE_CONFLICT');return transition(actOnTrial(state(value),command,context(c)));}
  maintain(_settings:unknown,value:unknown,c:TravelGameContext){
   if(c.status!=='active')return null;const before=state(value),after=maintainTrial(before,c.now);
