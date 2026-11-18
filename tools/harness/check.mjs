@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { runCheck } from './runner.mjs';
+import { LEGACY_BROWSER_CHECKS } from './legacy-browser.mjs';
 import { discoverTests, API_SUITE_TIMEOUT_MS } from './discovery.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const startedAt=new Date().toISOString();
@@ -20,7 +21,7 @@ const checks=[
  {id:'unit',kind:'node-tests',testDirectory:'tests/unit',timeoutMs:10000,dependsOn:'build'},
  {id:'api-integration',kind:'node-tests',testDirectory:'tests/integration',timeoutMs:API_SUITE_TIMEOUT_MS,dependsOn:'build'},
  {id:'db-integration',kind:'node-tests',testDirectory:'tests/database',timeoutMs:15000,dependsOn:'build'},
- {id:'browser-launch',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep-invert','@e2e|@mobile'],timeoutMs:360000,dependsOn:'build'},
+ ...LEGACY_BROWSER_CHECKS,
  {id:'gameplay-e2e',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@e2e'],timeoutMs:150000,dependsOn:'build'},
  {id:'mobile-emulation',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--reporter=json','--grep','@mobile'],timeoutMs:90000,dependsOn:'build'},
  {id:'party-browser',kind:'playwright',files:['node_modules/@playwright/test/cli.js'],args:['test','--config=playwright.party.config.mjs','--reporter=json','--grep-invert','@party-e2e'],timeoutMs:180000,dependsOn:'build'},

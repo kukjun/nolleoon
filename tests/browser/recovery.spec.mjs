@@ -1,11 +1,6 @@
-import {openCourt} from '../support/court-navigation.mjs';
-import { refreshRoster } from '../support/room-disclosures.mjs';
+import {readyVotingCourt as ready} from '../support/voting-court.mjs';
 import {test,expect} from '@playwright/test';
-async function ready(page,browser){
- await page.goto('/');await page.getByRole('button',{name:'이 브라우저로 시작'}).click();await page.getByLabel('닉네임').fill('투표 방장');await page.getByRole('button',{name:'방 만들기',exact:true}).click();await openCourt(page,1,{reselectCurrentTrial:true});await page.getByLabel('사건',{exact:true}).fill('단체 사진 사건');await openCourt(page,1,{reselectCurrentTrial:true});await page.getByLabel('벌칙',{exact:true}).fill('간식 준비');await page.getByRole('button',{name:'설정 저장',exact:true}).click();await expect(page.getByText('설정을 저장했어요.',{exact:true})).toBeVisible();await openCourt(page,2,{reselectCurrentTrial:true});await page.getByRole('radio',{name:/^피고/}).click();await page.getByRole('button',{name:'이 벌칙에 동의',exact:true}).click();await expect(page.getByText('피고가 이 벌칙에 동의했어요.',{exact:true})).toBeVisible();const guests=[];
- for(let i=0;i<2;i++){const context=await browser.newContext();const guest=await context.newPage();await guest.goto(page.url());await guest.getByRole('button',{name:'이 브라우저로 시작'}).click();await guest.getByLabel('닉네임').fill(`투표 친구${i}`);await guest.getByRole('button',{name:'방 참여하기'}).click();guests.push({context,page:guest});}
- await refreshRoster(page, 'click');await openCourt(page,3,{reselectCurrentTrial:true});await page.getByRole('button',{name:'재판 시작',exact:true}).click();await page.getByRole('button',{name:'다 같이 투표 시작'}).click();for(const guest of guests)await expect(guest.page.getByRole('button',{name:'투표 제출',exact:true})).toBeVisible();return guests;
-}
+
 function trackCreates(page){let count=0;page.on('request',request=>{if(new URL(request.url()).pathname==='/api/session'&&request.method()==='POST')count++;});return()=>count;}
 async function vote(page){await page.getByRole('radio',{name:'유죄',exact:true}).click();await page.getByLabel('투표 이유',{exact:true}).fill('복구 뒤에도 그대로 유지할 이유');await page.getByRole('button',{name:'투표 제출',exact:true}).click();}
 test('투표 접수·마감은 미리보기 왕복·새로고침·pageshow·오프라인 복귀에도 유지된다',async({page,browser})=>{

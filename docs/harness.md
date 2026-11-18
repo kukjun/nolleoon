@@ -65,7 +65,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 
 ## 종합 gameplay E2E
 
-`@e2e`가 붙은 시험은 `gameplay-e2e` gate에서만 집계하고, 기존 `browser-launch` 기능 회귀 gate는 해당 태그를 제외한다. 전체 `check`는 두 gate를 순서대로 실행한다. 독립 컨텍스트·요구 연결·실패 증거의 해석은 [E2E 인수 근거](e2e-acceptance.md)를 따른다. 실기기·외부 배포 planned 항목은 계속 미완료로 남긴다.
+`@e2e`가 붙은 시험은 `gameplay-e2e` gate에서만 집계하고, 기존 기능 회귀는 `browser-launch-1`/`browser-launch-2` 두 순차 shard에서 해당 태그를 제외한다. 전체 `check`는 두 shard와 E2E gate를 모두 실행하며 하나라도 실패하면 실패다. 독립 컨텍스트·요구 연결·실패 증거의 해석은 [E2E 인수 근거](e2e-acceptance.md)를 따른다. 실기기·외부 배포 planned 항목은 계속 미완료로 남긴다.
 
 ## 모바일 자동화와 실기기 차단
 
@@ -82,3 +82,7 @@ GitHub OAuth 인증에 workflow 범위가 없어 실행 workflow push가 거부�
 ## API 파일 워커 예산 (#190)
 
 `npm run test:integration`과 전체 하네스의 API gate는 공유 `nodeTestArguments`를 통해 `--test-concurrency=1`로 모든 발견 파일을 직렬 실행한다. 다른 Node suite의 파일 병렬 정책은 바꾸지 않는다. 같은 46파일/151개에서 병렬 149/151, 직렬 151/151(99.038초)을 관측하여 API **suite 전체 예산을 15초에서 180초로 변경**했다. production의 개별 2초 종료 제한/기동 polling과 durability의 4초 IPC 제한 및 assertion은 그대로다. 시험을 빼거나 skip을 허용하는 변경이 아니며, 원격 CI·실기기·제품 인수는 별도다. 상세 근거는 [작업 기록](tasks/2026-11-19-api-worker-budget.md)을 본다.
+
+## 기존 웹 회귀의 순차 분할 (#189)
+
+75개 기존 기능 회귀는 동일 필터의 Playwright 내장 두 shard로 순차 실행한다. 각 stage360초, 총 최대720초이며 기존 약612초 측정에 근거한다. 개별 시험 제한·재시도·worker·실패 판정은 변경하지 않았다. 합집합/중복 검사와 측정·전체 검증 상태는 [진단 기록](tasks/2026-11-18-browser-gate.md)을 본다.
