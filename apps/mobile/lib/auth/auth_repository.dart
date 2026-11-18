@@ -1,0 +1,172 @@
+import 'package:flutter/foundation.dart';
+
+// Secrets deliberately have no custom toString and are never part of UI state.
+class AuthSession {
+  const AuthSession({
+    required this.token,
+    required this.expiresAt,
+    required this.accountId,
+    required this.displayName,
+  });
+  final String token, accountId, displayName;
+  final DateTime expiresAt;
+}
+
+abstract interface class SessionStore {
+  Future<String?> read();
+  Future<void> write(String token);
+  Future<void> clear();
+}
+
+abstract interface class KakaoIdentity {
+  bool get configured;
+  Future<String> login();
+  Future<void> clear();
+}
+
+abstract interface class AuthBackend {
+  Future<AuthSession> exchange(String kakaoAccessToken);
+  Future<AuthSession> probe(String bearer);
+  Future<void> logout(String bearer);
+}
+
+class LoginCancelled implements Exception {
+  const LoginCancelled();
+}
+
+class SessionExpired implements Exception {
+  const SessionExpired();
+}
+
+enum AuthPhase { signedOut, unavailable, busy, signedIn, error, logoutFailed }
+
+/// Serializes lifecycle probes with login callbacks. No cookie emulation, refresh,
+/// automatic sign-in retries or persistence of provider tokens.
+class AuthRepository extends ChangeNotifier {
+  AuthRepository({
+    required this.identity,
+    required this.backend,
+    required this.store,
+  });
+  final KakaoIdentity identity;
+  final AuthBackend backend;
+  final SessionStore store;
+  AuthPhase phase = AuthPhase.signedOut;
+  AuthSession? session;
+  bool _busy = false, _disposed = false;
+  void _state(AuthPhase value) {
+    if (_disposed) return;
+    phase = value;
+    notifyListeners();
+  }
+
+  Future<void> login() async {
+    if (_busy || _disposed) return;
+    if (!identity.configured) {
+      _state(AuthPhase.unavailable);
+      return;
+    }
+    _busy = true;
+    session = null;
+    _state(AuthPhase.busy);
+    AuthSession? issued;
+    try {
+      final providerToken = await identity.login();
+      if (_disposed) return;
+      issued = await backend.exchange(providerToken);
+      if (_disposed) {
+        await backend.logout(issued.token);
+        return;
+      }
+      await store.write(issued.token);
+      if (_disposed) {
+        await store.clear();
+        await backend.logout(issued.token);
+        return;
+      }
+      session = issued;
+      _state(AuthPhase.signedIn);
+    } on LoginCancelled {
+      _state(AuthPhase.signedOut);
+    } catch (_) {
+      if (issued != null) {
+        try {
+          await store.clear();
+        } catch (_) {}
+        try {
+          await backend.logout(issued.token);
+        } catch (_) {}
+      }
+      _state(AuthPhase.error);
+    } finally {
+      try {
+        await identity.clear();
+      } catch (_) {}
+      _busy = false;
+    }
+  }
+
+  Future<void> resume() async {
+    if (_busy || _disposed || phase == AuthPhase.logoutFailed) return;
+    _busy = true;
+    session = null;
+    _state(AuthPhase.busy);
+    try {
+      final token = await store.read();
+      if (_disposed) return;
+      if (token == null) {
+        _state(AuthPhase.signedOut);
+        return;
+      }
+      final result = await backend.probe(token);
+      if (_disposed) return;
+      if (!result.expiresAt.isAfter(DateTime.now())) {
+        throw const SessionExpired();
+      }
+      session = result;
+      _state(AuthPhase.signedIn);
+    } on SessionExpired {
+      try {
+        await store.clear();
+        _state(AuthPhase.signedOut);
+      } catch (_) {
+        _state(AuthPhase.error);
+      }
+    } catch (_) {
+      _state(AuthPhase.error);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<void> logout() async {
+    if (_busy || _disposed) return;
+    _busy = true;
+    session = null;
+    _state(AuthPhase.busy);
+    try {
+      final token = await store.read();
+      if (token != null) {
+        try {
+          await backend.logout(token);
+        } on SessionExpired {
+          /* already invalid */
+        }
+      }
+      await store.clear();
+      await identity.clear();
+      _state(AuthPhase.signedOut);
+    } catch (_) {
+      _state(AuthPhase.logoutFailed);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    super.dispose();
+  }
+}
