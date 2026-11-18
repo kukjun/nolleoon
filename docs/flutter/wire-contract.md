@@ -89,7 +89,8 @@ Error = {error:{code:string,message:string}}
 ## 오류, 중복 재시도, 취소
 실제 wire 오류 코드는 fixture에 HTTP status와 서버 메시지까지 보존했다. `SESSION_REQUIRED`=401, `FORBIDDEN`=403, `NOT_FOUND`=404, `STATE_CONFLICT`/`DEADLINE_PASSED`=409, `ROOM_CLOSED`=410, `RATE_LIMITED`=429, `TEMPORARILY_UNAVAILABLE`=503 등이다. `ACCOUNT_REQUIRED`, `NETWORK_ERROR`, `INVALID_RESPONSE`는 현재 웹 client의 로컬 분류/대체값일 수 있으며 서버 계약 enum인 척하지 않는다.
 
-- 응답 유실/timeout/cancel은 실패 또는 성공을 확정하지 못한다. 동일 사용자 의도의 **동일 requestId + 동일 body/expectedVersion**으로 재확인하며, 매 재시도 새 ID를 만들지 않는다. 서버 receipt는 현재 권한 검증 후 현재 projection을 다시 줄 수 있어 byte-identical response를 기대하지 않는다.
+- **초대 발급은 예외다.** POST `/api/travel-rooms/:roomId/invite`는 같은 requestId를 다시 보내면 STATE_CONFLICT이며, 이미 발급한 token을 재전송하지 않는다. 응답을 잃으면 같은 ID로 token을 복구할 수 없다. 최신 방을 다시 읽고 사용자가 새 링크 발급에 동의한 별도 의도로 새 requestId를 사용한다. 새 발급은 이전 초대를 폐기하므로 자동 재발급하지 않는다.
+- 그 외 receipt 재확인을 지원하는 mutation에서 응답 유실/timeout/cancel은 실패 또는 성공을 확정하지 못한다. 동일 사용자 의도의 **동일 requestId + 동일 body/expectedVersion**으로 재확인하며, 매 재시도 새 ID를 만들지 않는다. 서버 receipt는 현재 권한 검증 후 현재 projection을 다시 줄 수 있어 byte-identical response를 기대하지 않는다.
 - 같은 ID로 다른 의도를 보내면 STATE_CONFLICT. 사용자가 내용을 바꾼 새 의도는 최신 snapshot 확인 후 새 ID다. 409를 받았다고 같은 버튼을 무한 자동재시도하지 않는다.
 - 현재 웹 adapter timeout=6000ms, caller AbortSignal 지원. 취소는 HTTP 요청 중단일 뿐 서버 rollback 보장이 아니다. Dart timeout/cancellation 모델은 후속 구현에서 별도로 테스트한다.
 - 인증/멤버 권한 소실 시 protected state와 사진 cache를 지우고 진행중 요청의 오래된 응답을 무시해야 한다. request generation 또는 동등한 제어 필요. 오류의 임의 서버 문자열을 화면에 그대로 신뢰하지 않는다.
