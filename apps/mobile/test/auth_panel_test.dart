@@ -70,4 +70,37 @@ void main() {
     expect(tester.takeException(), null);
     auth.dispose();
   });
+  testWidgets(
+    'unresolved stored identity offers retry/logout but disables new login',
+    (tester) async {
+      final store = fakes.Store()..value = 'existing-account';
+      final backend = fakes.Backend()..offline = true;
+      final provider = fakes.Provider();
+      final auth = AuthRepository(
+        identity: provider,
+        backend: backend,
+        store: store,
+      );
+      addTearDown(auth.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: AuthPanel(auth: auth)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final login = find.ancestor(
+        of: find.text('카카오로 로그인'),
+        matching: find.byType(FilledButton),
+      );
+      expect(tester.widget<FilledButton>(login).onPressed, null);
+      expect(find.text('로그인 상태 다시 확인'), findsOneWidget);
+      expect(find.text('기존 세션 로그아웃'), findsOneWidget);
+      expect(provider.calls, 0);
+      backend.offline = false;
+      await tester.tap(find.text('기존 세션 로그아웃'));
+      await tester.pumpAndSettle();
+      expect(store.value, null);
+      expect(tester.widget<FilledButton>(login).onPressed, isNotNull);
+    },
+  );
 }

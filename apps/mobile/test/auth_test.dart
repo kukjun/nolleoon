@@ -133,6 +133,22 @@ void main() {
     expect(auth.phase, AuthPhase.signedOut);
     expect(store.value, null);
   });
+  test(
+    'failed probe cannot start another identity or cancel into signed out',
+    () async {
+      store.value = 'existing-account';
+      backend.offline = true;
+      await auth.resume();
+      provider.cancelled = true;
+      await auth.login();
+      expect(provider.calls, 0);
+      expect(auth.phase, AuthPhase.error);
+      expect(store.value, 'existing-account');
+      backend.offline = false;
+      await auth.logout();
+      expect(store.value, null);
+    },
+  );
   test('disposed login return cannot persist a new bearer', () async {
     provider.pending = Completer();
     final pending = auth.login();

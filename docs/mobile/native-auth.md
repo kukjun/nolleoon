@@ -24,3 +24,7 @@
 - 새 상태 테스트 6, UI/설정 3, SDK gateway 2, native API bridge 2 = 13개. 기반/디자인/data 회귀 포함 총 32개 PASS.
 - pin/lock 확인, format, Flutter analyze 모두 PASS. 초기 missing module RED 후 구현했다. bridge 401 회귀가 실제 실패하여 원격 `ApiFailure.status == 401`도 세션 만료로 변환하도록 수정하고 전체 재검증했다.
 - `tools/mobile/check.sh` 사용. 실 API 테스트가 아니라 strict JSON/헤더 검사는 합성 transport를 사용했다. 실제 SDK/Keychain/Android Keystore는 플랫폼 미구성으로 미실행이다.
+
+### 독립 리뷰 P2 보완
+
+보관된 계정 A의 재확인이 네트워크 오류로 실패한 상태에서 새 로그인 B를 취소하면 A가 다시 나타날 수 있는 경로를 실제 테스트로 재현했다. 이제 미해결 보관 세션은 새 SDK 로그인을 상태/UI 양쪽에서 차단하며, 세션 재확인 또는 명시적 기존 세션 로그아웃만 허용한다. 저장소 읽기 실패도 소유 상태 미확정으로 취급한다. 추가 상태/UI 2개 포함 인증 focused 11개 PASS(이전 신규 SDK/API 4개 별도).

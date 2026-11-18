@@ -54,6 +54,14 @@ class AuthRepository extends ChangeNotifier {
   AuthPhase phase = AuthPhase.signedOut;
   AuthSession? session;
   bool _busy = false, _disposed = false;
+  bool _sessionUnresolved = false;
+  bool get hasUnresolvedSession => _sessionUnresolved;
+  bool get canLogin =>
+      identity.configured &&
+      !_sessionUnresolved &&
+      !_busy &&
+      phase != AuthPhase.signedIn &&
+      phase != AuthPhase.logoutFailed;
   void _state(AuthPhase value) {
     if (_disposed) return;
     phase = value;
@@ -61,7 +69,12 @@ class AuthRepository extends ChangeNotifier {
   }
 
   Future<void> login() async {
-    if (_busy || _disposed) return;
+    if (_busy ||
+        _disposed ||
+        _sessionUnresolved ||
+        phase == AuthPhase.signedIn ||
+        phase == AuthPhase.logoutFailed)
+      return;
     if (!identity.configured) {
       _state(AuthPhase.unavailable);
       return;
@@ -71,6 +84,15 @@ class AuthRepository extends ChangeNotifier {
     _state(AuthPhase.busy);
     AuthSession? issued;
     try {
+      // Resolve existing ownership before starting another provider identity.
+      _sessionUnresolved = true;
+      final existing = await store.read();
+      if (_disposed) return;
+      if (existing != null) {
+        _state(AuthPhase.error);
+        return;
+      }
+      _sessionUnresolved = false;
       final providerToken = await identity.login();
       if (_disposed) return;
       issued = await backend.exchange(providerToken);
@@ -79,6 +101,7 @@ class AuthRepository extends ChangeNotifier {
         return;
       }
       await store.write(issued.token);
+      _sessionUnresolved = true;
       if (_disposed) {
         await store.clear();
         await backend.logout(issued.token);
@@ -112,9 +135,11 @@ class AuthRepository extends ChangeNotifier {
     session = null;
     _state(AuthPhase.busy);
     try {
+      _sessionUnresolved = true;
       final token = await store.read();
       if (_disposed) return;
       if (token == null) {
+        _sessionUnresolved = false;
         _state(AuthPhase.signedOut);
         return;
       }
@@ -128,6 +153,7 @@ class AuthRepository extends ChangeNotifier {
     } on SessionExpired {
       try {
         await store.clear();
+        _sessionUnresolved = false;
         _state(AuthPhase.signedOut);
       } catch (_) {
         _state(AuthPhase.error);
@@ -154,6 +180,7 @@ class AuthRepository extends ChangeNotifier {
         }
       }
       await store.clear();
+      _sessionUnresolved = false;
       await identity.clear();
       _state(AuthPhase.signedOut);
     } catch (_) {

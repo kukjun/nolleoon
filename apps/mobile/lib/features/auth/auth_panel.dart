@@ -73,9 +73,11 @@ class _AuthPanelState extends State<AuthPanel> with WidgetsBindingObserver {
                   ),
                   AppAction(label: '로그인 상태 다시 확인', onPressed: auth.resume),
                 ],
+                if (auth.hasUnresolvedSession)
+                  AppAction(label: '기존 세션 로그아웃', onPressed: auth.logout),
                 AppAction(
                   label: '카카오로 로그인',
-                  enabled: auth.identity.configured && !busy,
+                  enabled: auth.canLogin,
                   onPressed: auth.login,
                 ),
               ],
