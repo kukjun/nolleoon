@@ -13,10 +13,12 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     required this.repository,
+    required this.accountScope,
     required this.onSessionLost,
     this.photoSource,
   });
   final ProfileRepository repository;
+  final String accountScope;
   final VoidCallback onSessionLost;
   final ProfilePhotoSource? photoSource;
   @override
@@ -25,7 +27,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with WidgetsBindingObserver {
-  late final ProfileController controller;
+  late ProfileController controller;
   final name = TextEditingController();
   bool initialized = false, choosing = false;
   String? selection;
@@ -37,11 +39,41 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _bind();
+  }
+
+  void _bind() {
     controller = ProfileController(
       widget.repository,
-      onSessionLost: widget.onSessionLost,
+      onSessionLost: () => widget.onSessionLost(),
     )..addListener(_changed);
     controller.load();
+  }
+
+  @override
+  void didUpdateWidget(ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.accountScope != widget.accountScope ||
+        !identical(oldWidget.repository, widget.repository)) {
+      controller.removeListener(_changed);
+      controller.dispose();
+      _pickGeneration++;
+      _clearPhoto();
+      name.clear();
+      initialized = false;
+      choosing = false;
+      picking = false;
+      selection = null;
+      localError = null;
+      _bind();
+    } else if (!identical(oldWidget.photoSource, widget.photoSource)) {
+      _pickGeneration++;
+      _clearPhoto();
+      picking = false;
+      choosing = false;
+      selection = null;
+      localError = null;
+    }
   }
 
   void _changed() {
@@ -87,6 +119,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     try {
       final input = await widget.photoSource!.pick();
       if (input == null) return;
+      if (!mounted || generation != _pickGeneration) {
+        input.bytes.fillRange(0, input.bytes.length, 0);
+        return;
+      }
       late final Uint8List prepared;
       try {
         prepared = await prepareProfilePhoto(input);
@@ -110,7 +146,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
       }
     } finally {
-      if (mounted) setState(() => picking = false);
+      if (mounted && generation == _pickGeneration) {
+        setState(() => picking = false);
+      }
     }
   }
 
@@ -189,7 +227,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                           enabled: !controller.busy,
                           maxLength: 20,
                           decoration: const InputDecoration(labelText: '이름'),
+                          onChanged: (_) => setState(() {}),
                         ),
+                        Text('현재 서버 이름: ${current['displayName']}'),
+                        if (name.text != current['displayName'])
+                          TextButton(
+                            onPressed: controller.busy
+                                ? null
+                                : () => setState(() {
+                                    name.text =
+                                        current['displayName'] as String;
+                                  }),
+                            child: const Text('최신 이름 사용'),
+                          ),
                         AppAction(
                           label: '이름 저장',
                           enabled: !controller.busy,

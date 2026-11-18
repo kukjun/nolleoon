@@ -77,6 +77,7 @@ class ProfileController extends ChangeNotifier {
         try {
           await _apply(await repository.load(cancel), cancel, g);
         } catch (next) {
+          if (!_current(g)) return;
           if (_auth(next)) {
             _clear();
             onSessionLost?.call();

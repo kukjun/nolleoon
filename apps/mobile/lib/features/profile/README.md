@@ -12,3 +12,6 @@
 
 ## 검증
 구현 전 없는 AvatarClient/ProfileController 로딩 RED 확인. 기본 UI 테스트의 material/스크롤/real-codec fake-time 제약을 실제 원인에 맞게 수정했다. codec 작업은 runAsync로 실제 PNG를 생성·decode한다. 320/390 화면에서 프리셋 선택→취소/저장, CAS 최신화/409, 이름 검증, 이미지 byte 제거/401, 4MP 초과와256 crop을 시험한다. 합성 transport와 Flutter 테스트이며 실제 카카오/서버/기기/스토어·운영 성공을 의미하지 않는다. 최종 실행 개수는 전달 보고 참조.
+
+### Identity/review correction
+`accountScope` is now required (verified account ID). Scope/repository changes dispose old controller/photos, invalidate pending picker completion, clear drafts and reload. Callback closure changes use the current callback without wiping a draft; picker implementation changes invalidate only picker state. 409 shows the latest server name alongside the preserved draft and offers explicit `최신 이름 사용`. A late failed conflict-refresh cannot clear a newer foreground profile. Regression includes same-repository account swap + delayed photo return, callback rebuild, and delayed 401 conflict-refresh.

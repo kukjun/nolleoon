@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -11,6 +12,12 @@ import 'package:nolleoon_mobile/features/profile/photo_source.dart';
 
 import '../../data/avatar_client_test.dart' as a;
 import 'profile_test.dart' as f;
+
+class LatePhotoSource implements ProfilePhotoSource {
+  final pending = Completer<PhotoInput?>();
+  @override
+  Future<PhotoInput?> pick() => pending.future;
+}
 
 void main() {
   for (final width in [320.0, 390.0]) {
@@ -43,6 +50,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: ProfileScreen(
+            accountScope: 'account-a',
             repository: ProfileRepository(
               ApiClient(
                 transport: j,
@@ -138,4 +146,120 @@ void main() {
       picture.dispose();
     });
   });
+  testWidgets(
+    'same repository account scope swap clears old draft and late picker',
+    (tester) async {
+      final j = f.JsonFake();
+      final binary = a.AvatarFake();
+      var id = 'account-a';
+      var bearer = 'a' * 43;
+      j.handler = (r) async {
+        final value = f.account()
+          ..['id'] = id
+          ..['displayName'] = id;
+        return f.jsonOk({
+          'authenticated': true,
+          if (r.method == 'GET') 'expiresAt': 9999,
+          'account': value,
+        });
+      };
+      final repository = ProfileRepository(
+        ApiClient(
+          transport: j,
+          resolver: const NativeRoutes(),
+          accessToken: () async => bearer,
+        ),
+        AvatarClient(transport: binary, accessToken: () async => bearer),
+      );
+      final source = LatePhotoSource();
+      Widget screen() => MaterialApp(
+        home: ProfileScreen(
+          key: const ValueKey('same-profile'),
+          accountScope: id,
+          repository: repository,
+          onSessionLost: () {},
+          photoSource: source,
+        ),
+      );
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'old private draft');
+      await tester.tap(find.text('캐릭터·사진 바꾸기'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('내 사진 선택'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('내 사진 선택'));
+      await tester.pump();
+      id = 'account-b';
+      bearer = 'b' * 43;
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      expect(find.text('old private draft'), findsNothing);
+      expect(find.text('account-b'), findsOneWidget);
+      final oldBytes = Uint8List.fromList([1, 2, 3]);
+      source.pending.complete(PhotoInput(oldBytes, 'image/png'));
+      await tester.pumpAndSettle();
+      expect(oldBytes.every((x) => x == 0), isTrue);
+      expect(find.text('캐릭터·사진 선택'), findsNothing);
+      expect(binary.requests, isEmpty);
+      await tester.tap(find.text('이름 저장'));
+      await tester.pumpAndSettle();
+      expect(j.requests.last.headers['Authorization'], 'Bearer ${'b' * 43}');
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  testWidgets(
+    '409 shows authoritative name while preserving explicit draft choice',
+    (tester) async {
+      final j = f.JsonFake();
+      final binary = a.AvatarFake();
+      var current = '원래 이름';
+      j.handler = (r) async {
+        if (r.method == 'POST') {
+          current = '다른 기기 이름';
+          return const TransportResponse(
+            409,
+            '{"error":{"code":"STATE_CONFLICT"}}',
+          );
+        }
+        return f.jsonOk({
+          'authenticated': true,
+          'expiresAt': 9999,
+          'account': f.account()..['displayName'] = current,
+        });
+      };
+      final repository = ProfileRepository(
+        ApiClient(
+          transport: j,
+          resolver: const NativeRoutes(),
+          accessToken: () async => 'a' * 43,
+        ),
+        AvatarClient(transport: binary, accessToken: () async => 'a' * 43),
+      );
+      Widget screen() => MaterialApp(
+        home: ProfileScreen(
+          accountScope: 'account-a',
+          repository: repository,
+          onSessionLost: () {},
+        ),
+      );
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '내 초안');
+      await tester.pumpWidget(screen());
+      await tester.pumpAndSettle();
+      expect(find.text('내 초안'), findsOneWidget);
+      await tester.tap(find.text('이름 저장'));
+      await tester.pumpAndSettle();
+      expect(find.text('내 초안'), findsOneWidget);
+      expect(find.text('현재 서버 이름: 다른 기기 이름'), findsOneWidget);
+      await tester.tap(find.text('최신 이름 사용'));
+      await tester.pumpAndSettle();
+      expect(find.text('다른 기기 이름'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }

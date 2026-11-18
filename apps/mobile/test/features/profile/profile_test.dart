@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nolleoon_mobile/data/api_client.dart';
 import 'package:nolleoon_mobile/data/avatar_client.dart';
+import 'package:nolleoon_mobile/data/wire_models.dart';
 import 'package:nolleoon_mobile/features/profile/profile_controller.dart';
 import 'package:nolleoon_mobile/features/profile/profile_repository.dart';
 
@@ -45,6 +46,26 @@ class JsonFake implements ApiTransport {
 }
 
 TransportResponse jsonOk(Object o) => TransportResponse(200, jsonEncode(o));
+
+class DelayedConflictRepository extends ProfileRepository {
+  DelayedConflictRepository(super.api, super.avatars);
+  final refresh = Completer<JsonMap>();
+  int reads = 0;
+  @override
+  Future<JsonMap> load(CancellationToken cancel) async {
+    reads++;
+    if (reads == 2) return refresh.future;
+    return account(revision: reads);
+  }
+
+  @override
+  Future<JsonMap> saveName(
+    JsonMap current,
+    String name,
+    CancellationToken cancel,
+  ) async => throw const ApiFailure(FailureKind.server, status: 409);
+}
+
 void main() {
   late JsonFake j;
   late binary.AvatarFake a;
@@ -211,4 +232,33 @@ void main() {
     expect(c.account, isNull);
     expect(lost, 1);
   });
+  test(
+    'stale conflict reload failure cannot clear newer foreground account',
+    () async {
+      c.dispose();
+      var lost = 0;
+      final repository = DelayedConflictRepository(
+        ApiClient(
+          transport: j,
+          resolver: const NativeRoutes(),
+          accessToken: () async => 'a' * 43,
+        ),
+        AvatarClient(transport: a, accessToken: () async => 'a' * 43),
+      );
+      c = ProfileController(repository, onSessionLost: () => lost++);
+      await c.load();
+      final old = c.saveName('초안');
+      await Future<void>.delayed(Duration.zero);
+      c.setForeground(false);
+      c.setForeground(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(c.account!['revision'], 3);
+      repository.refresh.completeError(
+        const ApiFailure(FailureKind.server, status: 401),
+      );
+      await old;
+      expect(c.account!['revision'], 3);
+      expect(lost, 0);
+    },
+  );
 }
