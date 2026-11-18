@@ -1,3 +1,4 @@
+import type {NativeAccountSessions} from './native-account-sessions.js';
 export interface AccountAvatarRecord {accountId:string;presetId:string|null;revision:number;imageBytes:Uint8Array|null}
 // Account identity is deliberately separate from legacy browser sessions.
 export interface AccountRecord {id:string;createdAt:number;status:'active'|'disabled';displayName:string;presetId:string;revision:number}
@@ -22,5 +23,5 @@ export interface AccountAuthRepository {
  claimAttempt(stateHash:string,codeHash:string):boolean;
  consumeAttempt(stateHash:string):boolean;
 }
-export interface AccountAuthUnitOfWork {run<T>(work:(repositories:{accountAuth:AccountAuthRepository})=>T):T}
+export interface AccountAuthUnitOfWork {run<T>(work:(repositories:{accountAuth:AccountAuthRepository;nativeSessions?:NativeAccountSessions})=>T):T}
 export interface KakaoIdentityProvider {authorizationUrl(state:string):string;exchange(code:string):Promise<{subject:string}>}

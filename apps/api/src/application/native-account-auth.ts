@@ -7,7 +7,7 @@ import {DomainFailure} from '../domain/failure.js';
 import {accountAvatar,accountAvatarView} from './account-avatar-view.js';
 export const NATIVE_SESSION_MS=30*24*60*60*1000;
 const opaque=(value:unknown):value is string=>typeof value==='string'&&/^[A-Za-z0-9_-]{43}$/.test(value);
-function view(r:Repositories,id:string){const a=r.accountAuth.findAccount(id)!;return{id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision,avatar:accountAvatarView(accountAvatar(r.accountAuth,a))};}
+function view(r:Repositories,id:string){const a=r.accountAuth.findAccount(id)!;return{id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision,avatar:accountAvatarView(accountAvatar(r.accountAuth,a),'/api/native/account/avatar/image')};}
 /** Native bearer sessions are never web cookies and are never refreshed implicitly. */
 export class NativeAccountAuth {
  constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly verifier:NativeKakaoTokenVerifier|undefined,private readonly authority:NativeAuthAuthority){}

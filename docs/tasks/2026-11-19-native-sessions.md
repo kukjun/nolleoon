@@ -16,3 +16,6 @@
 
 ## 회고
 native public API가 연결되기 전까지 유스케이스 시험 결과를 실제 Flutter 로그인 완료로 표현하지 않는다.
+
+## #162 공통 command 후속
+profilePrincipal과 native avatar URL/세션 재검증, executeNative 및 schema20 receipt 분리를 추가했다. native 사진 저장 응답이 web URL인 실제 RED를 확인한 뒤 수정했다. 웹 wrapper는 그대로 유지하며 실제 controller/HTTP조합은 별도 worker가 검증한다. targeted12개(세션7·command3·migration/restore2) 성공.

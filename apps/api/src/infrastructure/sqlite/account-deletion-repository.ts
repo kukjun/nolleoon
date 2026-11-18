@@ -7,6 +7,7 @@ export function accountDeletionRepository(sql:SqlAccess,db:Database.Database):Ac
  const {execute,find,all}=sql,travel=travelRepository(sql);
  return {
  deletion:id=>find<{operationId:string;createdAt:number}>('SELECT operation_id operationId,created_at createdAt FROM account_deletions WHERE account_id=?',id),
+ nativeRetry:(hash,now)=>find<{accountId:string;operationId:string}>('SELECT d.account_id accountId,d.operation_id operationId FROM native_account_deletion_receipts r JOIN account_deletions d ON d.operation_id=r.operation_id WHERE r.session_hash=? AND r.expires_at>?',hash,now),
  retry:(hash,now)=>find<{accountId:string;operationId:string}>('SELECT d.account_id accountId,d.operation_id operationId FROM account_deletion_receipts r JOIN account_deletions d ON d.operation_id=r.operation_id WHERE r.session_hash=? AND r.expires_at>?',hash,now),
  legacySummary:id=>legacyNumericProjection(db,id)??undefined,
  kakaoSubject:id=>find<{subject:string}>("SELECT subject FROM provider_identities WHERE provider='kakao' AND account_id=?",id)?.subject,
@@ -25,6 +26,7 @@ export function accountDeletionRepository(sql:SqlAccess,db:Database.Database):Ac
  scrubIdentity:entry=>{
  execute('INSERT OR IGNORE INTO account_deletions VALUES (@operationId,@accountId,@createdAt)',entry);
  execute('INSERT OR IGNORE INTO account_deletion_receipts SELECT token_hash,@operationId,expires_at FROM account_sessions WHERE account_id=@accountId',{operationId:entry.operationId,accountId:entry.accountId});
+ execute('INSERT OR IGNORE INTO native_account_deletion_receipts SELECT token_hash,@operationId,expires_at FROM native_account_sessions WHERE account_id=@accountId',{operationId:entry.operationId,accountId:entry.accountId});
  execute('DELETE FROM oauth_attempts WHERE browser_hash IN (SELECT browser_hash FROM account_sessions WHERE account_id=@id) OR previous_session_hash IN (SELECT token_hash FROM account_sessions WHERE account_id=@id)',{id:entry.accountId});
  execute('DELETE FROM provider_identities WHERE account_id=@id',{id:entry.accountId});execute('DELETE FROM account_avatars WHERE account_id=@id',{id:entry.accountId});execute('DELETE FROM account_sessions WHERE account_id=@id',{id:entry.accountId});execute('DELETE FROM native_account_sessions WHERE account_id=@id',{id:entry.accountId});execute('DELETE FROM account_legacy_links WHERE account_id=@id',{id:entry.accountId});
  execute("UPDATE travel_requests SET intent='redacted',result_json='{}' WHERE account_id=@id",{id:entry.accountId});
