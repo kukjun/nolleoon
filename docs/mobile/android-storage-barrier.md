@@ -1,4 +1,4 @@
-# Android secure receipt flush 설계 검토 (코드 변경 전)
+# Android secure receipt flush 설계와 소스 검증
 
 확인일 2026-11-18 UTC. 설치 flutter_secure_storage11.2.0 소스와 Android 공식 reference/AOSP를 읽었다. 실제 Android/저장된 값은 접근하지 않았다.
 
@@ -39,6 +39,6 @@ AndroidOptions.dart 기본 resetOnError=true인 반면 앱은 명시 override하
 
 채널 `nolleoon/native_secure_storage_barrier`, method `flush`, arguments=null, 성공=true. MainActivity가 엔진 설정에서 등록하고 정리 때 handler를 해제한다. 이미 실행 중인 commit을 activity detach/timeout으로 취소했다고 주장하지 않는다. 후속 요청은 동일 executor에 직렬화된다. UUID는 marker 충돌 회피용이며 새로운 자격증명/암호화 방식이 아니다.
 
-Dart 쪽 receipt/session await, readback, resetOnError:false, 오류 UI는 별도 구현이다. 모든 caller가 저장 완료 후 flush를 기다려야 하고 향후 다른 isolate/process 또는 저장 namespace 추가는 재검토해야 한다. 이 executor는 plugin 자체의 미래 쓰기를 전역 잠그지 않는다.
+Dart 쪽 receipt/session await, readback 및 resetOnError:false는 후속 소스 8d86182에서 구현했다. 별도 25개 Dart mock 회귀는 통과했지만 실제 native 저장 완료를 검증한 것은 아니다. 모든 caller가 저장 완료 후 flush를 기다려야 하고 향후 다른 isolate/process 또는 저장 namespace 추가는 재검토해야 한다. 이 executor는 plugin 자체의 미래 쓰기를 전역 잠그지 않는다.
 
 검증은 Node source-contract 4개로만 수행했다(누락 source RED → source contract GREEN). 고정 이름/채널/인자 거부/commit 변경/serial executor/민감 getter 부재/앱 등록/의존 버전 pin을 검사한다. 이는 Kotlin 문법/Android API 호환/OS 파일 쓰기/강제종료 성공을 검증하지 않는다. Android SDK/JDK 미구성 상태에서 빌드를 실행하거나 설치/라이선스를 변경하지 않았으며 #210 native release gate는 열린 상태다.

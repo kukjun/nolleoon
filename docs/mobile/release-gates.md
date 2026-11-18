@@ -68,3 +68,7 @@
 6. [소유자 결정 #180](https://github.com/kukjun/nolleoon/issues/180): Apple 로그인/계정 연결 방향, 개발자 계정·대상 국가·앱 식별/서명, 개인정보/삭제 경로·심사 접근 요건. 정책 충족·스토어 승인이나 유료 계정 생성은 이 문서로 승인/확정되지 않는다.
 
 현재는 코드 통합과 합성 회귀의 체크포인트이며 **스토어 출시 또는 실기기 인수 완료가 아니다**.
+
+## #210 후속 소스 통합
+
+Android fixed-prefs marker commit barrier와 Dart await/readback·resetOnError:false 보완을 별도 구현·소스 리뷰했다. Kotlin 소스 계약 4개와 Dart focused 25개는 실제 Android 컴파일/OS 디스크 기록/강제종료 시험을 대신하지 않는다. 기기 gate는 계속 열어 둔다. 자세한 근거와 제한은 [Android storage barrier](android-storage-barrier.md)를 따른다.
