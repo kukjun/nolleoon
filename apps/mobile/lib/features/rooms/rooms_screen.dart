@@ -12,8 +12,12 @@ class RoomsScreen extends StatefulWidget {
     required this.repository,
     required this.onSessionLost,
     this.onOpenRun,
+    this.accountId,
+    this.createRecovery,
   });
   final RoomsRepository repository;
+  final String? accountId;
+  final RoomsCreateRecovery? createRecovery;
   final VoidCallback onSessionLost;
   final Future<void> Function(String roomId, String runId)? onOpenRun;
   @override
@@ -34,7 +38,16 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
     controller = RoomsController(
       widget.repository,
       onSessionLost: widget.onSessionLost,
+      accountId: widget.accountId,
+      createRecovery: widget.createRecovery,
     );
+    final draft = controller.pendingDraft;
+    if (draft != null) {
+      creating = true;
+      title.text = draft['title'] as String;
+      start = DateTime.tryParse(draft['startDate'] as String? ?? '');
+      end = DateTime.tryParse(draft['endDate'] as String? ?? '');
+    }
     controller.addListener(_changed);
     controller.refresh();
   }

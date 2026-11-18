@@ -23,3 +23,6 @@
 - auth owner는 `RoomsScreen(repository:, onSessionLost:, onOpenRun:)`을 **accountId 키** 아래 설치하고 로그아웃/계정 변경 시 폐기한다. main/auth는 수정하지 않았다.
 - RED: 컨트롤러가 없는 상태에서 테스트 로딩 실패 확인. 이후 실제 실패(취소 microtask 관찰, 모의 오류 envelope, material_ui 테스트 루트, paused 프레임 비활성)를 구분해 올바른 계약/생명주기 테스트로 고쳤다. 서버 보호/제품 기준을 약화하지 않았다.
 - GREEN: feature 12개 (repository/controller 7 + widget 5)와 전체 31개 통과. 320/390 폭 생성→로비→목록, 작성 취소/유지, 실제 API body/path, cursor, 중복 생성/동일 intent 재시도, 늦은 탐색/권한 소실, polling/foreground/dispose 포함. `flutter analyze` No issues. 실제 서버/Kakao/기기/외부 배포/이미지 시각 검수는 미실행이며 합성 transport + Flutter 위젯 결과만이다.
+
+## Lifecycle follow-up
+`RoomsCreateRecovery(accountId)` is an optional account-bound memory-only owner supplied by auth composition. It retains only an immutable uncertain create payload across same-account verified remount; it never replays automatically. The create screen restores title/dates and requires explicit retry. Runtime account mismatch throws. Auth composition MUST call clear() on explicit logout, expired sign-out, or account switch; feature clears on success/known rejection/explicit abandon. Unsubmitted drafts are still not retained across full auth-subtree disposal (UX limitation, not duplicate mutation). Added two recovery tests; feature 15 passed after date-only draft fix.

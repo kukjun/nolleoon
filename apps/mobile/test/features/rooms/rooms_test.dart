@@ -193,4 +193,76 @@ void main() {
     await a;
     expect(c.room?.roomId, 'room-b');
   });
+  test(
+    'same account remount retains uncertain request without automatic replay',
+    () async {
+      final recovery = RoomsCreateRecovery('account-a');
+      c.dispose();
+      c = RoomsController(
+        RoomsRepository(
+          ApiClient(
+            transport: t,
+            resolver: const NativeRoutes(),
+            accessToken: () async => 'synthetic',
+          ),
+          requestId: () => 'stable-id',
+        ),
+        accountId: 'account-a',
+        createRecovery: recovery,
+      );
+      t.handler = (r) async => throw const ApiFailure(FailureKind.network);
+      await c.create('이름', null, null);
+      final original = t.requests.single.body;
+      c.dispose();
+      c = RoomsController(
+        RoomsRepository(
+          ApiClient(
+            transport: t,
+            resolver: const NativeRoutes(),
+            accessToken: () async => 'synthetic',
+          ),
+          requestId: () => 'wrong-new-id',
+        ),
+        accountId: 'account-a',
+        createRecovery: recovery,
+      );
+      expect(c.pendingCreate, isTrue);
+      expect(c.pendingDraft!['title'], '이름');
+      expect(t.requests.length, 1);
+      t.handler = (r) async => ok(room());
+      await c.create('새 입력', null, null);
+      expect(t.requests.last.body, original);
+      expect(c.pendingCreate, isFalse);
+    },
+  );
+  test(
+    'account mismatch rejected and explicit auth clear removes recovery',
+    () async {
+      final recovery = RoomsCreateRecovery('account-a');
+      expect(
+        () => RoomsController(
+          c.repository,
+          accountId: 'account-b',
+          createRecovery: recovery,
+        ),
+        throwsArgumentError,
+      );
+      c.dispose();
+      c = RoomsController(
+        c.repository,
+        accountId: 'account-a',
+        createRecovery: recovery,
+      );
+      t.handler = (r) async => throw const ApiFailure(FailureKind.network);
+      await c.create('이름', null, null);
+      c.dispose();
+      recovery.clear();
+      c = RoomsController(
+        c.repository,
+        accountId: 'account-a',
+        createRecovery: recovery,
+      );
+      expect(c.pendingCreate, isFalse);
+    },
+  );
 }

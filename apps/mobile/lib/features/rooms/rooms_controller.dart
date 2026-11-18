@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -6,8 +7,33 @@ import '../../data/api_client.dart';
 import '../../data/wire_models.dart';
 import 'rooms_repository.dart';
 
+/// Account-bound memory only. Auth composition clears this on logout/account
+/// switch, but may retain across inactive -> verified same-account remount.
+class RoomsCreateRecovery {
+  RoomsCreateRecovery(this.accountId);
+  final String accountId;
+  MutationIntent? _intent;
+  void clear() {
+    _intent = null;
+  }
+
+  @override
+  String toString() => 'RoomsCreateRecovery(redacted)';
+}
+
 class RoomsController extends ChangeNotifier {
-  RoomsController(this.repository, {this.onSessionLost});
+  RoomsController(
+    this.repository, {
+    this.onSessionLost,
+    this.createRecovery,
+    String? accountId,
+  }) {
+    if (createRecovery != null &&
+        (accountId == null || accountId != createRecovery!.accountId)) {
+      throw ArgumentError('Pending room intent belongs to a different account');
+    }
+  }
+  final RoomsCreateRecovery? createRecovery;
   final RoomsRepository repository;
   final VoidCallback? onSessionLost;
   List<JsonMap> items = const [];
@@ -18,7 +44,22 @@ class RoomsController extends ChangeNotifier {
   int _generation = 0;
   CancellationToken? _request;
   Timer? _poll;
-  MutationIntent? _create;
+  MutationIntent? _localCreate;
+  MutationIntent? get _create =>
+      createRecovery == null ? _localCreate : createRecovery!._intent;
+  set _create(MutationIntent? value) {
+    if (createRecovery == null) {
+      _localCreate = value;
+    } else {
+      createRecovery!._intent = value;
+    }
+  }
+
+  Map<String, Object?>? get pendingDraft => _create == null
+      ? null
+      : Map<String, Object?>.unmodifiable(
+          jsonDecode(_create!.serializedBody) as Map<String, dynamic>,
+        );
   bool get pendingCreate => _create != null;
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -193,7 +234,7 @@ class RoomsController extends ChangeNotifier {
     _stop();
     room = null;
     items = const [];
-    _create = null;
+    _localCreate = null;
     super.dispose();
   }
 }
