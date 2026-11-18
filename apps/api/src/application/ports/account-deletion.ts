@@ -6,6 +6,7 @@ export interface DeletionLedger {record(entry:AccountDeletionEntry):AccountDelet
 export interface RedactedRunSummary {participantCount:number;rounds?:{number:number;guilty:number;notGuilty:number;abstain:number;total:number}[];teams?:{team:number;count:number}[];revealed?:{winnerCount:number;notWinnerCount:number};responseCount?:number}
 export interface AccountDeletionRepository {
  deletion(accountId:string):{operationId:string;createdAt:number}|undefined;
+ kakaoSubject(accountId:string):string|undefined;
  blocked(accountId:string):boolean;
  soloRooms(accountId:string):{id:string;version:number;status:'open'|'closed'}[];
  affectedRuns(accountId:string):TravelRun[];

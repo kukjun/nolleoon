@@ -1,3 +1,4 @@
+import type {KakaoUnlinkOutbox} from './ports/kakao-unlink-outbox.js';
 import {accountAvatar,accountAvatarView} from './account-avatar-view.js';
 import {SessionRequired,type Clock,type TokenCodec} from './browser-sessions.js';
 import type {AccountAuthRepository,AccountAuthUnitOfWork,AccountRecord,KakaoIdentityProvider} from './ports/account-auth.js';
@@ -12,7 +13,7 @@ export function accountReturnPath(value:unknown):string {
 }
 function publicAccount(a:AccountRecord,r:AccountAuthRepository){return {avatar:accountAvatarView(accountAvatar(r,a)),id:a.id,displayName:a.displayName,presetId:a.presetId,revision:a.revision};}
 export class AccountAuth {
- constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider,private readonly beforeContinuation?:()=>void){}
+ constructor(private readonly uow:AccountAuthUnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly provider?:KakaoIdentityProvider,private readonly beforeContinuation?:()=>void,private readonly unlinkQueue?:KakaoUnlinkOutbox){}
  private current(r:AccountAuthRepository,token:unknown,now:number){
   const session=opaque(token)?r.findSession(this.codec.hash(token)):undefined;
   const account=session?r.findAccount(session.accountId):undefined;
@@ -54,6 +55,7 @@ export class AccountAuth {
   return this.uow.run(({accountAuth:r})=>{
    const latest=r.findAttempt(stateHash),now=this.clock.now();
    if(!latest||latest.status!=='exchanging'||latest.expiresAt<=now||!r.consumeAttempt(stateHash))throw new DomainFailure('FORBIDDEN');
+   try{if(this.unlinkQueue?.pending(identity.subject,now))throw new Error();}catch{throw new DomainFailure('TEMPORARILY_UNAVAILABLE');}
    const linked=r.findIdentity('kakao',identity.subject);
    const previous=attempt.previousSessionHash?r.findSession(attempt.previousSessionHash):undefined;
    if(previous&&previous.revokedAt===null&&previous.expiresAt>now&&linked?.accountId!==previous.accountId)throw new DomainFailure('STATE_CONFLICT');

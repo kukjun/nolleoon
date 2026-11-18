@@ -1,3 +1,5 @@
+import type {KakaoUnlinkOutbox} from './ports/kakao-unlink-outbox.js';
+import {UNLINK_RETENTION_MS} from './ports/kakao-unlink-outbox.js';
 import {applyRoomDeletionEvent,ROOM_DELETION_GRACE_MS} from './travel-room-deletion.js';
 import type {UnitOfWork,Repositories} from './ports/storage.js';
 import type {Clock,TokenCodec} from './browser-sessions.js';
@@ -63,13 +65,14 @@ export function applyAccountDeletion(r:Repositories,entry:AccountDeletionEntry,o
  r.accountDeletion.scrubIdentity(entry);
 }
 export class AccountDeletion {
- constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly ledger?:DeletionLedger){}
+ constructor(private readonly uow:UnitOfWork,private readonly clock:Clock,private readonly codec:TokenCodec,private readonly ledger?:DeletionLedger,private readonly unlinkQueue?:KakaoUnlinkOutbox,private readonly unlinkRequired=false){}
  reconcile(){if(!this.ledger)return;for(const entry of this.ledger.entries())this.uow.run(r=>{if(!r.accountDeletion.deletion(entry.accountId))applyAccountDeletion(r,entry);});}
- execute(token:unknown,input:unknown){const b=travelInput(input,['requestId','confirmation']),requestKey=requestId(b.requestId);if(b.confirmation!=='계정 탈퇴')throw new DomainFailure('INVALID_INPUT');if(typeof token!=='string'||!/^[-A-Za-z0-9_]{43}$/.test(token))throw new SessionRequired();if(!this.ledger)throw new DomainFailure('TEMPORARILY_UNAVAILABLE');this.reconcile();return this.uow.run(r=>{
+ execute(token:unknown,input:unknown){const b=travelInput(input,['requestId','confirmation']),requestKey=requestId(b.requestId);if(b.confirmation!=='계정 탈퇴')throw new DomainFailure('INVALID_INPUT');if(typeof token!=='string'||!/^[-A-Za-z0-9_]{43}$/.test(token))throw new SessionRequired();if(!this.ledger)throw new DomainFailure('TEMPORARILY_UNAVAILABLE');this.reconcile();if(this.unlinkRequired&&!this.unlinkQueue)throw new DomainFailure('TEMPORARILY_UNAVAILABLE');this.unlinkQueue?.available();return this.uow.run(r=>{
  const sessionHash=this.codec.hash(token),now=this.clock.now(),retry=r.accountDeletion.retry(sessionHash,now);if(retry){if(retry.operationId!==this.codec.hash(retry.accountId+':'+requestKey))throw new SessionRequired();return{deleted:true};}const session=r.accountAuth.findSession(sessionHash);if(!session||session.revokedAt!==null||session.expiresAt<=now)throw new SessionRequired();const a=r.accountAuth.findAccount(session.accountId);if(a?.status!=='active')throw new SessionRequired();if(r.accountDeletion.blocked(a.id))throw new DomainFailure('STATE_CONFLICT');
  const affected=r.accountDeletion.affectedRuns(a.id);for(const run of affected)if(!r.accountDeletion.summary(run.id))summarizeDeletedRun(run,r.travel.participants(run.id).length);
  const entry:AccountDeletionEntry={operationId:this.codec.hash(a.id+':'+requestKey),accountId:a.id,runIds:affected.map(run=>run.id).sort(),legacyRunIds:r.accountDeletion.linkedRuns(a.id).sort(),legacyProofs:r.accountDeletion.legacyProofs(a.id),createdAt:now};
  const rooms=r.accountDeletion.soloRooms(a.id);if(rooms.length)entry.roomDeletions=rooms.map(room=>({roomId:room.id,deletedAt:now,purgeAfter:now+ROOM_DELETION_GRACE_MS,deletionVersion:room.version+1,previousStatus:room.status,administratorAccountId:a.id}));
+ const subject=r.accountDeletion.kakaoSubject(a.id);if(subject&&this.unlinkQueue){const intent=this.unlinkQueue.prepare({operationId:entry.operationId,subject,createdAt:now,expiresAt:now+UNLINK_RETENTION_MS});entry.createdAt=intent.createdAt;for(const room of entry.roomDeletions??[]){room.deletedAt=intent.createdAt;room.purgeAfter=intent.createdAt+ROOM_DELETION_GRACE_MS;}}
  const canonical=this.ledger!.record(entry);applyAccountDeletion(r,canonical);return{deleted:true};
  });}
 }
