@@ -10,3 +10,6 @@
 
 ## 증거
 fixture 존재/버전 검사 RED(ENOENT) 후 생성. 실제 room presenter, 4 engine projector, 웹 parser, error presenter, native requestId/version 검사와 비교한 Node8/8 PASS. caller cancellation/응답유실후동일body재시도, 투표 작성자만 보는 사유 수신확인·타인 비공개 fixture 포함. 설치는 기존 npm lock 기준이며 Dart 설치/프로젝트 생성 없음. 상세 결과/커밋은 보고에 기록.
+
+## 독립 리뷰 반영
+초대 발급은 동일 requestId 재시도가 STATE_CONFLICT이고 token 재전송/유실복구가 안 되는 예외를 문서와 machine fixture에 명시했다. 실제 TravelRooms.issueInvite에 기존 receipt를 주입해 token 생성/재전송이 발생하지 않는 시험을 추가했다. 새 예외 metadata 테스트 RED 후 보완. 투표 사유 privacy 사례는 실제 TrialEngine의 prepare→동의→start→begin-vote→vote→project 결과를 fixture와 직접 비교하도록 강화했다. Node9/9 PASS; 원래 fixture 검증만으로 실제 projection을 검증했다고 확대해석하지 않는다.

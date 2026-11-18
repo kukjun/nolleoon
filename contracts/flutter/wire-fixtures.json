@@ -75,7 +75,8 @@
       "method": "POST",
       "path": "/api/travel-rooms/:roomId/invite",
       "versionScope": "room.version",
-      "response": "invite-issued"
+      "response": "invite-issued",
+      "retryPolicy": "duplicate-conflict-no-token-replay"
     },
     {
       "method": "POST",
