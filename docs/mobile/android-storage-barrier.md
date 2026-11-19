@@ -46,4 +46,4 @@ Dart 쪽 receipt/session await, readback 및 resetOnError:false는 후속 소스
 Dart session store 자체는 여러 instance의 standalone write/clear를 직렬화하지 않는다. 현재 앱의 단일 AuthRepository와 `_busy` owner 아래에서만 session mutation 순서를 보장한다. receipt는 기존 static per-key queue를 사용한다. 다른 isolate/process 또는 복수 인증 owner를 도입하면 이 범위를 재설계·검증해야 한다.
 
 ## 후속 실제 실행
-2026-11-19 사용자 승인 SDK 설치 후 표준590e71b APK 빌드와 API36 에뮬레이터 앱 실행을 완료했다. 별도6442b21 probe의6단계 force-stop/relaunch도 통과했다. 최초 미실행 기록과 구분하며 [릴리스 근거](release-gates.md)와 [probe 실측](receipt-process-probe.md)를 참조한다. API24/실물/전원손실/저장 오류·백업 복원까지 완료했다는 뜻은 아니다.
+2026-11-19 사용자 승인 SDK 설치 후 표준590e71b APK 빌드와 API36 에뮬레이터 앱 실행을 완료했다. 별도6442b21 probe의6단계 force-stop/relaunch도 통과했다. 최초 미실행 기록과 구분하며 [릴리스 근거](release-gates.md)와 [probe 실측](receipt-process-probe.md)를 참조한다. 이후 같은 APK로 API24 에뮬레이터도 6단계 통과했다. 두 API 끝점의 process force-stop 시험이며 실물/전원손실/저장 오류·백업 복원까지 완료했다는 뜻은 아니다.
