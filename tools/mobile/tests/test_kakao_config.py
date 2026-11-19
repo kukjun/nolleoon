@@ -20,8 +20,8 @@ class KakaoConfig(unittest.TestCase):
   self.assertEqual(m.callback_config(encoded('KAKAO_NATIVE_APP_KEY='+'a'*32)),(False,'nolleoon-kakao-disabled'))
  def test_local_test_requires_debug_separate_bundle_and_explicit_loopback(self):
   raw=encoded('NATIVE_LOOPBACK_TEST_BUILD=true','NATIVE_LOOPBACK_ORIGIN=http://127.0.0.1:4190')
-  self.assertEqual(m.render({},raw,'Debug','com.example.nolleoonMobile.localprobe'),{})
-  for configuration,bundle in [('Release','com.example.nolleoonMobile.localprobe'),('Debug','com.example.nolleoonMobile')]:
+  self.assertEqual(m.render({},raw,'Debug','com.kukjun.nolleoon.localprobe'),{})
+  for configuration,bundle in [('Release','com.kukjun.nolleoon.localprobe'),('Debug','com.kukjun.nolleoon'),('Debug','com.example.nolleoonMobile.localprobe')]:
    with self.assertRaises(ValueError):m.render({},raw,configuration,bundle)
   for bad in [encoded('NATIVE_LOOPBACK_TEST_BUILD=true'),encoded('NATIVE_LOOPBACK_ORIGIN=http://127.0.0.1:4190'),encoded('NATIVE_LOOPBACK_TEST_BUILD=true','NATIVE_LOOPBACK_ORIGIN=https://evil.test:443')]:
    with self.assertRaises(ValueError):m.callback_config(bad)

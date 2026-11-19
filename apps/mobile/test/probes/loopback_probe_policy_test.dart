@@ -7,7 +7,7 @@ void main() {
     void check({
       bool enabled = true,
       String origin = 'http://127.0.0.1:4188',
-      String bundleId = 'com.example.nolleoonMobile.localprobe',
+      String bundleId = 'com.kukjun.nolleoon.localprobe',
       bool debug = true,
       bool ios = true,
     }) => requireLoopbackProbe(
@@ -25,7 +25,7 @@ void main() {
     );
     expect(() => check(origin: 'http://localhost:4188'), throwsStateError);
     expect(
-      () => check(bundleId: 'com.example.nolleoonMobile'),
+      () => check(bundleId: 'com.kukjun.nolleoon'),
       throwsStateError,
     );
     expect(() => check(debug: false), throwsStateError);

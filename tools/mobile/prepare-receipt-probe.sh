@@ -14,4 +14,4 @@ p.write_text(s)
 PY
 printf 'Prepared isolated debug source: %s\n' "$out"
 printf 'Build only this target: flutter build apk --debug --target test_targets/receipt_process_probe.dart\n'
-printf 'Expected applicationId: com.example.nolleoon_mobile.receiptprobe\n'
+printf 'Expected applicationId: com.kukjun.nolleoon.receiptprobe\n'

@@ -27,7 +27,7 @@ def callback_config(raw):
 def render(template,raw,configuration=None,bundle_id=None):
     decoded=[base64.b64decode(item,validate=True).decode('utf-8') for item in raw.split(',')] if raw else []
     test='NATIVE_LOOPBACK_TEST_BUILD=true' in decoded
-    if test and (configuration!='Debug' or bundle_id!='com.example.nolleoonMobile.localprobe'):
+    if test and (configuration!='Debug' or bundle_id!='com.kukjun.nolleoon.localprobe'):
         raise ValueError('Local test build requires separate debug application identity')
     if not test and bundle_id and bundle_id.endswith('.localprobe'):
         raise ValueError('Unexpected local test application identity')

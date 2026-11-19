@@ -43,7 +43,7 @@ if (localTestFlag == "true" && gradle.startParameter.taskNames.any { it.contains
     throw GradleException("Local test identity is debug only")
 
 android {
-    namespace = "com.example.nolleoon_mobile"
+    namespace = "com.kukjun.nolleoon"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -54,7 +54,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.nolleoon_mobile"
+        applicationId = "com.kukjun.nolleoon"
         manifestPlaceholders["kakaoCallbackEnabled"] = kakaoCallbackEnabled.toString()
         manifestPlaceholders["kakaoCallbackScheme"] = if (kakaoCallbackEnabled) "kakao$kakaoNativeKey" else "nolleoon-kakao-disabled"
         // You can update the following values to match your application needs.

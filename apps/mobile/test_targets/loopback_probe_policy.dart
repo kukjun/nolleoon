@@ -10,7 +10,7 @@ void requireLoopbackProbe({
       !debug ||
       !ios ||
       origin != 'http://127.0.0.1:4188' ||
-      bundleId != 'com.example.nolleoonMobile.localprobe') {
+      bundleId != 'com.kukjun.nolleoon.localprobe') {
     throw StateError('Dedicated iOS loopback probe required');
   }
 }

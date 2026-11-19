@@ -6,7 +6,7 @@
 
 새 전용 AVD `nolleoon_receipt_probe_api<API번호>`만 사용한다. 기존 emulator/물리기기/사용자 설치는 금지한다. `tools/mobile/prepare-receipt-probe.sh`는 현재 커밋을 새 임시폴더에 archive하여 그 복사본 debug에만 `.receiptprobe` applicationIdSuffix를 넣는다. 원본 Gradle/main은 수정하지 않는다.
 
-그 복사본의 apps/mobile에서 `flutter build apk --debug --target test_targets/receipt_process_probe.dart`로만 빌드한다. package는 `com.example.nolleoon_mobile.receiptprobe`. production main을 target으로 빌드한 APK를 전달하면 안 된다. release pipeline은 이 target을 참조하지 않는다.
+그 복사본의 apps/mobile에서 `flutter build apk --debug --target test_targets/receipt_process_probe.dart`로만 빌드한다. package는 `com.kukjun.nolleoon.receiptprobe`. production main을 target으로 빌드한 APK를 전달하면 안 된다. release pipeline은 이 target을 참조하지 않는다.
 
 `python3 tools/mobile/run-receipt-probe.py --adb <SDK adb> --aapt <동일 SDK build-tools aapt> --serial emulator-<번호> --apk <전용 target APK>`
 

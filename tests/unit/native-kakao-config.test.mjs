@@ -18,7 +18,7 @@ test('Android callbacks are SDK owned and disabled/exported false through the sa
  assert.match(gradle,/gradleProperty\("dart-defines"\)/);
  assert.match(gradle,/kakaoVerified == "true" && kakaoNativeKey\.isNotEmpty\(\)/);
  assert.match(gradle,/applicationIdSuffix = "\.localprobe"/);
- assert.match(gradle,/applicationId = "com\.example\.nolleoon_mobile"/);
+ assert.match(gradle,/applicationId = "com\.kukjun\.nolleoon"/);
 });
 test('iOS generated plist has explicit input/output dependency and template remains keyless',()=>{
  const project=read('apps/mobile/ios/Runner.xcodeproj/project.pbxproj');
@@ -28,4 +28,12 @@ test('iOS generated plist has explicit input/output dependency and template rema
  assert.doesNotMatch(read('apps/mobile/ios/Runner/Info.plist'),/CFBundleURLSchemes|LSApplicationQueriesSchemes/);
  const generator=read('apps/mobile/ios/Flutter/kakao_info.py');
  assert.match(generator,/\['kakaokompassauth'\]/);assert.doesNotMatch(generator,/kakaolink|kakaoplus/);
+});
+
+test('approved package identity stays consistent across native source and test-only guard',()=>{
+ const project=read('apps/mobile/ios/Runner.xcodeproj/project.pbxproj');
+ assert.equal((project.match(/PRODUCT_BUNDLE_IDENTIFIER = com\.kukjun\.nolleoon;/g)||[]).length,3);
+ assert.equal((project.match(/PRODUCT_BUNDLE_IDENTIFIER = com\.kukjun\.nolleoon\.RunnerTests;/g)||[]).length,3);
+ for(const file of ['MainActivity.kt','SecureStorageBarrier.kt']) assert.match(read('apps/mobile/android/app/src/main/kotlin/com/kukjun/nolleoon/'+file),/^package com\.kukjun\.nolleoon/m);
+ assert.match(read('apps/mobile/test_targets/loopback_probe_policy.dart'),/bundleId != 'com\.kukjun\.nolleoon\.localprobe'/);
 });
