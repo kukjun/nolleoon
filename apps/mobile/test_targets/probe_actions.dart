@@ -1,14 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
-Finder enabledProbeButton(Finder content) => find.ancestor(
-  of: content,
-  matching: find.byWidgetPredicate(
-    (widget) =>
-        widget is ButtonStyleButton && widget.onPressed != null ||
-        widget is IconButton && widget.onPressed != null,
-  ),
-);
+Finder enabledProbeButton(Finder content) {
+  // M3 IconButton contains an internal ButtonStyleButton. Resolve the public
+  // icon owner first so one action is not counted twice. Keep disabled icons
+  // in this check so their implementation cannot bypass public readiness.
+  final icons = find.ancestor(of: content, matching: find.byType(IconButton));
+  if (icons.evaluate().isNotEmpty) {
+    return find.ancestor(
+      of: content,
+      matching: find.byWidgetPredicate(
+        (widget) => widget is IconButton && widget.onPressed != null,
+      ),
+    );
+  }
+  return find.ancestor(
+    of: content,
+    matching: find.byWidgetPredicate(
+      (widget) => widget is ButtonStyleButton && widget.onPressed != null,
+    ),
+  );
+}
 
 Future<void> tapReadyProbeAction(
   WidgetTester tester,
