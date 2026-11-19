@@ -43,3 +43,20 @@
 각 PASS 뒤 `am force-stop` 및 PID 없음 확인을 거쳤다. pending은 원래 합성 account/request/token/digest/expiry와 일치했고 confirmed는 동일 digest·expiry를 유지하면서 raw token이 없었다. session 삭제와 receipt 삭제 모두 다음 process에서도 확인했다. 마지막 03:13:41Z 확인에서도 probe PID 없음. 저장소를 mock하지 않고 실제 plugin/Android barrier 경로로 수행했다.
 
 이는 **API36 emulator 한 환경의 강제 종료/재시작 검증**이다. minSdk24는 APK 선언일 뿐 API24 실제 실행이나 Android24–36 전체 보장이 아니다. API24/다른 API/실제 기기/전원 차단/reboot/backup 복원/손상 디스크의 동작은 미실행이며 별도 gate로 남는다. channel 누락/오류/timeout의 합성 단위 시험도 실제 OS 장애 시험과 구분한다.
+
+## 추가 실제 실행: 최소 API 24 ARM64 (2026-11-19 UTC)
+
+승인된 공식 AOSP API24 ARM64 이미지의 새 전용 AVD `nolleoon_receipt_probe_api24`가 부팅되어, 명시 serial `emulator-5582`에서 같은 `ca98aa2e…ba04d3` APK와 동일 driver를 실행했다. 새 build는 없고 API36 AVD/기존 표준 앱은 변경하지 않았다. QEMU/AVD명/미설치/package/debuggable guard를 그대로 통과한 뒤 한 번만 설치했다.
+
+| 단계 | 결과 | 실제 process PID |
+|---|---|---:|
+| seed | PASS | 2487 |
+| check-pending | PASS | 2554 |
+| confirm | PASS | 2620 |
+| check-confirmed | PASS | 2688 |
+| clear | PASS | 2754 |
+| check-clear | PASS | 2820 |
+
+각 단계 뒤 force-stop/PID 소실, 다음 단계 새 PID를 확인했고 중간 reinstall/clear-data는 없었다. 최종 03:18:09Z에도 probe process 없음. 실제 SDK API24/ABI arm64-v8a에서 원래 합성 receipt/digest/expiry 보존, confirmed tokenless/session 삭제, receipt 삭제 뒤 null을 모두 확인했다.
+
+앞 절의 **API24 미실행 상태는 이 추가 실행으로 해소**됐다. 현재 실측은 API24와API36 AOSP emulator 두 끝점이며, 중간 모든 API·제조사별 물리기기·전원 차단·reboot·backup 복원 검증으로 확대하지 않는다. 앱의 실제 게임/실계정/Kakao 인증 전체 흐름은 이 합성 저장소 probe의 범위가 아니다.
