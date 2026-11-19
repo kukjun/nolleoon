@@ -15,7 +15,7 @@ def main():
     if not pathlib.Path(a.apk).is_file(): raise ValueError('Probe APK required')
     if run(a.adb,a.serial,'shell','getprop','ro.kernel.qemu') != '1': raise ValueError('Not emulator')
     avd=run(a.adb,a.serial,'emu','avd','name').splitlines()[0]
-    if not re.fullmatch(r'nolleoon_receipt_api[0-9]+',avd): raise ValueError('Dedicated AVD required')
+    if not re.fullmatch(r'nolleoon_receipt_probe_api[0-9]+',avd): raise ValueError('Dedicated AVD required')
     if run(a.adb,a.serial,'shell','pm','list','packages',PACKAGE): raise ValueError('Use a new AVD, package exists')
     badging=subprocess.run([a.aapt,'dump','badging',a.apk],check=True,text=True,capture_output=True,timeout=30).stdout
     if f"package: name='{PACKAGE}'" not in badging or 'application-debuggable' not in badging:

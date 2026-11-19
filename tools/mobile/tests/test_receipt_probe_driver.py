@@ -9,7 +9,7 @@ class DriverTests(unittest.TestCase):
   def adb(_,serial,*args):
    self.assertEqual(serial,'emulator-5554');calls.append(args)
    if args==('shell','getprop','ro.kernel.qemu'):return '1'
-   if args==('emu','avd','name'):return 'nolleoon_receipt_api36\nOK'
+   if args==('emu','avd','name'):return 'nolleoon_receipt_probe_api36\nOK'
    if args[:4]==('shell','pm','list','packages'):return ''
    if args[:3]==('shell','am','start'):
     state['pid']+=1;state['step']=args[-1].split('/')[2];return ''
@@ -31,7 +31,7 @@ class DriverTests(unittest.TestCase):
   calls=[]
   def adb(_,serial,*args):
    calls.append(args)
-   return '1' if args[0]=='shell' and args[1]=='getprop' else ('nolleoon_receipt_api36\nOK' if args[0]=='emu' else 'package:'+m.PACKAGE)
+   return '1' if args[0]=='shell' and args[1]=='getprop' else ('nolleoon_receipt_probe_api36\nOK' if args[0]=='emu' else 'package:'+m.PACKAGE)
   with tempfile.NamedTemporaryFile() as apk,patch.object(m,'run',side_effect=adb),patch('sys.argv',['probe','--adb','adb','--aapt','aapt','--serial','emulator-5554','--apk',apk.name]):
    with self.assertRaises(ValueError):m.main()
   self.assertFalse(any(x[0]=='install' or 'start' in x for x in calls))
