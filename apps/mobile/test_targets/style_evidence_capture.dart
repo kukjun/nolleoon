@@ -76,7 +76,27 @@ void main() {
     );
     Future<void> capture(String stage) async {
       await tester.pumpAndSettle();
+      // Asset decoding is real asynchronous work, outside the widget fake clock.
+      // Wait for the exact synthetic member presets before taking pixels.
+      await tester.runAsync(() async {
+        for (final preset in ['preset-01', 'preset-02']) {
+          await precacheImage(
+            AssetImage('assets/avatars/$preset.webp'),
+            key.currentContext!,
+          );
+        }
+      });
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      if (stage == '02-lobby' || stage == '05-team-result') {
+        expect(
+          tester.allRenderObjects
+              .whereType<RenderImage>()
+              .where((image) => image.image != null)
+              .length,
+          greaterThanOrEqualTo(2),
+        );
+      }
       // Widget-test null-font fallback is Ahem even when Roboto is loaded.
       // Supply only missing family names at the rendering boundary; preserve
       // all app sizes, weights, colors, text and explicit icon fonts.

@@ -51,3 +51,11 @@ node tools/mobile/compose-style-evidence.mjs \
 ```
 
 새 출력 디렉터리에만 복사하며 모든 원본은 보존한다. index.html, 6행×3열 contact-sheet.png, 18개 390×844 PNG, SHA-256 manifest.json을 만든다. HTML은 상대경로로 오프라인 열 수 있고 비교 렌더 브라우저는 file 외 네트워크를 차단한다. 검증은 AFTER widget 시나리오1 PASS, scoped analyze, compositor exit0 및 실제 결과·게임선택 이미지 눈검사다. 운영 앱/실기기/API 동작 증거로 확대하지 않는다.
+
+### 최종 교차 검증본: comparison-verified
+
+초기 로비의 빈 아바타는 실제 preset 누락이 아니라 widget fake clock의 pumpAndSettle이 webp 비동기 디코딩을 기다리지 않은 캡처 결함이었다. 공개 preset01/02만 tester.runAsync/precacheImage로 기다리고 로비·결과에서 `RenderImage.image != null`이 최소2개임을 assertion으로 확인했다. 운영 사진/API 호출을 추가하지 않았다.
+
+공정한 최종 비교를 위해 제품 d551688을 새 detached worktree에서 다시 렌더했다. BEFORE와 AFTER **모두** 동일한 미지정-fontFamily 보정/디코딩 대기 정책을 적용했다. 초기 BEFORE/AFTER 이미지는 삭제·덮어쓰기하지 않고 보존했다. 최종 입력은 `before-decoded/flutter`(d551688), `after-verified/flutter`(de56652), 웹은 기존 d551688 캡처 복사본이다. 최종 전달용은 `comparison-verified/index.html`, `comparison-verified/contact-sheet.png`와 manifest.json이다. 앞 절의 font 정책 차이와 comparison-final은 중간 진단본에 해당하며 최종 전달본에는 적용되지 않는다.
+
+최종 양쪽 widget 시나리오 각각1 PASS, 아바타 decode assertion 통과. 제품 코드는 수정하지 않았고 fixture는 새 선택 단계 차이만 반영했다.
