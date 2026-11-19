@@ -87,9 +87,8 @@ void main() {
     final title =
         'Synthetic iOS loopback ${DateTime.now().millisecondsSinceEpoch}';
     await tester.enterText(find.byType(TextField).first, title);
-    tester.testTextInput.hide();
+    FocusManager.instance.primaryFocus?.unfocus();
     await tester.pump();
-    await tester.ensureVisible(find.text('여행방 만들기'));
     await tapReadyProbeAction(tester, find.text('여행방 만들기'));
     await visible(find.text(title));
     await tapReadyProbeAction(
