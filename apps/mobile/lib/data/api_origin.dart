@@ -9,6 +9,7 @@ final class ApiOrigin {
   ApiOrigin._(this.base, this._namespace);
   final String _namespace;
   final Uri base;
+  bool get isVerification => _namespace == 'verification';
   static ApiOrigin get configured {
     const flag = String.fromEnvironment('NATIVE_LOOPBACK_TEST_BUILD');
     const verification = String.fromEnvironment(

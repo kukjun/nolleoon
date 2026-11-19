@@ -1,3 +1,4 @@
+import '../data/api_origin.dart';
 import '../features/profile/photo_source.dart';
 
 import 'dart:async';
@@ -94,6 +95,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   bool _deletionLocalCleaned = false;
   bool get _hasReceipt => _features?.deletion.hasPending ?? false;
   void _beginDeletion() {
+    if (ApiOrigin.configured.isVerification) return;
     final session = widget.auth.session;
     final owner = _features;
     if (widget.auth.phase != AuthPhase.signedIn ||

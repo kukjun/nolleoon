@@ -1,3 +1,4 @@
+import 'data/api_origin.dart';
 import 'features/profile/photo_source.dart';
 import 'features/profile/native_photo_source.dart';
 import 'features/account_deletion/deletion_receipt_store.dart';
@@ -74,6 +75,24 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: '놀러온',
+    builder: (context, child) => ApiOrigin.configured.isVerification
+        ? Column(
+            children: [
+              const Material(
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text(
+                      '카카오 연동 확인용 · 로컬 시험 서버\n계정 탈퇴·연결 해제는 이 앱에서 할 수 없어요.',
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(child: child ?? const SizedBox.shrink()),
+            ],
+          )
+        : child ?? const SizedBox.shrink(),
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
     home: AuthGate(

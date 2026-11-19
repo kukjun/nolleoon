@@ -1,3 +1,5 @@
+import '../../data/api_origin.dart';
+
 import 'dart:math';
 import 'dart:convert';
 
@@ -59,6 +61,9 @@ class AccountDeletionRepository {
     body: {'requestId': requestId(), 'confirmation': '계정 탈퇴'},
   );
   Future<void> execute(MutationIntent intent, CancellationToken cancel) async {
+    if (ApiOrigin.configured.isVerification) {
+      throw StateError('Account deletion is outside verification scope');
+    }
     if (_serverConfirmed) {
       await persistConfirmation();
       return;

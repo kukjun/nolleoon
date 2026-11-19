@@ -129,10 +129,11 @@ class _FeatureShellState extends State<FeatureShell> {
                               onPressed: () => s.open(FeatureRoute.trash),
                               child: const Text('방 휴지통'),
                             ),
-                            TextButton(
-                              onPressed: widget.onDeleteAccount,
-                              child: const Text('계정 탈퇴'),
-                            ),
+                            if (!widget.api.origin.isVerification)
+                              TextButton(
+                                onPressed: widget.onDeleteAccount,
+                                child: const Text('계정 탈퇴'),
+                              ),
                           ],
                         ),
                       ),
