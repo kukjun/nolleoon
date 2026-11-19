@@ -6,7 +6,7 @@ const root=new URL('../../',import.meta.url);
 const read=p=>readFileSync(new URL(p,root),'utf8');
 test('native callback generator rejects malformed/duplicate/foreign credentials and test identity mismatch',()=>{
  const result=spawnSync('python3',['-m','unittest','discover','-s','tools/mobile/tests','-p','test_kakao_config.py'],{cwd:root,encoding:'utf8'});
- assert.equal(result.status,0,result.stderr);assert.match(result.stderr,/Ran 5 tests/);
+ assert.equal(result.status,0,result.stderr);assert.match(result.stderr,/Ran 6 tests/);
 });
 test('Android callbacks are SDK owned and disabled/exported false through the same defines by default',()=>{
  const manifest=read('apps/mobile/android/app/src/main/AndroidManifest.xml');
@@ -36,4 +36,12 @@ test('approved package identity stays consistent across native source and test-o
  assert.equal((project.match(/PRODUCT_BUNDLE_IDENTIFIER = com\.kukjun\.nolleoon\.RunnerTests;/g)||[]).length,3);
  for(const file of ['MainActivity.kt','SecureStorageBarrier.kt']) assert.match(read('apps/mobile/android/app/src/main/kotlin/com/kukjun/nolleoon/'+file),/^package com\.kukjun\.nolleoon/m);
  assert.match(read('apps/mobile/test_targets/loopback_probe_policy.dart'),/bundleId != 'com\.kukjun\.nolleoon\.localprobe'/);
+});
+
+test('real verification keeps final identity and disables non-debug variants',()=>{
+ const gradle=read('apps/mobile/android/app/build.gradle.kts');
+ assert.match(gradle,/verificationFlag == "true" && !kakaoCallbackEnabled/);
+ assert.match(gradle,/localTestFlag == "true" && verificationFlag == "true"/);
+ assert.match(gradle,/localBuild && variant.buildType != "debug"\) variant.enable = false/);
+ assert.match(gradle,/if \(localTestFlag == "true"\) applicationIdSuffix = "\.localprobe"/);
 });

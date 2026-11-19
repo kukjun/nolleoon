@@ -18,7 +18,7 @@ if (encodedDefines.isNotEmpty()) {
         val name = item.substring(0, separator)
         if (name in listOf("KAKAO_ADMIN_KEY", "KAKAO_REST_API_KEY"))
             throw GradleException("Forbidden native credential type")
-        if (name in listOf("KAKAO_NATIVE_APP_KEY", "NATIVE_AUTH_PLATFORM_VERIFIED", "NATIVE_LOOPBACK_TEST_BUILD", "NATIVE_LOOPBACK_ORIGIN")) {
+        if (name in listOf("KAKAO_NATIVE_APP_KEY", "NATIVE_AUTH_PLATFORM_VERIFIED", "NATIVE_LOOPBACK_TEST_BUILD", "NATIVE_LOOPBACK_ORIGIN", "NATIVE_KAKAO_VERIFICATION_BUILD")) {
             if (kakaoConfig.containsKey(name)) throw GradleException("Duplicate native callback configuration")
             kakaoConfig[name] = item.substring(separator + 1)
         }
@@ -33,13 +33,17 @@ if (kakaoVerified !in listOf("true", "false") ||
 val kakaoCallbackEnabled = kakaoVerified == "true" && kakaoNativeKey.isNotEmpty()
 
 val localTestFlag = kakaoConfig["NATIVE_LOOPBACK_TEST_BUILD"] ?: "false"
+val verificationFlag = kakaoConfig["NATIVE_KAKAO_VERIFICATION_BUILD"] ?: "false"
+val localBuild = localTestFlag == "true" || verificationFlag == "true"
 val localTestOrigin = kakaoConfig["NATIVE_LOOPBACK_ORIGIN"].orEmpty()
 val localOriginMatch = Regex("^http://(127\\.0\\.0\\.1|\\[::1\\]):([0-9]+)$").matchEntire(localTestOrigin)
-if (localTestFlag !in listOf("true", "false") ||
-    (localTestFlag == "false" && localTestOrigin.isNotEmpty()) ||
-    (localTestFlag == "true" && (localOriginMatch == null || localOriginMatch.groupValues[2].toIntOrNull() !in 1..65535)))
+if (localTestFlag !in listOf("true", "false") || verificationFlag !in listOf("true", "false") ||
+    (localTestFlag == "true" && verificationFlag == "true") ||
+    (verificationFlag == "true" && !kakaoCallbackEnabled) ||
+    (!localBuild && localTestOrigin.isNotEmpty()) ||
+    (localBuild && (localOriginMatch == null || localOriginMatch.groupValues[2].toIntOrNull() !in 1..65535)))
     throw GradleException("Invalid local test configuration")
-if (localTestFlag == "true" && gradle.startParameter.taskNames.any { it.contains("release", true) || it.contains("profile", true) })
+if (localBuild && gradle.startParameter.taskNames.any { it.contains("release", true) || it.contains("profile", true) })
     throw GradleException("Local test identity is debug only")
 
 android {
@@ -88,4 +92,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Aggregate tasks cannot accidentally produce non-debug loopback artifacts.
+androidComponents {
+    beforeVariants(selector().all()) { variant ->
+        if (localBuild && variant.buildType != "debug") variant.enable = false
+    }
 }

@@ -25,4 +25,12 @@ class KakaoConfig(unittest.TestCase):
    with self.assertRaises(ValueError):m.render({},raw,configuration,bundle)
   for bad in [encoded('NATIVE_LOOPBACK_TEST_BUILD=true'),encoded('NATIVE_LOOPBACK_ORIGIN=http://127.0.0.1:4190'),encoded('NATIVE_LOOPBACK_TEST_BUILD=true','NATIVE_LOOPBACK_ORIGIN=https://evil.test:443')]:
    with self.assertRaises(ValueError):m.callback_config(bad)
+ def test_real_verification_requires_final_debug_identity_origin_and_enabled_callback(self):
+  args=['NATIVE_KAKAO_VERIFICATION_BUILD=true','NATIVE_LOOPBACK_ORIGIN=http://127.0.0.1:4190','KAKAO_NATIVE_APP_KEY='+'a'*32,'NATIVE_AUTH_PLATFORM_VERIFIED=true']
+  raw=encoded(*args)
+  self.assertTrue(m.render({},raw,'Debug','com.kukjun.nolleoon')['CFBundleURLTypes'])
+  for config,bundle in [('Release','com.kukjun.nolleoon'),('Profile','com.kukjun.nolleoon'),('Debug','com.kukjun.nolleoon.localprobe'),('Debug','com.example.old')]:
+   with self.assertRaises(ValueError):m.render({},raw,config,bundle)
+  for bad in [args+['NATIVE_LOOPBACK_TEST_BUILD=true'],args[1:],args[:2],args[:1]+args[2:],args[:1]+['NATIVE_LOOPBACK_ORIGIN=https://example.com:443']+args[2:]]:
+   with self.assertRaises(ValueError):m.callback_config(encoded(*bad))
 if __name__=='__main__':unittest.main()

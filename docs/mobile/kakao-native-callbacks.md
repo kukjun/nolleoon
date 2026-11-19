@@ -65,3 +65,24 @@ xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner \
 - 이 로컬 debug 인증서 SHA256 `d8812171713319fc9c5487f8ce04d6777039a1b35335dea4dd9108a1970849ac`, SHA1 `2ad283693d5a12f4ed82a3743d5e5d62624c4cf5`. 공개 인증서 식별값이며 release/upload 인증서가 아니다. 콘솔 등록은 별도다.
 - 첫 iOS build는 integration_test includes 생성 오류, 이어 Xcode 단독 시도는 같은 worktree에서 동시에 실행한 Flutter test의 generated Swift package 재생성 때문에 app_links 모듈 오류였다. 같은 worktree의 build/test 병행을 중단하고 Flutter iOS 생성을 단독 재실행해9.4초 PASS. 최종 plist ID `com.kukjun.nolleoon`, callback/query 목록 없음 확인.
 - iOS synthetic/on + 정식 `.localprobe` xcodebuild BUILD SUCCEEDED. 최종 plist ID `com.kukjun.nolleoon.localprobe`, 합성 callback 1개와 login query 1개를 실제 산출물에서 검증했다. 앱 설치/실행·실제 카카오 인증·콘솔 등록·서명 설정은 수행하지 않았다.
+
+## 정식 ID의 격리된 카카오 검증 모드
+
+`NATIVE_KAKAO_VERIFICATION_BUILD=true`는 기존 합성 `.localprobe`와 구별되는 **debug 전용** 모드다. 카카오 콘솔에 등록한 정식 `com.kukjun.nolleoon`으로 callback을 받아야 할 때 사용한다. `NATIVE_LOOPBACK_TEST_BUILD=true`와 동시에 사용할 수 없다. `NATIVE_LOOPBACK_ORIGIN`은 명시 포트가 있는 literal `http://127.0.0.1:<port>` 또는 `http://[::1]:<port>`만 허용하며 native key와 `NATIVE_AUTH_PLATFORM_VERIFIED=true`도 필수다. 기본 빌드에는 이 모드를 넣지 않는다.
+
+Android verification에는 suffix가 없고 synthetic만 `.localprobe`다. release/profile task를 거절하며 aggregate task에서도 non-debug variant를 비활성화한다. iOS verification은 Debug + 정확한 정식 ID만 허용하고 synthetic은 기존 Debug + `.localprobe`만 허용한다. transport/storage worker의 `.verification.<origin SHA256>` 분리가 반드시 함께 있어야 한다. 이 플랫폼 변경 단독으로 저장소 격리가 완료됐다고 주장하지 않는다. 정식 ID와 동일한 앱이므로 기존 앱을 덮어 설치하지 않으며, 전용 새 simulator/emulator와 별도 검증 서버를 사용해야 한다.
+
+실제 키 입력 전 handoff 파일은 저장소 밖 권한0600 파일로 준비하고 아래 값을 채운다. 빈 키 상태는 의도적으로 빌드 실패한다. 실제 키를 이 문서·커밋·명령 출력에 넣지 않는다. REST/Admin key 사용 금지.
+
+```json
+{
+  "NATIVE_KAKAO_VERIFICATION_BUILD": "true",
+  "NATIVE_LOOPBACK_ORIGIN": "http://127.0.0.1:4190",
+  "NATIVE_AUTH_PLATFORM_VERIFIED": "true",
+  "KAKAO_NATIVE_APP_KEY": ""
+}
+```
+
+부모 승인 후 Android는 `flutter build apk --debug --dart-define-from-file=<private-file>`를 사용한다. iOS는 같은 define을 base64 `DART_DEFINES`로 전달하는 위 xcodebuild 절차에서 `PRODUCT_BUNDLE_IDENTIFIER=com.kukjun.nolleoon`을 지정한다. 설정 파일 경로만 공유하고 내용이나 verbose build log는 공유하지 않는다. 실제 키 빌드/카카오 로그인/토큰 교환은 아직 별도 단계다.
+
+검증 모드 구현 실측(합성키, 2026-11-19): Python 신규조건 RED 후6 PASS, Node 플랫폼/저장소 source9 PASS. Android verification debug APK22.5초 PASS 및 실제 package 정식 ID/callback 활성 확인. 동일 verification defines의 `:app:assembleRelease`는 구성 단계에서 `Local test identity is debug only`로 실제 거절했다. iOS 기본/off Flutter simulator build23.3초 PASS, verification 합성/on 정식 ID xcodebuild BUILD SUCCEEDED; 최종 plist의 정식 ID/정확한 합성 scheme/login query를 검사했다. 원본 앱 main을 빌드했으나 설치·실행하지 않았고, 이 플랫폼 branch는 Dart verification storage commit과 통합하기 전 실행하면 안 된다. 실제 키 파일·카카오 로그인·콘솔·운영 설정은 접근하지 않았다.
