@@ -243,6 +243,10 @@ void main() {
       );
       await tester.tap(find.text('새 게임'));
       await tester.pumpAndSettle();
+      expect(find.text('어떤 게임을 할까요?'), findsOneWidget);
+      expect(find.text('첫 사람'), findsNothing);
+      await tester.tap(find.text('팀 나누기'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('첫 사람'));
       await tester.tap(find.text('둘째 사람'));
       await tester.pumpAndSettle();
