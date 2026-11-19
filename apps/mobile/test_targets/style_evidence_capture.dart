@@ -149,7 +149,7 @@ void main() {
     await tester.tap(find.text('합성 여행'));
     await tester.pumpAndSettle();
     await capture('02-lobby');
-    await tap('새 게임');
+    await tap('게임 고르기');
     await capture('03-selection');
     await tap('팀 나누기');
     await tap('첫 사람');
