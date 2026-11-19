@@ -5,6 +5,7 @@
 - snapshotId: YYYY-MM-DDTHH-mm-ss+0900 (Asia/Seoul, 실제 capture/assembly 근거 구분)
 - 이전 기록/승인 기준 링크:
 - before / after / fixture 전체 commit SHA:
+- 자동 capture manifest: 캡처 전후 HEAD·dirty 상태·실행 환경·출력 PNG SHA를 함께 보존. 실행 전후 소스가 달라지거나 dirty이면 자동 승인/출처 일치로 처리하지 않는다. 수기로 적은 소스 SHA와 자동 실행 증거를 구분한다.
 - 실제 캡처 시간 범위 및 mtime 출처:
 - viewport / DPR / text scale / Flutter·browser 버전:
 - 폰트 보정 정책 및 SHA (파일 배포 금지):
