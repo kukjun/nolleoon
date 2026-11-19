@@ -36,3 +36,18 @@ Mac의 `/System/Library/Fonts/AppleSDGothicNeo.ttc`가 필요하다. 별도 명�
 ## AFTER 출력 격리
 
 Flutter target은 `STYLE_EVIDENCE_OUTPUT_DIR`로 새 출력 디렉터리를 받는다. 생략 시 기존 BEFORE 경로가 기본이다. 대상 6개 PNG 중 하나라도 이미 있으면 렌더 전에 실패하며 덮어쓰지 않는다. AFTER 실행은 별도 통합 소스 worktree에서 `STYLE_EVIDENCE_OUTPUT_DIR=../../artifacts/style-evidence/after/flutter`를 지정한다. BEFORE 이미지를 지우거나 AFTER 이름으로 덮어쓰지 않는다. 파일 경로는 시험자가 소유한 artifact 디렉터리만 사용한다. 이 변수는 앱·API 설정에 전달되지 않는다.
+
+## AFTER 실제 결과와 비교본
+
+AFTER 제품 소스는 `de56652`(화면 구현 `294305c` 포함). 새 게임 선택 단계에서 '팀 나누기' 카드를 누르는 조작만 fixture에 추가했다. 상태·API·게임 규칙은 수정하지 않았다.
+
+새 버튼 테마의 fontFamily 미지정 값은 widget-test 엔진에서 Ahem으로 렌더됐다. `FontLoader('Ahem')` 별칭도 실제로 시도했으나 네모가 남았다. 최종 캡처는 **fixture 렌더 단계에서만** 미지정 fontFamily를 이미 로드한 한국어 Roboto 별칭으로 보충한다. TextSpan의 문구·명시 폰트·크기·두께·색·행간은 유지한다. 앱 소스는 변경하지 않았다. BEFORE는 FontLoader만 사용했으므로 폰트 정책 차이를 contact sheet/manifest에 명시한다. 실제 OS 폰트 렌더의 픽셀 동일성 비교가 아니다.
+
+AFTER 원본(`after/flutter`), Ahem 별칭 시도(`after-readable/flutter`), 최종 가독성 캡처(`after-final/flutter`)를 각각 남겼다. 최종 6×3 비교:
+
+```sh
+node tools/mobile/compose-style-evidence.mjs \
+  <before-artifact-root> <after-final-flutter-directory> <new-comparison-directory>
+```
+
+새 출력 디렉터리에만 복사하며 모든 원본은 보존한다. index.html, 6행×3열 contact-sheet.png, 18개 390×844 PNG, SHA-256 manifest.json을 만든다. HTML은 상대경로로 오프라인 열 수 있고 비교 렌더 브라우저는 file 외 네트워크를 차단한다. 검증은 AFTER widget 시나리오1 PASS, scoped analyze, compositor exit0 및 실제 결과·게임선택 이미지 눈검사다. 운영 앱/실기기/API 동작 증거로 확대하지 않는다.

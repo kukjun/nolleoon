@@ -77,6 +77,29 @@ void main() {
     Future<void> capture(String stage) async {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+      // Widget-test null-font fallback is Ahem even when Roboto is loaded.
+      // Supply only missing family names at the rendering boundary; preserve
+      // all app sizes, weights, colors, text and explicit icon fonts.
+      InlineSpan readable(InlineSpan span) {
+        if (span is! TextSpan) return span;
+        return TextSpan(
+          text: span.text,
+          style: (span.style ?? const TextStyle()).copyWith(
+            fontFamily: span.style?.fontFamily ?? 'Roboto',
+          ),
+          children: span.children?.map(readable).toList(),
+          recognizer: span.recognizer,
+          semanticsLabel: span.semanticsLabel,
+          locale: span.locale,
+          spellOut: span.spellOut,
+        );
+      }
+
+      for (final paragraph
+          in tester.allRenderObjects.whereType<RenderParagraph>()) {
+        paragraph.text = readable(paragraph.text);
+      }
+      await tester.pump();
       await tester.runAsync(() async {
         final boundary =
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
@@ -108,6 +131,7 @@ void main() {
     await capture('02-lobby');
     await tap('새 게임');
     await capture('03-selection');
+    await tap('팀 나누기');
     await tap('첫 사람');
     await tap('둘째 사람');
     await tap('게임 설정');
