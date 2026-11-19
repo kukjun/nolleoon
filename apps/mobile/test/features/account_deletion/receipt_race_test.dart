@@ -35,10 +35,12 @@ void main() {
       final storage = DelayedStorage()..delay = true;
       final now = DateTime.fromMillisecondsSinceEpoch(1000000);
       final first = SecureDeletionReceiptStore(
+        commitBarrier: () async {},
         storage: storage,
         now: () => now,
       );
       final second = SecureDeletionReceiptStore(
+        commitBarrier: () async {},
         storage: storage,
         now: () => now,
       );
@@ -65,6 +67,7 @@ void main() {
       final storage = DelayedStorage();
       final now = DateTime.fromMillisecondsSinceEpoch(1000000);
       final store = SecureDeletionReceiptStore(
+        commitBarrier: () async {},
         storage: storage,
         now: () => now,
       );
@@ -79,6 +82,7 @@ void main() {
       final old = store.write(pending);
       await storage.entered.future;
       final second = SecureDeletionReceiptStore(
+        commitBarrier: () async {},
         storage: storage,
         now: () => now,
       );

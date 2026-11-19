@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../auth/storage_commit_barrier.dart';
+
 /// Only a fixed original deletion request, never a renewable login credential.
 class DeletionReceipt {
   const DeletionReceipt._(
@@ -123,16 +125,20 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   SecureDeletionReceiptStore({
     FlutterSecureStorage? storage,
     DateTime Function()? now,
+    Future<void> Function()? commitBarrier,
   }) : _storage =
            storage ??
            const FlutterSecureStorage(
+             aOptions: AndroidOptions(resetOnError: false),
              iOptions: IOSOptions(
                accessibility: KeychainAccessibility.first_unlock_this_device,
              ),
            ),
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _commitBarrier = commitBarrier ?? NativeStorageCommitBarrier.flush;
   final FlutterSecureStorage _storage;
   final DateTime Function() _now;
+  final Future<void> Function() _commitBarrier;
   static const key = 'nolleoon.native.deletion-receipt.v1';
   // One queue for this key across remounted adapter instances in this isolate.
   // Root owns a single store; no background isolate writes are supported.
@@ -172,6 +178,7 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
       throw StateError('Unresolved deletion receipt');
     }
     await _storage.write(key: key, value: raw);
+    await _commitBarrier();
     if (await _storage.read(key: key) != raw) {
       throw StateError('Deletion receipt not saved');
     }
@@ -181,6 +188,7 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   Future<void> clear() => _serialized(_clear);
   Future<void> _clear() async {
     await _storage.delete(key: key);
+    await _commitBarrier();
     if (await _storage.read(key: key) != null) {
       throw StateError('Deletion receipt not cleared');
     }

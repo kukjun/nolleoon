@@ -39,9 +39,15 @@ void main() {
   });
   test('secure adapter process reconstruction, monotonic phase, mismatch and clear', () async {
     FlutterSecureStorage.setMockInitialValues({});
-    final first = SecureDeletionReceiptStore(now: () => now);
+    final first = SecureDeletionReceiptStore(
+      commitBarrier: () async {},
+      now: () => now,
+    );
     await first.write(receipt());
-    final second = SecureDeletionReceiptStore(now: () => now);
+    final second = SecureDeletionReceiptStore(
+      commitBarrier: () async {},
+      now: () => now,
+    );
     expect((await second.read())!.token, token);
     await expectLater(
       second.write(
