@@ -9,6 +9,26 @@ import 'package:nolleoon_mobile/features/account_deletion/deletion_receipt_store
 const probeAccount = 'synthetic-receipt-probe-account';
 const probeRequest = 'synthetic-receipt-probe-request';
 final probeToken = List.filled(43, 'S').join();
+bool matchesProbeReceipt(
+  DeletionReceipt? receipt,
+  int expiry, {
+  required bool confirmed,
+}) {
+  final expected = DeletionReceipt.pending(
+    accountScope: probeAccount,
+    requestId: probeRequest,
+    token: probeToken,
+    expiresAt: expiry,
+  );
+  return receipt != null &&
+      receipt.accountScope == probeAccount &&
+      receipt.requestId == probeRequest &&
+      receipt.expiresAt == expiry &&
+      receipt.serverConfirmed == confirmed &&
+      receipt.tokenDigest == expected.tokenDigest &&
+      (confirmed ? receipt.token == null : receipt.token == probeToken);
+}
+
 void require(bool value) {
   if (!value) throw StateError('Probe check failed');
 }
@@ -31,14 +51,7 @@ Future<void> probe(String route) async {
   final receipt = await receiptStore.read();
   final session = await sessionStore.read();
   void matches({required bool confirmed}) {
-    require(
-      receipt != null &&
-          receipt.accountScope == probeAccount &&
-          receipt.requestId == probeRequest &&
-          receipt.expiresAt == expiry &&
-          receipt.serverConfirmed == confirmed,
-    );
-    require(confirmed ? receipt!.token == null : receipt!.token == probeToken);
+    require(matchesProbeReceipt(receipt, expiry!, confirmed: confirmed));
   }
 
   switch (step) {
