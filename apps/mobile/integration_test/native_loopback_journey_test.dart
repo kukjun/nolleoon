@@ -12,6 +12,7 @@ import 'package:nolleoon_mobile/data/api_origin.dart';
 import 'package:nolleoon_mobile/features/account_deletion/deletion_receipt_store.dart';
 
 import '../test_targets/loopback_probe_policy.dart';
+import '../test_targets/probe_actions.dart';
 
 class SyntheticIdentity implements KakaoIdentity {
   @override
@@ -74,10 +75,14 @@ void main() {
     }
 
     await visible(find.text('카카오로 로그인'));
-    await tester.tap(find.text('카카오로 로그인'));
+    await tapReadyProbeAction(
+      tester,
+      find.text('카카오로 로그인'),
+      ready: () => auth.canLogin,
+    );
     await visible(find.text('새 여행방 만들기'));
     expect(auth.phase, AuthPhase.signedIn);
-    await tester.tap(find.text('새 여행방 만들기'));
+    await tapReadyProbeAction(tester, find.text('새 여행방 만들기'));
     await tester.pump();
     final title =
         'Synthetic iOS loopback ${DateTime.now().millisecondsSinceEpoch}';
@@ -85,12 +90,17 @@ void main() {
     tester.testTextInput.hide();
     await tester.pump();
     await tester.ensureVisible(find.text('여행방 만들기'));
-    await tester.tap(find.text('여행방 만들기'));
+    await tapReadyProbeAction(tester, find.text('여행방 만들기'));
     await visible(find.text(title));
-    await tester.tap(find.byTooltip('목록으로'));
+    await tapReadyProbeAction(
+      tester,
+      find
+          .descendant(of: find.byTooltip('목록으로'), matching: find.byType(Icon))
+          .first,
+    );
     await tester.pump();
     await visible(find.text(title));
-    await tester.tap(find.text('로그아웃'));
+    await tapReadyProbeAction(tester, find.text('로그아웃'));
     await visible(find.text('카카오로 로그인'));
     expect(auth.phase, AuthPhase.signedOut);
     expect(await store.read(), isNull);
