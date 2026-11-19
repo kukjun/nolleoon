@@ -167,7 +167,8 @@ class _MenuGameViewState extends State<MenuGameView> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('메뉴 선택 결과'),
+          Text('메뉴 선택 결과', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
           if (result['outcome'] == 'selected')
             Text(
               result['menu'] as String,
