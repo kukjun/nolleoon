@@ -165,6 +165,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('카카오로 로그인'));
         await tester.pumpAndSettle();
+        await tester.tap(find.text('계정 메뉴'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('내 프로필'));
         await tester.pumpAndSettle();
         expect(find.text('프로필 이름'), findsOneWidget);
@@ -173,11 +175,11 @@ void main() {
         await tester.tap(find.text('합성 여행'));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
-          find.text('새 게임'),
+          find.text('게임 고르기'),
           150,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.tap(find.text('새 게임'));
+        await tester.tap(find.text('게임 고르기'));
         await tester.pumpAndSettle();
         expect(find.text('팀 나누기'), findsOneWidget);
         expect(find.text('제비뽑기'), findsOneWidget);
@@ -196,20 +198,39 @@ void main() {
         await tester.pageBack();
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
-          find.text('방 관리'),
+          find.text('방 더보기'),
           150,
           scrollable: find.byType(Scrollable).first,
         );
+        await Scrollable.ensureVisible(
+          tester.element(find.text('방 더보기')),
+          alignment: .5,
+        );
+        await tester.pumpAndSettle();
+        await Scrollable.ensureVisible(
+          tester.element(find.text('방 더보기')),
+          alignment: .5,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('방 더보기'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('방 관리'));
         await tester.pumpAndSettle();
         expect(find.text('여행방 관리'), findsOneWidget);
         await tester.tap(find.byTooltip('이전 화면'));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
-          find.text('게임 기록'),
+          find.text('방 더보기'),
           150,
           scrollable: find.byType(Scrollable).first,
         );
+        await Scrollable.ensureVisible(
+          tester.element(find.text('방 더보기')),
+          alignment: .5,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('방 더보기'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('게임 기록'));
         await tester.pumpAndSettle();
         expect(t.requests.any((r) => r.uri.path.endsWith('/history')), isTrue);
@@ -237,11 +258,11 @@ void main() {
       await tester.tap(find.text('합성 여행'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('새 게임'),
+        find.text('게임 고르기'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('새 게임'));
+      await tester.tap(find.text('게임 고르기'));
       await tester.pumpAndSettle();
       expect(find.text('어떤 게임을 할까요?'), findsOneWidget);
       expect(find.text('첫 사람'), findsNothing);
@@ -309,6 +330,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('카카오로 로그인'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('계정 메뉴'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('계정 탈퇴'));
     await tester.pumpAndSettle();

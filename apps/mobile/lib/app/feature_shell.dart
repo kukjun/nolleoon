@@ -118,23 +118,18 @@ class _FeatureShellState extends State<FeatureShell> {
                     children: [
                       SafeArea(
                         bottom: false,
-                        child: Wrap(
-                          spacing: 8,
-                          children: [
-                            TextButton(
-                              onPressed: () => s.open(FeatureRoute.profile),
-                              child: const Text('내 프로필'),
-                            ),
-                            TextButton(
-                              onPressed: () => s.open(FeatureRoute.trash),
-                              child: const Text('방 휴지통'),
-                            ),
-                            if (!widget.api.origin.isVerification)
-                              TextButton(
-                                onPressed: widget.onDeleteAccount,
-                                child: const Text('계정 탈퇴'),
-                              ),
-                          ],
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _ActionMenu(
+                            scope: '${s.accountId}:account',
+                            label: '계정 메뉴',
+                            actions: {
+                              '내 프로필': () => s.open(FeatureRoute.profile),
+                              '방 휴지통': () => s.open(FeatureRoute.trash),
+                              if (!widget.api.origin.isVerification)
+                                '계정 탈퇴': widget.onDeleteAccount,
+                            },
+                          ),
                         ),
                       ),
                       Expanded(
@@ -157,40 +152,45 @@ class _FeatureShellState extends State<FeatureShell> {
                             onSessionLost: widget.onSessionLost,
                             child: child,
                           ),
-                          roomActionsBuilder: (room) => Wrap(
-                            spacing: 8,
+                          roomActionsBuilder: (room) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              FilledButton(
-                                onPressed:
-                                    room.data['status'] == 'open' &&
-                                        room.data['activeRun'] == null
-                                    ? () => s.open(
-                                        FeatureRoute.game,
+                              if (room.data['activeRun'] == null &&
+                                  room.data['status'] == 'open')
+                                FilledButton(
+                                  onPressed: () => s.open(
+                                    FeatureRoute.game,
+                                    roomId: room.roomId,
+                                  ),
+                                  child: const Text('게임 고르기'),
+                                ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () => s.open(
+                                      FeatureRoute.sharing,
+                                      roomId: room.roomId,
+                                    ),
+                                    icon: const Icon(Icons.person_add_outlined),
+                                    label: const Text('친구 초대'),
+                                  ),
+                                  _ActionMenu(
+                                    scope: '${s.accountId}:${room.roomId}',
+                                    label: '방 더보기',
+                                    actions: {
+                                      '게임 기록': () => s.open(
+                                        FeatureRoute.history,
                                         roomId: room.roomId,
-                                      )
-                                    : null,
-                                child: const Text('새 게임'),
-                              ),
-                              TextButton(
-                                onPressed: () => s.open(
-                                  FeatureRoute.management,
-                                  roomId: room.roomId,
-                                ),
-                                child: const Text('방 관리'),
-                              ),
-                              TextButton(
-                                onPressed: () => s.open(
-                                  FeatureRoute.sharing,
-                                  roomId: room.roomId,
-                                ),
-                                child: const Text('초대 관리'),
-                              ),
-                              TextButton(
-                                onPressed: () => s.open(
-                                  FeatureRoute.history,
-                                  roomId: room.roomId,
-                                ),
-                                child: const Text('게임 기록'),
+                                      ),
+                                      '방 관리': () => s.open(
+                                        FeatureRoute.management,
+                                        roomId: room.roomId,
+                                      ),
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -313,6 +313,7 @@ class _RoomFeatureState extends State<_RoomFeature> {
         repository: widget.roomAvatars,
         onSessionLost: widget.onSessionLost,
         child: GameScreen(
+          onExit: widget.session.home,
           repository: widget.games,
           roomId: r.roomId,
           runId: widget.session.runId,
@@ -404,4 +405,103 @@ class _RoomFeatureState extends State<_RoomFeature> {
       ),
     );
   }
+}
+
+/// Only this menu's route is removed on scope/lifecycle changes. No callback
+/// from an old account or dismissed menu may navigate the current session.
+class _ActionMenu extends StatefulWidget {
+  const _ActionMenu({
+    required this.scope,
+    required this.label,
+    required this.actions,
+  });
+  final String scope, label;
+  final Map<String, VoidCallback> actions;
+  @override
+  State<_ActionMenu> createState() => _ActionMenuState();
+}
+
+class _ActionMenuState extends State<_ActionMenu> with WidgetsBindingObserver {
+  DialogRoute<String>? _route;
+  NavigatorState? _navigator;
+  int _epoch = 0;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _dismiss() {
+    _epoch++;
+    final route = _route;
+    _route = null;
+    if (route != null && route.isActive) _navigator?.removeRoute(route);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActionMenu old) {
+    super.didUpdateWidget(old);
+    if (old.scope != widget.scope) _dismiss();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _dismiss();
+  }
+
+  @override
+  void dispose() {
+    _dismiss();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _open() async {
+    if (_route != null) return;
+    final epoch = ++_epoch;
+    final scope = widget.scope;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    late final DialogRoute<String> route;
+    void close([String? selected]) {
+      if (mounted &&
+          epoch == _epoch &&
+          identical(_route, route) &&
+          route.isCurrent) {
+        navigator.pop(selected);
+      }
+    }
+
+    route = DialogRoute<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.label),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final label in widget.actions.keys)
+                TextButton(onPressed: () => close(label), child: Text(label)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => close(), child: const Text('닫기')),
+        ],
+      ),
+    );
+    _navigator = navigator;
+    _route = route;
+    final selected = await navigator.push(route);
+    if (!mounted || epoch != _epoch || scope != widget.scope) return;
+    _route = null;
+    if (selected != null) widget.actions[selected]?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: _open,
+    icon: const Icon(Icons.more_horiz),
+    label: Text(widget.label),
+  );
 }

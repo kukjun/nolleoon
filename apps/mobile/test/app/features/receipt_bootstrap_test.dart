@@ -135,6 +135,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('카카오로 로그인'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('계정 메뉴'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('계정 탈퇴'));
       await tester.pumpAndSettle();
       expect(find.text('탈퇴 최종 확인으로'), findsOneWidget);
