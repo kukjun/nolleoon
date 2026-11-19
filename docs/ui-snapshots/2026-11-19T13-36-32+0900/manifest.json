@@ -1,0 +1,198 @@
+{
+  "synthetic": true,
+  "apiVerified": false,
+  "deviceVerified": false,
+  "fontPolicy": "Both Flutter captures load Korean fonts, fill missing font families at render boundary and await preset decoding; explicit font/size/weight/color unchanged",
+  "beforeSource": "d551688",
+  "afterSource": "de56652",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "images": [
+    {
+      "file": "web/00-auth.png",
+      "sha256": "ecf0f15d813e575082bb7432fc0a0f5b60b09bd18b453c58da50b9601ae8f22b",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.431198+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.906577+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "web/01-home.png",
+      "sha256": "49dedd23d897fc2307137eeb166a27153ec3348e704aeb4a30c89ff819237492",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.431622+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.906166+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "web/02-lobby.png",
+      "sha256": "54a1f7571c4147afeff1073623141d3684f1105310c89bcca02c310a00b6af2b",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.431963+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.908093+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "web/03-selection.png",
+      "sha256": "83ed9dd46355dde28a0bf0cf786d52e4eec2728f3523f0f23865e08749fca879",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.432263+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.907764+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "web/04-team-ready.png",
+      "sha256": "40826917cc8a397cff8797067a0b1ca4028fc5ccfc37451e9b6b308c19840e98",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.432533+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.908422+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "web/05-team-result.png",
+      "sha256": "2c6169f738a2f9e009a857c8918740ce801c58b9cf9c54d12281b8622b942632",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.432785+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:29.907405+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/00-auth.png",
+      "sha256": "bc0fd2114e67c16c9ace8f65dd50b50f444b4549b4b2c736c702e4dffd75b43f",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.432968+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:17.774335+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/01-home.png",
+      "sha256": "44aff8937d88f79d739a710ba29740cd07d2b1622936ec72cccfe000fdcc6104",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.433095+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:17.896046+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/02-lobby.png",
+      "sha256": "c46ead5f7ca15cf7b3120462cec2e2bb57bad696f261759dcf3572e36fd8aa3b",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.435236+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:17.949872+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/03-selection.png",
+      "sha256": "5c0531512df9a07d61f94747b46544401394f5a8496e3636df8c35dabd5ed2dd",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.435407+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:18.039978+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/04-team-ready.png",
+      "sha256": "5ab0907619ea5c86dba6db4b1ef0dc23ceb49942c3ce211a9043d833ab8d6277",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.435575+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:18.137405+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "before/05-team-result.png",
+      "sha256": "356d279ffc08b83f569308ba5f13f50fae29a861061cf68fc3a50a397ec94b63",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.435729+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:18.155772+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/00-auth.png",
+      "sha256": "94ac9f4bc8b4826eb9ecb0aad93183ace19f20f397aec2b68273f51d9cf67548",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.435909+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:31.880574+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/01-home.png",
+      "sha256": "b261280098f55a77fd39cb609d45c4f1e6470a95e2884cdc610edd0d5625a92d",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.436051+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:32.001030+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/02-lobby.png",
+      "sha256": "e456e97406e6a271ba883fd66f84c816935794adf6e8316c3d241b9fef25cf70",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.436198+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:32.061213+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/03-selection.png",
+      "sha256": "d2910eb993605f1af2220c3701272dd3a6debb72b9c9fe71bbfd550e165b45f1",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.436346+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:32.138048+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/04-team-ready.png",
+      "sha256": "9ee217555c93ba33132d823bcd61a8d919420fbf79189782d8bc32a0ec558b57",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.436504+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:32.244286+09:00",
+      "retainedInputHashMatches": true
+    },
+    {
+      "file": "after/05-team-result.png",
+      "sha256": "c88b7ef14c8fc323cda44b0e96fb29c654a89219b2277a3f347c2f94484aeb7b",
+      "comparisonCopyMtime": "2026-11-19T13:36:32.436650+09:00",
+      "retainedInputMtime": "2026-11-19T13:36:32.263081+09:00",
+      "retainedInputHashMatches": true
+    }
+  ],
+  "schemaVersion": 1,
+  "snapshotId": "2026-11-19T13-36-32+0900",
+  "timezone": "Asia/Seoul",
+  "recordStatus": "captured-candidate",
+  "userApproved": false,
+  "previousBaseline": null,
+  "previousBaselineReason": "First committed visual record; not an approved golden baseline.",
+  "assembledAt": "2026-11-19T13:36:32.718559+09:00",
+  "timestampEvidence": "Filesystem mtime of retained capture/comparison files; assembly time is not original browser shutter time. Git checkout mtimes are not provenance.",
+  "fixtureSource": "c010a86",
+  "productSourceEquivalentTo": "c010a86 (apps/mobile/lib diff from de56652 is empty)",
+  "engine": {
+    "flutter": "3.50.0",
+    "flutterMode": "widget render, not OS screenshot",
+    "web": "Chromium viewport capture",
+    "pixelRatio": 1,
+    "textScale": 1
+  },
+  "fonts": [
+    {
+      "name": "Apple SD Gothic Neo",
+      "sha256": "f2fe69e39644d04a9484802044836ba9d4a950aed2e32b006a3e16d5df5f49f1"
+    },
+    {
+      "name": "MaterialIcons",
+      "sha256": "d9865b671a09d683d13a863089d8825e0f61a37696ce5d7d448bc8023aa62453"
+    }
+  ],
+  "privacy": {
+    "data": "synthetic fixture only",
+    "avatars": "public bundled presets 01/02",
+    "realAccounts": false,
+    "credentials": false,
+    "fontFilesIncluded": false
+  },
+  "acceptance": {
+    "readability": "candidate: Korean glyphs and two avatars rendered; user approval pending",
+    "navigation": "not equivalent: management menus and back/return CTA differ",
+    "webPalette": "matched token values; visual approval pending",
+    "api": "not verified by these captures",
+    "osAndPhysicalDevice": "not verified by these captures"
+  },
+  "assets": [
+    {
+      "file": "index.html",
+      "sha256": "1e362d03028d7c6ee124816a545bfa62f236e43e2d6e87cdd198479c235d95d0",
+      "bytes": 3912
+    },
+    {
+      "file": "contact-sheet.png",
+      "sha256": "23900aab80467832f74ed611afe3d6756f6af0f9a5d843091fb3d8334c6d88f7",
+      "bytes": 680906
+    }
+  ],
+  "recordedAt": "2026-11-19T13:42:02.779141+09:00",
+  "capturedAt": null,
+  "captureTimeLimitation": "Exact capture start is not logged. Retained original Flutter PNG mtimes indicate file completion, web retained input may be a copy; assembly/copy times are separate.",
+  "proposedVisualBaseline": "tests/visual/native-proposed (separate pending comparator change; not approved baseline)"
+}
