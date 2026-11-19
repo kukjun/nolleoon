@@ -13,9 +13,25 @@ import '../test/receipt_fake.dart';
 import '../test/app/features/feature_wiring_test.dart' as shell;
 
 void main() {
-  testWidgets('synthetic rendered 390x844 six-stage BEFORE evidence', (
+  testWidgets('synthetic rendered 390x844 six-stage style evidence', (
     tester,
   ) async {
+    final output = Directory(
+      Platform.environment['STYLE_EVIDENCE_OUTPUT_DIR'] ??
+          '../../artifacts/style-evidence/before/flutter',
+    );
+    final stages = [
+      '00-auth',
+      '01-home',
+      '02-lobby',
+      '03-selection',
+      '04-team-ready',
+      '05-team-result',
+    ];
+    if (stages.any((stage) => File('${output.path}/$stage.png').existsSync())) {
+      fail('Evidence already exists; choose a fresh STYLE_EVIDENCE_OUTPUT_DIR');
+    }
+    output.createSync(recursive: true);
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -66,10 +82,7 @@ void main() {
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
         final image = await boundary.toImage(pixelRatio: 1);
         final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        final directory = Directory(
-          '../../artifacts/style-evidence/before/flutter',
-        )..createSync(recursive: true);
-        File('${directory.path}/$stage.png')
+        File('${output.path}/$stage.png')
             .writeAsBytesSync(png!.buffer.asUint8List());
         image.dispose();
       });

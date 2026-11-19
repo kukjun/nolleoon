@@ -32,3 +32,7 @@ Mac의 `/System/Library/Fonts/AppleSDGothicNeo.ttc`가 필요하다. 별도 명�
 - 두 결과 이미지에서 한글 이름과 아바타가 실제로 렌더된 것을 직접 확인했다. Flutter 앱 제목/헤더 구조도 웹과 다르다. 후속 UI 구현자가 고칠 대상이지 fixture가 숨길 차이가 아니다.
 
 검증: Flutter 렌더 시나리오 1 PASS(6캡처), 웹 스크립트 exit0(6캡처), 실제 운영/모바일 OS 미사용. 이 캡처 생성 도구는 기존 UI 인수시험을 대체하거나 assertion을 완화하지 않는다.
+
+## AFTER 출력 격리
+
+Flutter target은 `STYLE_EVIDENCE_OUTPUT_DIR`로 새 출력 디렉터리를 받는다. 생략 시 기존 BEFORE 경로가 기본이다. 대상 6개 PNG 중 하나라도 이미 있으면 렌더 전에 실패하며 덮어쓰지 않는다. AFTER 실행은 별도 통합 소스 worktree에서 `STYLE_EVIDENCE_OUTPUT_DIR=../../artifacts/style-evidence/after/flutter`를 지정한다. BEFORE 이미지를 지우거나 AFTER 이름으로 덮어쓰지 않는다. 파일 경로는 시험자가 소유한 artifact 디렉터리만 사용한다. 이 변수는 앱·API 설정에 전달되지 않는다.
