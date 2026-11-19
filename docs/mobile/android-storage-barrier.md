@@ -31,7 +31,7 @@ AndroidOptions.dart 기본 resetOnError=true인 반면 앱은 명시 override하
 ## 한계와 게이트
 - 같은 process/SharedPreferences 객체의 앞선 writes에 대한 보완이지 multi-process/isolates/future plugin writers 전체 동기화가 아니다. 앱은 단일 writer/isolate 규약을 유지하고 채널 namespace/version을 고정해야 한다.
 - API24 + 최신API native fault injection: apply 후 지연, rename/write/commit 실패, false, channel미구현, ACK 후 cleanup실패, force-stop/relaunch, reboot/backuprestore를 실제로 확인해야 한다.
-- Dart mock에서 POST0/cleanup 미완료를 검증할 수 있지만 native bytecode/OS fsync/강제종료 검증을 대신하지 않는다. 현재 Android SDK/JDK 미구성으로 native 빌드/기기 게이트는 계속 미완료다.
+- Dart mock에서 POST0/cleanup 미완료를 검증할 수 있지만 native bytecode/OS fsync/강제종료 검증을 대신하지 않는다. 최초 소스 검토 당시에는 Android SDK/JDK 미구성으로 빌드를 실행하지 못했다. 이후 API36 검증 범위는 아래 후속 기록을 따른다.
 
 ## 이번 구현 (#210, native source만)
 
@@ -41,6 +41,9 @@ AndroidOptions.dart 기본 resetOnError=true인 반면 앱은 명시 override하
 
 Dart 쪽 receipt/session await, readback 및 resetOnError:false는 후속 소스 8d86182에서 구현했다. 별도 25개 Dart mock 회귀는 통과했지만 실제 native 저장 완료를 검증한 것은 아니다. 모든 caller가 저장 완료 후 flush를 기다려야 하고 향후 다른 isolate/process 또는 저장 namespace 추가는 재검토해야 한다. 이 executor는 plugin 자체의 미래 쓰기를 전역 잠그지 않는다.
 
-검증은 Node source-contract 4개로만 수행했다(누락 source RED → source contract GREEN). 고정 이름/채널/인자 거부/commit 변경/serial executor/민감 getter 부재/앱 등록/의존 버전 pin을 검사한다. 이는 Kotlin 문법/Android API 호환/OS 파일 쓰기/강제종료 성공을 검증하지 않는다. Android SDK/JDK 미구성 상태에서 빌드를 실행하거나 설치/라이선스를 변경하지 않았으며 #210 native release gate는 열린 상태다.
+최초 소스 검증은 Node source-contract 4개로만 수행했다(누락 source RED → source contract GREEN). 고정 이름/채널/인자 거부/commit 변경/serial executor/민감 getter 부재/앱 등록/의존 버전 pin을 검사한다. 이는 Kotlin 문법/Android API 호환/OS 파일 쓰기/강제종료 성공을 검증하지 않는다. Android SDK/JDK 미구성 상태에서 빌드를 실행하거나 설치/라이선스를 변경하지 않았으며 #210 native release gate는 열린 상태다.
 
 Dart session store 자체는 여러 instance의 standalone write/clear를 직렬화하지 않는다. 현재 앱의 단일 AuthRepository와 `_busy` owner 아래에서만 session mutation 순서를 보장한다. receipt는 기존 static per-key queue를 사용한다. 다른 isolate/process 또는 복수 인증 owner를 도입하면 이 범위를 재설계·검증해야 한다.
+
+## 후속 실제 실행
+2026-11-19 사용자 승인 SDK 설치 후 표준590e71b APK 빌드와 API36 에뮬레이터 앱 실행을 완료했다. 별도6442b21 probe의6단계 force-stop/relaunch도 통과했다. 최초 미실행 기록과 구분하며 [릴리스 근거](release-gates.md)와 [probe 실측](receipt-process-probe.md)를 참조한다. API24/실물/전원손실/저장 오류·백업 복원까지 완료했다는 뜻은 아니다.

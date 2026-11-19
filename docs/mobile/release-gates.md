@@ -36,7 +36,7 @@
 
 ### Android 영수증 내구성: #210 미완료
 
-`flutter_secure_storage 11.2`의 Android 저장은 `SharedPreferences.apply()` 완료를 실제 디스크 영속 완료로 보장하지 않는다. Dart Future 완료와 저장 후 읽기 일치만으로 process-kill 뒤 복구를 증명할 수 없다. [#210](https://github.com/kukjun/nolleoon/issues/210)의 고정 preferences 대상 최소 `commit()` barrier 보완은 구현 진행 중이며, 이 문서는 완료/검증을 선언하지 않는다. native 빌드와 실제 강제 종료 시험은 미실행이다. 영수증의 순서·digest·직렬 저장 합성 회귀 PASS도 이 플랫폼 내구성 게이트를 대체하지 않는다.
+`flutter_secure_storage 11.2`의 Android 저장은 `SharedPreferences.apply()` 완료를 실제 디스크 영속 완료로 보장하지 않는다. Dart Future 완료와 저장 후 읽기 일치만으로 process-kill 뒤 복구를 증명할 수 없다. [#210](https://github.com/kukjun/nolleoon/issues/210)의 고정 preferences 대상 `commit()` barrier를 구현했고, 2026-11-19 표준 Android debug 빌드와 API36 전용 에뮬레이터 강제 종료·재실행 6단계를 통과했다. API24·실물 기기·전원 손실·저장장치 오류·백업 복원까지 보장한 것은 아니다. 영수증의 순서·digest·직렬 저장 합성 회귀 PASS도 이 플랫폼 내구성 게이트를 대체하지 않는다.
 
 ## 알려진 제품 한계
 
@@ -72,3 +72,13 @@
 ## #210 후속 소스 통합
 
 Android fixed-prefs marker commit barrier와 Dart await/readback·resetOnError:false 보완을 별도 구현·소스 리뷰했다. Kotlin 소스 계약 4개와 Dart focused 25개는 실제 Android 컴파일/OS 디스크 기록/강제종료 시험을 대신하지 않는다. 기기 gate는 계속 열어 둔다. 자세한 근거와 제한은 [Android storage barrier](android-storage-barrier.md)를 따른다.
+
+
+## 2026-11-19 실제 Android 후속 검증
+
+- 표준 앱 exact `590e71b`: debug APK 빌드 exit0, 478.2초, Kotlin barrier 컴파일 포함. APK 174,709,701 bytes, SHA256 `a4c0dba5e871f0a3e149e47ab0aad7df348708575d1df51766cb9c4d7ac532f0`.
+- 새 AOSP API36 ARM64 에뮬레이터에 설치·초기 화면 실행 성공. 카카오 연결은 기본 비활성으로 실제 로그인·다인 게임 인수 성공은 아니다.
+- 별도 probe exact `6442b21`: 단일 설치 후 pending/confirmed/clear 각각 force-stop과 새 프로세스 복구, 총 6단계 PASS. [별도 실측](receipt-process-probe.md)에 APK와 범위를 구분했다.
+- 통합 코드 `aad5bf3` 전체 Flutter 267 tests PASS, analyze clean. host driver3 및 Kotlin source-contract4도 PASS. 문서 변경 후 코드 차이 없음.
+- 공식 SDK/JDK를 전용 개발 경로에 설치했고 Android SDK 약관은 사용자 명시 승인 후 처리했다. 격리 Ruby3.4.13/CocoaPods1.17.0 설치·실행도 완료했다. Xcode 약관 수락 명령은 관리자 권한 요구로 실패하여 실제 수락·iOS 빌드는 미완료다.
+- #210은 API24/실물/저장장치 오류·전원손실·백업 복원 등 남은 내구성 검증을 위해 유지한다. 원격 CI, 실제 Kakao SDK, 서명·스토어·운영 출시도 미완료다. 기존 운영 서비스 변경 없음.
