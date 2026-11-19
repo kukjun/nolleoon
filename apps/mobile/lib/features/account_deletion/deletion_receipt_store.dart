@@ -1,3 +1,5 @@
+import '../../data/api_origin.dart';
+
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -124,9 +126,11 @@ abstract interface class DeletionReceiptStore {
 class SecureDeletionReceiptStore implements DeletionReceiptStore {
   SecureDeletionReceiptStore({
     FlutterSecureStorage? storage,
+    ApiOrigin? origin,
     DateTime Function()? now,
     Future<void> Function()? commitBarrier,
-  }) : _storage =
+  }) : _storageKey = (origin ?? ApiOrigin.configured).storageKey(key),
+       _storage =
            storage ??
            const FlutterSecureStorage(
              aOptions: AndroidOptions(resetOnError: false),
@@ -136,6 +140,7 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
            ),
        _now = now ?? DateTime.now,
        _commitBarrier = commitBarrier ?? NativeStorageCommitBarrier.flush;
+  final String _storageKey;
   final FlutterSecureStorage _storage;
   final DateTime Function() _now;
   final Future<void> Function() _commitBarrier;
@@ -152,7 +157,7 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   @override
   Future<DeletionReceipt?> read() => _serialized(_read);
   Future<DeletionReceipt?> _read() async {
-    final raw = await _storage.read(key: key);
+    final raw = await _storage.read(key: _storageKey);
     if (raw == null) return null;
     // Invalid/expired data is not silently accepted as permission to log in.
     // Caller must resolve the error and clear stored login before a fresh flow.
@@ -177,9 +182,9 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
             (existing.serverConfirmed && !receipt.serverConfirmed))) {
       throw StateError('Unresolved deletion receipt');
     }
-    await _storage.write(key: key, value: raw);
+    await _storage.write(key: _storageKey, value: raw);
     await _commitBarrier();
-    if (await _storage.read(key: key) != raw) {
+    if (await _storage.read(key: _storageKey) != raw) {
       throw StateError('Deletion receipt not saved');
     }
   }
@@ -187,9 +192,9 @@ class SecureDeletionReceiptStore implements DeletionReceiptStore {
   @override
   Future<void> clear() => _serialized(_clear);
   Future<void> _clear() async {
-    await _storage.delete(key: key);
+    await _storage.delete(key: _storageKey);
     await _commitBarrier();
-    if (await _storage.read(key: key) != null) {
+    if (await _storage.read(key: _storageKey) != null) {
       throw StateError('Deletion receipt not cleared');
     }
   }

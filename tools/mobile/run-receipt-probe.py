@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Synthetic-only storage probe on a NEW dedicated emulator."""
 import argparse, pathlib, re, subprocess, sys, time
-PACKAGE = 'com.example.nolleoon_mobile.receiptprobe'
-ACTIVITY = 'com.example.nolleoon_mobile.MainActivity'
+PACKAGE = 'com.kukjun.nolleoon.receiptprobe'
+ACTIVITY = 'com.kukjun.nolleoon.MainActivity'
 STEPS = ('seed', 'check-pending', 'confirm', 'check-confirmed', 'clear', 'check-clear')
 def run(adb, serial, *args):
     return subprocess.run([adb, '-s', serial, *args], check=True, text=True,

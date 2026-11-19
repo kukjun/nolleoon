@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const root=new URL('../../apps/mobile/android/app/src/main/kotlin/com/example/nolleoon_mobile/',import.meta.url);
+const root=new URL('../../apps/mobile/android/app/src/main/kotlin/com/kukjun/nolleoon/',import.meta.url);
 const source=()=>readFileSync(new URL('SecureStorageBarrier.kt',root),'utf8');
 test('Android barrier has fixed plugin 11.2 names, no secret reads or caller-selected names',()=>{
  const s=source();for(const name of ['FlutterSecureKeyStorage','FlutterSecureStorageConfiguration','FlutterSecureStorageConfiguration:FlutterSecureStorage','FlutterSecureStorage'])assert.ok(s.includes(`"${name}"`));

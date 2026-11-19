@@ -1,3 +1,5 @@
+import '../data/api_origin.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'auth_repository.dart';
@@ -7,8 +9,12 @@ import 'storage_commit_barrier.dart';
 class SecureSessionStore implements SessionStore {
   SecureSessionStore({
     FlutterSecureStorage? storage,
+    ApiOrigin? origin,
     Future<void> Function()? commitBarrier,
-  }) : _storage =
+  }) : _key = (origin ?? ApiOrigin.configured).storageKey(
+         'nolleoon.native.session.v1',
+       ),
+       _storage =
            storage ??
            const FlutterSecureStorage(
              aOptions: AndroidOptions(resetOnError: false),
@@ -19,7 +25,7 @@ class SecureSessionStore implements SessionStore {
        _commitBarrier = commitBarrier ?? NativeStorageCommitBarrier.flush;
   final FlutterSecureStorage _storage;
   final Future<void> Function() _commitBarrier;
-  static const _key = 'nolleoon.native.session.v1';
+  final String _key;
   @override
   Future<String?> read() => _storage.read(key: _key);
   @override

@@ -1,4 +1,4 @@
-package com.example.nolleoon_mobile
+package com.kukjun.nolleoon
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

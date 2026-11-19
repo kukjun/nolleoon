@@ -1,4 +1,4 @@
-package com.example.nolleoon_mobile
+package com.kukjun.nolleoon
 
 import android.content.Context
 import android.os.Handler
