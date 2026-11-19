@@ -8,6 +8,44 @@ import 'package:nolleoon_mobile/data/avatar_client.dart';
 import 'package:nolleoon_mobile/data/io_transport.dart';
 
 void main() {
+  test(
+    'real verification is exclusive, debug-only loopback and distinct storage',
+    () {
+      final o = ApiOrigin.fromConfiguration(
+        verificationBuild: true,
+        value: 'http://127.0.0.1:4188',
+      );
+      expect(o.base.host, '127.0.0.1');
+      expect(o.storageKey('key'), contains('.verification.'));
+      expect(
+        () => ApiOrigin.fromConfiguration(verificationBuild: true),
+        throwsArgumentError,
+      );
+      expect(
+        () => ApiOrigin.fromConfiguration(
+          verificationBuild: true,
+          testBuild: true,
+          value: 'http://127.0.0.1:4188',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => ApiOrigin.fromConfiguration(
+          verificationBuild: true,
+          releaseBuild: true,
+          value: 'http://127.0.0.1:4188',
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => ApiOrigin.fromConfiguration(
+          verificationBuild: true,
+          value: 'https://nolleoon.kukjun.com',
+        ),
+        throwsArgumentError,
+      );
+    },
+  );
   test('production default; test requires explicit debug opt-in and literal loopback', () {
     expect(
       ApiOrigin.fromConfiguration().base.toString(),

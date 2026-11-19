@@ -9,6 +9,10 @@ void main() {
   test('production and each loopback origin isolate both bearer and unresolved receipt; clear never migrates or deletes others', () async {
     FlutterSecureStorage.setMockInitialValues({});
     final prod = ApiOrigin.fromConfiguration();
+    final verification = ApiOrigin.fromConfiguration(
+      verificationBuild: true,
+      value: 'http://127.0.0.1:4100',
+    );
     final a = ApiOrigin.fromConfiguration(
       testBuild: true,
       value: 'http://127.0.0.1:4100',
@@ -39,6 +43,14 @@ void main() {
     await receipts(a).write(receipt('a'));
     expect(await session(b).read(), isNull);
     expect(await receipts(b).read(), isNull);
+    expect(await session(verification).read(), isNull);
+    expect(await receipts(verification).read(), isNull);
+    await session(verification).write('synthetic-verification');
+    await receipts(verification).write(receipt('verification'));
+    await session(verification).clear();
+    await receipts(verification).clear();
+    expect(await session(a).read(), 'synthetic-a');
+    expect((await receipts(a).read())!.accountScope, 'a');
     await session(a).clear();
     await receipts(a).clear();
     expect(await session(prod).read(), 'synthetic-production');

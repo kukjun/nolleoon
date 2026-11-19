@@ -12,7 +12,15 @@ import 'package:nolleoon_mobile/data/io_transport.dart';
 void main() {
   test('compile-time composition never falls back to production in broken test mode', () async {
     const rawFlag = String.fromEnvironment('NATIVE_LOOPBACK_TEST_BUILD');
-    const flag = rawFlag == 'true';
+    const verification = String.fromEnvironment(
+      'NATIVE_KAKAO_VERIFICATION_BUILD',
+    );
+    if (!{'', 'true', 'false'}.contains(verification) ||
+        (verification == 'true' && rawFlag == 'true')) {
+      expect(() => ApiOrigin.configured, throwsArgumentError);
+      return;
+    }
+    const flag = rawFlag == 'true' || verification == 'true';
     if (!{'', 'true', 'false'}.contains(rawFlag)) {
       expect(() => ApiOrigin.configured, throwsArgumentError);
       return;
