@@ -1,3 +1,5 @@
+import 'api_origin.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,16 +10,14 @@ import 'api_client.dart';
 /// Standard-library HTTPS transport. No cookies, redirects, logs or persistence.
 /// Credential storage and native login are not implemented here.
 final class IoApiTransport implements ApiTransport, AvatarBinaryTransport {
-  const IoApiTransport();
+  const IoApiTransport({this.origin});
+  final ApiOrigin? origin;
   @override
   Future<TransportResponse> send(
     TransportRequest request,
     CancellationToken cancel,
   ) async {
-    if (request.uri.scheme != 'https' ||
-        request.uri.host != 'nolleoon.kukjun.com' ||
-        request.uri.port != 443 ||
-        request.uri.userInfo.isNotEmpty ||
+    if (!(origin ?? ApiOrigin.configured).allows(request.uri) ||
         !request.uri.path.startsWith('/api/native/')) {
       throw ArgumentError('Unapproved API destination');
     }
@@ -72,7 +72,7 @@ final class IoApiTransport implements ApiTransport, AvatarBinaryTransport {
     AvatarBinaryRequest request,
     CancellationToken cancel,
   ) async {
-    validateAvatarRequest(request);
+    validateAvatarRequest(request, origin: origin);
     if (cancel.isCancelled) throw const ApiFailure(FailureKind.cancelled);
     final client = HttpClient();
     HttpClientRequest? outgoing;

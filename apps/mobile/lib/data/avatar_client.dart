@@ -1,3 +1,5 @@
+import 'api_origin.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -46,13 +48,9 @@ abstract interface class AvatarBinaryTransport {
 bool validNativeAvatarImagePath(String path) => RegExp(
   r'^/api/native/(account/avatar/image|travel-rooms/[A-Za-z0-9_-]{1,128}/avatars/[A-Za-z0-9_-]{1,128}/image)(\?v=[0-9]+)?$',
 ).hasMatch(path);
-void validateAvatarRequest(AvatarBinaryRequest r) {
+void validateAvatarRequest(AvatarBinaryRequest r, {ApiOrigin? origin}) {
   final u = r.uri;
-  if (u.scheme != 'https' ||
-      u.host != 'nolleoon.kukjun.com' ||
-      u.port != 443 ||
-      u.userInfo.isNotEmpty ||
-      u.hasFragment ||
+  if (!(origin ?? ApiOrigin.configured).allows(u) ||
       !{'GET', 'PUT'}.contains(r.method)) {
     throw ArgumentError('Unapproved avatar request');
   }
@@ -104,8 +102,10 @@ class AvatarClient {
   AvatarClient({
     required this.transport,
     required this.accessToken,
+    ApiOrigin? origin,
     this.timeout = const Duration(seconds: 6),
-  });
+  }) : origin = origin ?? ApiOrigin.configured;
+  final ApiOrigin origin;
   final AvatarBinaryTransport transport;
   final Future<String?> Function() accessToken;
   final Duration timeout;
@@ -225,20 +225,15 @@ class AvatarClient {
       if (bearer == null || !RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(bearer)) {
         throw const ApiFailure(FailureKind.unauthenticated);
       }
-      final request = AvatarBinaryRequest(
-        Uri.parse('https://nolleoon.kukjun.com$path'),
-        method,
-        {
-          'Accept': path.contains('/image') && method == 'GET'
-              ? 'image/webp'
-              : 'application/json',
-          'Authorization': 'Bearer $bearer',
-          'Content-Type': ?mime,
-          if (revision != null) 'X-Avatar-Revision': '$revision',
-        },
-        body,
-      );
-      validateAvatarRequest(request);
+      final request = AvatarBinaryRequest(origin.base.resolve(path), method, {
+        'Accept': path.contains('/image') && method == 'GET'
+            ? 'image/webp'
+            : 'application/json',
+        'Authorization': 'Bearer $bearer',
+        'Content-Type': ?mime,
+        if (revision != null) 'X-Avatar-Revision': '$revision',
+      }, body);
+      validateAvatarRequest(request, origin: origin);
       final response = await transport.sendAvatar(request, local);
       if (response.bytes.length > 65536) {
         throw const ApiFailure(FailureKind.invalidResponse);

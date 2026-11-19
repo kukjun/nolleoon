@@ -1,3 +1,5 @@
+import 'api_origin.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -281,7 +283,7 @@ final class MutationIntent {
 }
 
 final class ApiClient {
-  static final Uri _base = Uri.parse('https://nolleoon.kukjun.com/');
+  final ApiOrigin origin;
   final ApiTransport transport;
   final ApiPathResolver resolver;
   final Future<String?> Function() accessToken;
@@ -289,9 +291,10 @@ final class ApiClient {
   ApiClient({
     required this.transport,
     required this.resolver,
+    ApiOrigin? origin,
     required this.accessToken,
     this.timeout = const Duration(seconds: 6),
-  }) {
+  }) : origin = origin ?? ApiOrigin.configured {
     if (timeout <= Duration.zero) {
       throw ArgumentError('Positive timeout required');
     }
@@ -368,13 +371,10 @@ final class ApiClient {
     if (cursor != null && (cursor.isEmpty || cursor.length > 4096)) {
       throw ArgumentError('Invalid cursor');
     }
-    final uri = _base
+    final uri = origin.base
         .resolve(route.path)
         .replace(queryParameters: cursor == null ? null : {'cursor': cursor});
-    if (uri.scheme != 'https' ||
-        uri.host != 'nolleoon.kukjun.com' ||
-        uri.port != 443 ||
-        uri.userInfo.isNotEmpty) {
+    if (!origin.allows(uri)) {
       throw ArgumentError('Unapproved API host');
     }
     if (cancel?.isCancelled ?? false) {
