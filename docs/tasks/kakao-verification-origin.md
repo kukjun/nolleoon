@@ -25,3 +25,8 @@ Final: full Flutter **275 passed**, zero failures (17s); analyze no issues (2s).
 - Account-deletion entry is hidden; AuthGate rejects entry; repository rejects execution before generating/persisting a receipt or issuing a request. This avoids a forbidden server response leaving a real-account verification session stuck with pending deletion state.
 - Widget regression RED (banner absent) → GREEN with signed-in entry absent plus direct repository call receipt writes=0/network calls=0.
 - Final full Flutter **276 passed**, analyze clean. Dedicated verification-build UI test **1 passed**. Production/default deletion entry remains tested and unchanged. No real login or deletion attempted.
+
+### Verification banner width fix
+- Actual screenshot report reproduced by widget geometry: expected viewport width800, banner actual400.75 (RED).
+- Builder Column now stretches both banner and app child; banner is a semantic header/container. Existing readable warning text retained.
+- Verification-mode widget GREEN includes full width at800/320/390 and no layout exceptions, no deletion entry/write/network; analyze clean. Actual private-key build and screenshot remain coordinator-owned; no credential file read here.

@@ -29,6 +29,35 @@ void main() {
         find.textContaining('카카오 연동 확인용'),
         verification ? findsOneWidget : findsNothing,
       );
+      if (verification) {
+        final banner = find
+            .ancestor(
+              of: find.textContaining('카카오 연동 확인용'),
+              matching: find.byType(Material),
+            )
+            .first;
+        expect(
+          tester.getSize(banner).width,
+          tester.view.physicalSize.width / tester.view.devicePixelRatio,
+        );
+      }
+      if (verification) {
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        tester.view.devicePixelRatio = 1;
+        for (final width in [320.0, 390.0]) {
+          tester.view.physicalSize = Size(width, 800);
+          await tester.pumpAndSettle();
+          final banner = find
+              .ancestor(
+                of: find.textContaining('카카오 연동 확인용'),
+                matching: find.byType(Material),
+              )
+              .first;
+          expect(tester.getSize(banner).width, width);
+          expect(tester.takeException(), isNull);
+        }
+      }
       await tester.tap(find.text('카카오로 로그인'));
       await tester.pumpAndSettle();
       expect(find.text('계정 탈퇴'), verification ? findsNothing : findsOneWidget);

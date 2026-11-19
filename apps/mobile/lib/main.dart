@@ -77,14 +77,19 @@ class _MyAppState extends State<MyApp> {
     title: '놀러온',
     builder: (context, child) => ApiOrigin.configured.isVerification
         ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Material(
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Text(
-                      '카카오 연동 확인용 · 로컬 시험 서버\n계정 탈퇴·연결 해제는 이 앱에서 할 수 없어요.',
+              Semantics(
+                container: true,
+                header: true,
+                child: const Material(
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text(
+                        '카카오 연동 확인용 · 로컬 시험 서버\n계정 탈퇴·연결 해제는 이 앱에서 할 수 없어요.',
+                      ),
                     ),
                   ),
                 ),
