@@ -50,7 +50,14 @@ class _AuthPanelState extends State<AuthPanel> with WidgetsBindingObserver {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              Text(
+                '여행의 빈틈을\n즐거운 한 판으로',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 12),
+              const Text('친구들과 여행방에 모여 팀을 나누고, 제비를 뽑고, 우리끼리 즐겨요.'),
+              const SizedBox(height: 24),
               if (auth.phase == AuthPhase.signedIn) ...[
                 const AppStatus(message: '로그인했어요.'),
                 AppAction(label: '로그아웃', onPressed: auth.logout),

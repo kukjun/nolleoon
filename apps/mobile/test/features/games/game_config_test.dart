@@ -56,6 +56,8 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
+      await t.tap(find.text('팀 나누기'));
+      await t.pump();
       await t.tap(find.byType(CheckboxListTile));
       await t.pump();
       await t.tap(find.text('게임 설정'));
@@ -67,6 +69,8 @@ void main() {
       t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await t.pumpAndSettle();
       expect(find.text('어떤 게임을 할까요?'), findsOneWidget);
+      await t.tap(find.text('팀 나누기'));
+      await t.pump();
       await t.tap(find.byType(CheckboxListTile));
       await t.pump();
       await t.tap(find.text('게임 설정'));
@@ -78,7 +82,7 @@ void main() {
       completions.last(null);
       await t.pumpAndSettle();
       expect(find.text('private-owned-config'), findsNothing);
-      expect(find.text('어떤 게임을 할까요?'), findsOneWidget);
+      expect(find.text('함께할 사람을 골라요'), findsOneWidget);
       await t.pumpWidget(const SizedBox());
     },
   );
@@ -131,6 +135,8 @@ void main() {
       ),
     );
     await t.pumpAndSettle();
+    await t.tap(find.text('팀 나누기'));
+    await t.pump();
     await t.tap(find.byType(CheckboxListTile));
     await t.pump();
     await t.tap(find.text('게임 설정'));

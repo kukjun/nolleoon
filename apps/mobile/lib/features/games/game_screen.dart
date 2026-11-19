@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../design/app_tokens.dart';
+
 import '../../data/api_client.dart';
 import '../../data/wire_models.dart';
 import 'game_controller.dart';
@@ -62,6 +64,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late GameController controller;
   String kind = 'team';
+  bool choosingParticipants = false;
   String? _reportedRun;
   final selected = <String>{};
   Object? _configurationToken;
@@ -102,6 +105,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _cancelConfiguration();
       selected.clear();
       kind = 'team';
+      choosingParticipants = false;
       controller.removeListener(_changed);
       controller.dispose();
       _replaceController();
@@ -124,6 +128,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _cancelConfiguration();
       selected.clear();
       kind = 'team';
+      choosingParticipants = false;
     }
     controller.setForeground(
       state == AppLifecycleState.resumed && !_configuring,
@@ -266,138 +271,226 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(title: const Text('함께 하는 게임')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            if (controller.busy) const LinearProgressIndicator(),
-            if (controller.error != null)
-              Text(controller.error!, key: const Key('game-error')),
-            if (controller.hasPendingIntent) ...[
-              const Text('처리 결과를 확인하지 못했어요. 같은 요청만 다시 보낼 수 있어요.'),
-              OutlinedButton(
-                onPressed: controller.busy ? null : controller.retry,
-                child: const Text('같은 요청 다시 보내기'),
-              ),
-            ],
-            if (!controller.foreground)
-              const Text('다시 돌아오면 최신 상태를 확인해요.')
-            else if (run != null) ...[
-              Text(
-                '${run.data['type']} · ${run.data['status']}',
-                key: const Key('run-status'),
-              ),
-              if (run.game?.redacted ?? false)
-                const Text('탈퇴로 삭제된 게임입니다. 개인 내용은 표시하지 않아요.')
-              else if (run.game?.restricted ?? false) ...[
-                const Text('이 게임의 상세 내용은 볼 수 없어요.'),
-                if (run.data['type'] == 'trial' &&
-                    canControl &&
-                    widget.restrictedControls != null)
-                  widget.restrictedControls!(context, run, controller),
-              ] else if (widget.play != null)
-                widget.play!(context, run, controller)
-              else
-                const Text('게임 상태는 연결됐어요. 게임별 입력·결과 화면은 준비 중이에요.'),
-              if (canControl && run.data['status'] == 'draft') ...[
-                if (run.game?.restricted ?? true)
-                  const Text('설정을 볼 수 없어 수정할 수 없어요. 준비 취소 후 새 게임을 만들어 주세요.')
-                else if (widget.editConfigure != null)
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppTokens.pageWidth),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                if (controller.busy) const LinearProgressIndicator(),
+                if (controller.error != null)
+                  Text(controller.error!, key: const Key('game-error')),
+                if (controller.hasPendingIntent) ...[
+                  const Text('처리 결과를 확인하지 못했어요. 같은 요청만 다시 보낼 수 있어요.'),
                   OutlinedButton(
-                    onPressed: controller.busy || controller.hasPendingIntent
-                        ? null
-                        : () => _configure(editing: run),
-                    child: const Text('설정 수정'),
+                    onPressed: controller.busy ? null : controller.retry,
+                    child: const Text('같은 요청 다시 보내기'),
                   ),
+                ],
+                if (!controller.foreground)
+                  const Text('다시 돌아오면 최신 상태를 확인해요.')
+                else if (run != null) ...[
+                  Text(
+                    '${const {'team': '팀 나누기', 'draw': '제비뽑기', 'trial': '재판', 'menu': '메뉴 고르기'}[run.data['type']]} · ${const {'draft': '준비 중', 'active': '진행 중', 'completed': '완료', 'incomplete': '미완료', 'interrupted': '중단'}[run.data['status']] ?? run.data['status']}',
+                    key: const Key('run-status'),
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  if (run.game?.redacted ?? false)
+                    const Text('탈퇴로 삭제된 게임입니다. 개인 내용은 표시하지 않아요.')
+                  else if (run.game?.restricted ?? false) ...[
+                    const Text('이 게임의 상세 내용은 볼 수 없어요.'),
+                    if (run.data['type'] == 'trial' &&
+                        canControl &&
+                        widget.restrictedControls != null)
+                      widget.restrictedControls!(context, run, controller),
+                  ] else if (widget.play != null)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: widget.play!(context, run, controller),
+                      ),
+                    )
+                  else
+                    const Text('게임 상태는 연결됐어요. 게임별 입력·결과 화면은 준비 중이에요.'),
+                  if (canControl && run.data['status'] == 'draft') ...[
+                    if (run.game?.restricted ?? true)
+                      const Text('설정을 볼 수 없어 수정할 수 없어요. 준비 취소 후 새 게임을 만들어 주세요.')
+                    else if (widget.editConfigure != null)
+                      OutlinedButton(
+                        onPressed:
+                            controller.busy || controller.hasPendingIntent
+                            ? null
+                            : () => _configure(editing: run),
+                        child: const Text('설정 수정'),
+                      ),
 
-                FilledButton(
-                  onPressed: controller.busy || controller.hasPendingIntent
-                      ? null
-                      : () => controller.submit(
-                          widget.repository.command(
-                            ApiOperation.startRun,
-                            widget.roomId,
-                            run.runId,
-                            run.version,
+                    FilledButton(
+                      onPressed: controller.busy || controller.hasPendingIntent
+                          ? null
+                          : () => controller.submit(
+                              widget.repository.command(
+                                ApiOperation.startRun,
+                                widget.roomId,
+                                run.runId,
+                                run.version,
+                              ),
+                            ),
+                      child: const Text('게임 시작'),
+                    ),
+                    OutlinedButton(
+                      onPressed: controller.busy || controller.hasPendingIntent
+                          ? null
+                          : () => controller.submit(
+                              widget.repository.command(
+                                ApiOperation.cancelRun,
+                                widget.roomId,
+                                run.runId,
+                                run.version,
+                              ),
+                            ),
+                      child: const Text('준비 취소'),
+                    ),
+                  ],
+                ] else if (room != null) ...[
+                  Text(
+                    choosingParticipants ? '새 판 준비 · 2/3' : '새 판 준비 · 1/3',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      choosingParticipants ? '함께할 사람을 골라요' : '어떤 게임을 할까요?',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (!choosingParticipants)
+                    for (final entry in const {
+                      'team': (
+                        '팀 나누기',
+                        '여행 멤버를 팀으로 나눠요.',
+                        Icons.groups_outlined,
+                      ),
+                      'draw': (
+                        '제비뽑기',
+                        '각자 자기 결과를 공개해요.',
+                        Icons.confirmation_number_outlined,
+                      ),
+                      'trial': (
+                        '재판',
+                        '사건과 벌칙, 피고를 정해요.',
+                        Icons.balance_outlined,
+                      ),
+                      'menu': (
+                        '메뉴 고르기',
+                        '먹고 싶은 메뉴를 하나씩 적어요.',
+                        Icons.restaurant_outlined,
+                      ),
+                    }.entries)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.all(16),
+                            backgroundColor: AppTokens.gameSurface,
+                            side: const BorderSide(color: Color(0xffd5dfd4)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed:
+                              controller.busy ||
+                                  !widget.supportedKinds.contains(entry.key)
+                              ? null
+                              : () => setState(() {
+                                  kind = entry.key;
+                                  choosingParticipants = true;
+                                }),
+                          child: Row(
+                            children: [
+                              Icon(entry.value.$3, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      entry.value.$1,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      widget.supportedKinds.contains(entry.key)
+                                          ? entry.value.$2
+                                          : '연결 대기',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right),
+                            ],
                           ),
                         ),
-                  child: const Text('게임 시작'),
-                ),
+                      ),
+                  if (choosingParticipants) ...[
+                    TextButton(
+                      onPressed: controller.busy
+                          ? null
+                          : () => setState(() => choosingParticipants = false),
+                      child: const Text('게임 다시 고르기'),
+                    ),
+                    const Text('시작할 때 선택한 멤버가 고정돼요. 오프라인이어도 여행방 멤버로 남아요.'),
+                    const Text('참가할 친구'),
+                    for (final value in room.data['members'] as List)
+                      CheckboxListTile(
+                        title: Text((value as Map)['nickname'] as String),
+                        value: selected.contains(value['membershipId']),
+                        onChanged: controller.busy
+                            ? null
+                            : (checked) => setState(() {
+                                if (checked == true) {
+                                  selected.add(value['membershipId'] as String);
+                                } else {
+                                  selected.remove(value['membershipId']);
+                                }
+                              }),
+                      ),
+                    FilledButton(
+                      onPressed:
+                          widget.configure == null ||
+                              !widget.supportedKinds.contains(kind) ||
+                              controller.busy ||
+                              selected.isEmpty
+                          ? null
+                          : _create,
+                      child: const Text('게임 설정'),
+                    ),
+                    Text(
+                      '${selected.length}명 선택',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    if (widget.configure == null)
+                      const Text('게임별 설정 화면은 아직 연결되지 않았어요.'),
+                  ],
+                ] else if (!controller.busy)
+                  const Text('게임을 불러오지 못했어요.'),
                 OutlinedButton(
-                  onPressed: controller.busy || controller.hasPendingIntent
+                  onPressed: controller.busy || !controller.foreground
                       ? null
-                      : () => controller.submit(
-                          widget.repository.command(
-                            ApiOperation.cancelRun,
-                            widget.roomId,
-                            run.runId,
-                            run.version,
-                          ),
-                        ),
-                  child: const Text('준비 취소'),
+                      : controller.refresh,
+                  child: const Text('최신 상태 확인'),
                 ),
               ],
-            ] else if (room != null) ...[
-              const Text('어떤 게임을 할까요?'),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final entry in {
-                    'team': '팀 나누기',
-                    'draw': '제비뽑기',
-                    'trial': '재판',
-                    'menu': '메뉴 고르기',
-                  }.entries)
-                    ChoiceChip(
-                      label: Text(
-                        widget.supportedKinds.contains(entry.key)
-                            ? entry.value
-                            : '${entry.value} · 연결 대기',
-                      ),
-                      selected: kind == entry.key,
-                      onSelected:
-                          controller.busy ||
-                              !widget.supportedKinds.contains(entry.key)
-                          ? null
-                          : (_) => setState(() => kind = entry.key),
-                    ),
-                ],
-              ),
-              const Text('참가할 친구'),
-              for (final value in room.data['members'] as List)
-                CheckboxListTile(
-                  title: Text((value as Map)['nickname'] as String),
-                  value: selected.contains(value['membershipId']),
-                  onChanged: controller.busy
-                      ? null
-                      : (checked) => setState(() {
-                          if (checked == true) {
-                            selected.add(value['membershipId'] as String);
-                          } else {
-                            selected.remove(value['membershipId']);
-                          }
-                        }),
-                ),
-              FilledButton(
-                onPressed:
-                    widget.configure == null ||
-                        !widget.supportedKinds.contains(kind) ||
-                        controller.busy ||
-                        selected.isEmpty
-                    ? null
-                    : _create,
-                child: const Text('게임 설정'),
-              ),
-              if (widget.configure == null)
-                const Text('게임별 설정 화면은 아직 연결되지 않았어요.'),
-            ] else if (!controller.busy)
-              const Text('게임을 불러오지 못했어요.'),
-            OutlinedButton(
-              onPressed: controller.busy || !controller.foreground
-                  ? null
-                  : controller.refresh,
-              child: const Text('최신 상태 확인'),
             ),
-          ],
+          ),
         ),
       ),
     );

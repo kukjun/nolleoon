@@ -207,6 +207,8 @@ void main() {
     await tester.pumpWidget(screen('old'));
     await tester.pump();
     await tester.pump();
+    await tester.tap(find.text('팀 나누기'));
+    await tester.pump();
     await tester.tap(find.text('합성1'));
     await tester.pump();
     await tester.tap(find.text('게임 설정'));
@@ -219,6 +221,8 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(t.requests.where((r) => r.method != 'GET'), isEmpty);
+    await tester.tap(find.text('팀 나누기'));
+    await tester.pump();
     expect(
       tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
       false,
