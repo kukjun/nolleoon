@@ -183,7 +183,9 @@ class DrawGameView extends StatelessWidget {
               : status == 'draft'
               ? '제비뽑기 준비'
               : '내 제비',
+          style: Theme.of(context).textTheme.titleLarge,
         ),
+        const SizedBox(height: 12),
         Text(game.data['penaltyText'] as String),
         if (status == 'draft') ...[
           Text('참가 ${selected.length}명 · 뽑을 인원 ${game.data['winnerCount']}명'),

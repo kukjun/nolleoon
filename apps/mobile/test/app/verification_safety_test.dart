@@ -60,6 +60,8 @@ void main() {
       }
       await tester.tap(find.text('카카오로 로그인'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('계정 메뉴'));
+      await tester.pumpAndSettle();
       expect(find.text('계정 탈퇴'), verification ? findsNothing : findsOneWidget);
       if (verification) {
         final repo = AccountDeletionRepository(

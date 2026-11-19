@@ -365,7 +365,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                       Semantics(
                         header: true,
                         child: Text(
-                          '우리의 다음 여행',
+                          '함께 떠날 여행',
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                       ),
@@ -449,8 +449,6 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
     final members = room['members'] as List;
     final self = room['self'] as Map<String, Object?>;
     return [
-      Text('OUR TRAVEL ROOM', style: Theme.of(context).textTheme.labelMedium),
-      const SizedBox(height: 8),
       Semantics(
         header: true,
         child: Text(
@@ -463,36 +461,6 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
       if (room['startDate'] != null || room['endDate'] != null)
         Text('${room['startDate'] ?? '미정'} ~ ${room['endDate'] ?? '미정'}'),
       const SizedBox(height: 16),
-      if (run != null)
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '${const {'team': '팀 나누기', 'draw': '제비뽑기', 'trial': '재판', 'menu': '메뉴 정하기'}[run['type']]} · ${run['status'] == 'draft' ? '준비 중' : '진행 중'}',
-                ),
-                Text(
-                  run['facilitatorMembershipId'] == self['membershipId']
-                      ? '이번 판의 진행자예요'
-                      : '진행자는 방 관리자와 다를 수 있어요',
-                ),
-                if (widget.onOpenRun != null)
-                  FilledButton(
-                    onPressed: () => _openRun(run['runId'] as String),
-                    child: const Text('현재 판 보기'),
-                  )
-                else
-                  const Text('게임 화면 연결은 다음 단계에서 제공돼요.'),
-              ],
-            ),
-          ),
-        )
-      else
-        const AppStatus(message: '진행 중인 판이 없어요.'),
-      if (widget.roomActionsBuilder != null)
-        widget.roomActionsBuilder!(controller.room!),
       Semantics(
         header: true,
         child: Text(
@@ -534,6 +502,37 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
             );
           },
         ),
+      const SizedBox(height: 20),
+      if (run != null)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${const {'team': '팀 나누기', 'draw': '제비뽑기', 'trial': '재판', 'menu': '메뉴 정하기'}[run['type']]} · ${run['status'] == 'draft' ? '준비 중' : '진행 중'}',
+                ),
+                Text(
+                  run['facilitatorMembershipId'] == self['membershipId']
+                      ? '이번 판의 진행자예요'
+                      : '진행자는 방 관리자와 다를 수 있어요',
+                ),
+                if (widget.onOpenRun != null)
+                  FilledButton(
+                    onPressed: () => _openRun(run['runId'] as String),
+                    child: const Text('현재 판 보기'),
+                  )
+                else
+                  const Text('게임 화면 연결은 다음 단계에서 제공돼요.'),
+              ],
+            ),
+          ),
+        )
+      else
+        const AppStatus(message: '진행 중인 판이 없어요.'),
+      if (widget.roomActionsBuilder != null)
+        widget.roomActionsBuilder!(controller.room!),
       const SizedBox(height: 16),
       TextButton(
         onPressed: controller.busy ? null : controller.refresh,

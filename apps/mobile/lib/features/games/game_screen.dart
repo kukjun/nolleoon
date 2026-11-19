@@ -24,6 +24,7 @@ class GameScreen extends StatefulWidget {
     this.restrictedControls,
     this.editConfigure,
     this.onRunAvailable,
+    this.onExit,
   }) {
     if (accountScope.trim().isEmpty) {
       throw ArgumentError('Account scope required');
@@ -52,6 +53,9 @@ class GameScreen extends StatefulWidget {
   final Widget Function(BuildContext, RunDto, ValueChanged<JsonMap?>)?
   editConfigure;
   final ValueChanged<String>? onRunAvailable;
+
+  /// Navigation only; never completes or cancels a server game.
+  final VoidCallback? onExit;
   final Widget Function(BuildContext, RunDto, GameController)? play;
 
   /// Minimal server-authorized trial phase controls, never private content.
@@ -280,7 +284,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               children: [
                 if (controller.busy) const LinearProgressIndicator(),
                 if (controller.error != null)
-                  Text(controller.error!, key: const Key('game-error')),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        controller.error!,
+                        key: const Key('game-error'),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (controller.hasPendingIntent) ...[
                   const Text('처리 결과를 확인하지 못했어요. 같은 요청만 다시 보낼 수 있어요.'),
                   OutlinedButton(
@@ -296,6 +312,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     key: const Key('run-status'),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
+                  const SizedBox(height: 16),
                   if (run.game?.redacted ?? false)
                     const Text('탈퇴로 삭제된 게임입니다. 개인 내용은 표시하지 않아요.')
                   else if (run.game?.restricted ?? false) ...[
@@ -305,26 +322,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         widget.restrictedControls != null)
                       widget.restrictedControls!(context, run, controller),
                   ] else if (widget.play != null)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: widget.play!(context, run, controller),
-                      ),
-                    )
+                    widget.play!(context, run, controller)
                   else
                     const Text('게임 상태는 연결됐어요. 게임별 입력·결과 화면은 준비 중이에요.'),
                   if (canControl && run.data['status'] == 'draft') ...[
-                    if (run.game?.restricted ?? true)
-                      const Text('설정을 볼 수 없어 수정할 수 없어요. 준비 취소 후 새 게임을 만들어 주세요.')
-                    else if (widget.editConfigure != null)
-                      OutlinedButton(
-                        onPressed:
-                            controller.busy || controller.hasPendingIntent
-                            ? null
-                            : () => _configure(editing: run),
-                        child: const Text('설정 수정'),
-                      ),
-
+                    const SizedBox(height: 24),
                     FilledButton(
                       onPressed: controller.busy || controller.hasPendingIntent
                           ? null
@@ -338,7 +340,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                             ),
                       child: const Text('게임 시작'),
                     ),
-                    OutlinedButton(
+                    const SizedBox(height: 12),
+                    if (run.game?.restricted ?? true)
+                      const Text('설정을 볼 수 없어 수정할 수 없어요. 준비 취소 후 새 게임을 만들어 주세요.')
+                    else if (widget.editConfigure != null)
+                      OutlinedButton(
+                        onPressed:
+                            controller.busy || controller.hasPendingIntent
+                            ? null
+                            : () => _configure(editing: run),
+                        child: const Text('설정 수정'),
+                      ),
+
+                    TextButton(
                       onPressed: controller.busy || controller.hasPendingIntent
                           ? null
                           : () => controller.submit(
@@ -350,6 +364,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                               ),
                             ),
                       child: const Text('준비 취소'),
+                    ),
+                  ],
+                  if (widget.onExit != null &&
+                      const {
+                        'completed',
+                        'incomplete',
+                        'interrupted',
+                      }.contains(run.data['status'])) ...[
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: controller.busy || !controller.foreground
+                          ? null
+                          : widget.onExit,
+                      child: const Text('로비로 돌아가기'),
                     ),
                   ],
                 ] else if (room != null) ...[
@@ -390,7 +418,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                       ),
                     }.entries)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             alignment: Alignment.centerLeft,
@@ -428,6 +456,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                       widget.supportedKinds.contains(entry.key)
                                           ? entry.value.$2
                                           : '연결 대기',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      entry.key == 'trial' ? '3명 이상' : '2명 이상',
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall,
@@ -482,7 +517,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   ],
                 ] else if (!controller.busy)
                   const Text('게임을 불러오지 못했어요.'),
-                OutlinedButton(
+                const SizedBox(height: 16),
+                TextButton(
                   onPressed: controller.busy || !controller.foreground
                       ? null
                       : controller.refresh,

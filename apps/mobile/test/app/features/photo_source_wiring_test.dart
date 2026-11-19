@@ -119,6 +119,8 @@ void main() {
         await t.pumpAndSettle();
         await t.tap(find.text('카카오로 로그인'));
         await t.pumpAndSettle();
+        await t.tap(find.text('계정 메뉴'));
+        await t.pumpAndSettle();
         await t.tap(find.text('내 프로필'));
         await t.pumpAndSettle();
         await openPicker(t);
@@ -188,6 +190,8 @@ void main() {
       await t.pumpAndSettle();
       await t.tap(find.text('카카오로 로그인'));
       await t.pumpAndSettle();
+      await t.tap(find.text('계정 메뉴'));
+      await t.pumpAndSettle();
       await t.tap(find.text('내 프로필'));
       await t.pumpAndSettle();
       await t.tap(find.text('캐릭터·사진 바꾸기'));
@@ -234,6 +238,8 @@ void main() {
       );
       await t.pumpAndSettle();
       await t.tap(find.text('카카오로 로그인'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('계정 메뉴'));
       await t.pumpAndSettle();
       await t.tap(find.text('내 프로필'));
       await t.pumpAndSettle();
@@ -313,6 +319,8 @@ void main() {
     );
     await t.pumpAndSettle();
     await t.tap(find.text('카카오로 로그인'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('계정 메뉴'));
     await t.pumpAndSettle();
     await t.tap(find.text('내 프로필'));
     await t.pumpAndSettle();

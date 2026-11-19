@@ -150,8 +150,10 @@ class TeamGameView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('팀 나누기 결과'),
-        const Text('서버에 저장된 배정 결과예요.'),
+        Text('팀 나누기 결과', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 12),
+        Text('서버에 저장된 배정 결과예요.', style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 16),
         for (final team in numbers)
           Card(
             child: Padding(

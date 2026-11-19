@@ -132,6 +132,12 @@ void main() {
         150,
         scrollable: find.byType(Scrollable).first,
       );
+      await Scrollable.ensureVisible(
+        tester.element(find.text('현재 판 보기')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('현재 판 보기').hitTestable(), findsOneWidget);
       await tester.tap(find.text('현재 판 보기'));
       await tester.pumpAndSettle();
       expect(t.responded, false);
@@ -180,6 +186,12 @@ void main() {
         150,
         scrollable: find.byType(Scrollable).first,
       );
+      await Scrollable.ensureVisible(
+        tester.element(find.text('현재 판 보기')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('현재 판 보기').hitTestable(), findsOneWidget);
       await tester.tap(find.text('현재 판 보기'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
@@ -238,6 +250,12 @@ void main() {
         150,
         scrollable: find.byType(Scrollable).first,
       );
+      await Scrollable.ensureVisible(
+        tester.element(find.text('현재 판 보기')),
+        alignment: .5,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('현재 판 보기').hitTestable(), findsOneWidget);
       await tester.tap(find.text('현재 판 보기'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('사건과 합의한 벌칙'));
