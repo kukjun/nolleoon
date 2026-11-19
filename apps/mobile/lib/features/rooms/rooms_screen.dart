@@ -2,6 +2,8 @@ import '../room_avatars/room_avatar_widgets.dart';
 
 import 'package:material_ui/material_ui.dart';
 
+import '../../design/app_tokens.dart';
+
 import '../../design/app_components.dart';
 import 'rooms_controller.dart';
 import '../../data/wire_models.dart';
@@ -264,7 +266,7 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
           child: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              constraints: const BoxConstraints(maxWidth: AppTokens.pageWidth),
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
@@ -284,6 +286,13 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                         ),
                     ],
                     if (creating) ...[
+                      Text(
+                        '새 여행의 시작',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('친구들과 함께할 여행방을 만들어요.'),
+                      const SizedBox(height: 20),
                       TextField(
                         controller: title,
                         enabled: !controller.busy && !controller.pendingCreate,
@@ -353,6 +362,16 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
                       else
                         ..._lobby(room.data)
                     else if (!inDetail) ...[
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          '우리의 다음 여행',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('함께 떠날 친구들, 함께 즐길 한 판.'),
+                      const SizedBox(height: 20),
                       AppAction(
                         label: '새 여행방 만들기',
                         enabled: !controller.busy,
@@ -430,6 +449,8 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
     final members = room['members'] as List;
     final self = room['self'] as Map<String, Object?>;
     return [
+      Text('OUR TRAVEL ROOM', style: Theme.of(context).textTheme.labelMedium),
+      const SizedBox(height: 8),
       Semantics(
         header: true,
         child: Text(
@@ -484,23 +505,36 @@ class _RoomsScreenState extends State<RoomsScreen> with WidgetsBindingObserver {
         Builder(
           builder: (context) {
             final member = raw as Map<String, Object?>;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: RoomMemberAvatar(
-                membershipId: member['membershipId'] as String,
-                presetId: member['presetId'] as String? ?? 'preset-01',
-                size: 40,
-                label: '참가자 아바타',
-              ),
-              title: Text(
-                '${member['nickname']}${member['membershipId'] == self['membershipId'] ? ' (나)' : ''}',
-              ),
-              subtitle: Text(
-                '${member['isAdmin'] == true ? '방 관리자 · ' : ''}${run?['facilitatorMembershipId'] == member['membershipId'] ? '게임 진행자 · ' : ''}${member['connected'] == true ? '연결됨' : '오프라인'}',
+            return Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppTokens.memberSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  leading: RoomMemberAvatar(
+                    membershipId: member['membershipId'] as String,
+                    presetId: member['presetId'] as String? ?? 'preset-01',
+                    size: 44,
+                    label: '참가자 아바타',
+                  ),
+                  title: Text(
+                    '${member['nickname']}${member['membershipId'] == self['membershipId'] ? ' (나)' : ''}',
+                  ),
+                  subtitle: Text(
+                    '${member['isAdmin'] == true ? '방 관리자 · ' : ''}${run?['facilitatorMembershipId'] == member['membershipId'] ? '게임 진행자 · ' : ''}${member['connected'] == true ? '연결됨' : '오프라인'}',
+                  ),
+                ),
               ),
             );
           },
         ),
+      const SizedBox(height: 16),
       TextButton(
         onPressed: controller.busy ? null : controller.refresh,
         child: const Text('로비 새로고침'),

@@ -47,6 +47,8 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(find.byKey(const Key('run-status')), findsOneWidget);
+      expect(find.text('팀 나누기 · 준비 중'), findsOneWidget);
+      expect(find.text('team · draft'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     },
   );
