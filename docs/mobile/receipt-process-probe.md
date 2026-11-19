@@ -1,6 +1,6 @@
 # #210 Android process-death probe
 
-**준비 코드이며 실제 Android 실행 성공 기록이 아니다.** Kotlin 컴파일/OS 저장/강제종료 결과는 별도다.
+계획/범위와 실제 실행 기록을 구분한다. 아래 실행 기록 전에는 host unit·analyze 결과만 있었으며, 실제 API36 검증은 마지막 절에 별도 기록했다.
 
 ## 격리와 실행
 
@@ -24,3 +24,22 @@
 ## 범위
 
 실제 빌드의 최소 API(`flutter.minSdkVersion` resolved 값 확인)와 최신 설치가능 API 각각 새 AVD에서 검증해야 한다. 하나의 API PASS를 초기 Android부터 최신까지의 보장으로 확대하지 않는다. API/ABI/Flutter·plugin·native SHA/APK hash/시각/단계별 verdict를 기록한다. 설치·약관·컴파일 제약은 미실행으로 표시한다. mock failure 테스트와 실제 OS 확인을 분리하며 전원차단/reboot/backup 복원/물리기기별 동작은 이 force-stop 시험으로 보장하지 않는다.
+
+## 실제 실행 기록: API 36 ARM64 (2026-11-19 UTC)
+
+독립 검토한 target 커밋 `6442b21`을 위 준비 스크립트로 archive한 전용 복사본에서 빌드했다. `assembleDebug` 20.5초, exit0. Flutter3.50.0 / Dart3.14.0, flutter_secure_storage11.2.0, native barrier 기반 `590e71b`. APK SHA256: `ca98aa2eb8ea2df561d29cd05ce4cc21eff7185c0326e78f89e7f65843ba04d3`. aapt로 package `.receiptprobe`, debuggable, minSdk24/targetSdk36 확인.
+
+전용 새 AOSP AVD `nolleoon_receipt_probe_api36`, 명시 serial `emulator-5580`, API36/arm64-v8a에서 실제 실행했다. 해당 test package 미설치 확인 뒤 한 번 설치했고 중간 reinstall/clear-data는 없었다. production main/실계정/운영 API를 실행하지 않았다. 같은 emulator의 별도 표준 앱 package는 수정하거나 저장소를 읽지 않았다.
+
+| 단계 | 결과 | 실제 process PID |
+|---|---|---:|
+| seed | PASS | 2495 |
+| check-pending | PASS | 2556 |
+| confirm | PASS | 2613 |
+| check-confirmed | PASS | 2669 |
+| clear | PASS | 2727 |
+| check-clear | PASS | 2785 |
+
+각 PASS 뒤 `am force-stop` 및 PID 없음 확인을 거쳤다. pending은 원래 합성 account/request/token/digest/expiry와 일치했고 confirmed는 동일 digest·expiry를 유지하면서 raw token이 없었다. session 삭제와 receipt 삭제 모두 다음 process에서도 확인했다. 마지막 03:13:41Z 확인에서도 probe PID 없음. 저장소를 mock하지 않고 실제 plugin/Android barrier 경로로 수행했다.
+
+이는 **API36 emulator 한 환경의 강제 종료/재시작 검증**이다. minSdk24는 APK 선언일 뿐 API24 실제 실행이나 Android24–36 전체 보장이 아니다. API24/다른 API/실제 기기/전원 차단/reboot/backup 복원/손상 디스크의 동작은 미실행이며 별도 gate로 남는다. channel 누락/오류/timeout의 합성 단위 시험도 실제 OS 장애 시험과 구분한다.
