@@ -1,0 +1,29 @@
+{
+  "status": "proposed-not-user-approved",
+  "source": "c010a86",
+  "productSource": "de56652",
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "renderer": "flutter-test-RepaintBoundary",
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "pixelRatio": 1
+    },
+    "fontPolicy": "system-Korean-missing-family-fallback-v1-public-presets-decoded",
+    "fontSha256": "f2fe69e39644d04a9484802044836ba9d4a950aed2e32b006a3e16d5df5f49f1",
+    "iconSha256": "d9865b671a09d683d13a863089d8825e0f61a37696ce5d7d448bc8023aa62453",
+    "frameworkRevision": "ab2912035e160d9cad6306df307576da6128ebdb",
+    "engineRevision": "371f77202a73e8dff57a8b3bff75bca55c090aee",
+    "dartVersion": "3.14.0"
+  },
+  "images": {
+    "00-auth": "94ac9f4bc8b4826eb9ecb0aad93183ace19f20f397aec2b68273f51d9cf67548",
+    "01-home": "b261280098f55a77fd39cb609d45c4f1e6470a95e2884cdc610edd0d5625a92d",
+    "02-lobby": "e456e97406e6a271ba883fd66f84c816935794adf6e8316c3d241b9fef25cf70",
+    "03-selection": "d2910eb993605f1af2220c3701272dd3a6debb72b9c9fe71bbfd550e165b45f1",
+    "04-team-ready": "9ee217555c93ba33132d823bcd61a8d919420fbf79189782d8bc32a0ec558b57",
+    "05-team-result": "c88b7ef14c8fc323cda44b0e96fb29c654a89219b2277a3f347c2f94484aeb7b"
+  }
+}
