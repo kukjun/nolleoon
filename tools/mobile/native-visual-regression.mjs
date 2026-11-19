@@ -11,11 +11,22 @@ export function environment(sdk){
  const v=JSON.parse(readFileSync(join(sdk,'bin/cache/flutter.version.json')));
  return {platform:process.platform,arch:process.arch,renderer:'flutter-test-RepaintBoundary',viewport:{width:390,height:844,pixelRatio:1},fontPolicy:'system-Korean-missing-family-fallback-v1-public-presets-decoded',fontSha256:hash(readFileSync('/System/Library/Fonts/AppleSDGothicNeo.ttc')),iconSha256:hash(readFileSync(join(sdk,'bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf'))),frameworkRevision:v.frameworkRevision,engineRevision:v.engineRevision,dartVersion:v.dartSdkVersion};
 }
+function git(args){const result=spawnSync('git',args,{encoding:'utf8'});if(result.status!==0)throw Error('Git capture provenance unavailable');return result.stdout.trim();}
+export function sourceSnapshot(){
+ const paths=git(['ls-files','--cached','--others','--exclude-standard','apps/mobile','tools/mobile/native-visual-regression.mjs']).split('\n').filter(Boolean).sort();
+ const digest=createHash('sha256');for(const path of paths){digest.update(path+'\0');digest.update(readFileSync(path));digest.update('\0');}
+ return {commit:git(['rev-parse','HEAD']),dirty:git(['status','--porcelain']).length>0,sourceDigest:digest.digest('hex')};
+}
+export function assertStableCapture(before,after){if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Source or environment changed during capture; evidence rejected');}
 export function capture(output,sdk){
  if(existsSync(output))throw Error('Output must be new');
+ const startedAt=new Date().toISOString();
+ const before={source:sourceSnapshot(),environment:environment(sdk)};
  const result=spawnSync(join(sdk,'bin/flutter'),['--suppress-analytics','test','--no-pub','test_targets/style_evidence_capture.dart'],{cwd:resolve('apps/mobile'),env:{...process.env,STYLE_EVIDENCE_OUTPUT_DIR:resolve(output),STYLE_EVIDENCE_ICON_FONT:join(sdk,'bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf')},stdio:'inherit'});
  if(result.status!==0)throw Error('Capture failed');
- writeFileSync(join(output,'manifest.json'),JSON.stringify({environment:environment(sdk)},null,2),{flag:'wx'});
+ const after={source:sourceSnapshot(),environment:environment(sdk)};assertStableCapture(before,after);
+ const images=Object.fromEntries(stages.map(stage=>[stage,hash(readFileSync(join(output,stage+'.png')))]));
+ writeFileSync(join(output,'manifest.json'),JSON.stringify({environment:before.environment,source:before.source,startedAt,finishedAt:new Date().toISOString(),stableDuringCapture:true,images},null,2),{flag:'wx'});
 }
 export async function compare(baseline,candidate,output){
  mkdirSync(output); // Refuse overwrite including prior diff evidence.
@@ -30,6 +41,7 @@ export async function compare(baseline,candidate,output){
   for(const stage of stages){
    const b=readFileSync(join(baseline,stage+'.png')),c=readFileSync(join(candidate,stage+'.png'));
    if(base.images?.[stage]!==hash(b))throw Error('Baseline image checksum mismatch');
+   if(current.images?.[stage]!==hash(c))throw Error('Candidate image checksum mismatch');
    const diff=await page.evaluate(async([before,after])=>{
     const load=async src=>{const image=new globalThis.Image();image.src=src;await image.decode();if(image.width!==390||image.height!==844)throw Error('Unexpected viewport');const canvas=globalThis.document.createElement('canvas');canvas.width=390;canvas.height=844;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);return ctx.getImageData(0,0,390,844);};
     const b=await load(before),c=await load(after),canvas=globalThis.document.createElement('canvas');canvas.width=390;canvas.height=844;const ctx=canvas.getContext('2d'),out=ctx.createImageData(390,844);let changedPixels=0;

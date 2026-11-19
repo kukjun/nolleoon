@@ -37,3 +37,11 @@ node --test tests/visual/native-visual-regression.test.mjs
 그 worktree의 AppTokens.canvas만 cream→red로 의도 변경 후 실제 재렌더: auth309483, home248567, lobby227019, selection193544, ready209753, result183995 픽셀 변화. compare는changed/exit1을 반환했다. 해당 파일만 git restore한 뒤 재렌더6장은 다시 전부0픽셀/unchanged였다. 제품 수정은 커밋하지 않았다.
 
 자체 시험3개: 동일 합성 이미지 정확 비교/재출력 거부, 폰트 불일치 blocked, manifest누락·기준PNG변조 거부 PASS. 전체 앱/원격 CI/실제 사용자 디자인 승인은 이 기록에 포함되지 않는다.
+
+## 캡처 출처 결속 보강
+
+캡처 시작 전에 Git HEAD/dirty 여부, 모바일 tracked+untracked(ignored 제외) 소스와 캡처 도구의 내용 digest, 폰트/SDK/플랫폼 환경을 읽는다. 캡처 종료 뒤 같은 값을 다시 읽어 하나라도 달라지면 유효 manifest를 만들지 않고 실패한다. 성공 manifest에는 시작·종료 UTC 시각, 동일성 확인, 소스 commit/dirty/digest와 생성 PNG6장의 SHA-256을 자동 기록한다. 비교 시 candidate와 baseline 양쪽 PNG hash를 검증한다. dirty=true도 숨기지 않고 기록하므로 승인된 clean RC로 오해하지 않아야 한다. 이 검사는 전후 상태 결속이며 실행 중 변경 후 완전 원복된 악의적 ABA 변경까지 인증하는 샌드박스는 아니다.
+
+후속 검증: 실제1픽셀 변경 후보는 정확히1 changedPixel로 검출, 원본 복원 시0. 소스 commit/dirty/digest/폰트 환경 변경 거절 포함 자체5시험 PASS. 보강된 capture로 실제 다시 렌더한 후보도6장0픽셀이다. 최초 실제 canvas색 실험은 c010a86 기반 f899042 작업 트리에서 수행했고, AppTokens.canvas가 차지하는 전체 배경 영역 변화가 각 화면에 검출됐다(문서의 화면별 실제 수치 참고). 현재 제품 소스는 원복됐으며 제품 파일 diff는 없다.
+
+버전별 18장 비교 기록과 구조 설명은 [첫 캡처 데이터셋](../ui-snapshots/2026-11-19T13-36-32+0900/README.md)을 참고한다. 두 기준(after PNG와 proposed baseline)의 해시가 같아야 한다. 데이터셋과 기준 모두 사용자 미승인 상태이며 이미지 보존 자체가 디자인 수용을 뜻하지 않는다.
