@@ -1,3 +1,5 @@
+import 'app_tokens.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 /// Shared request button. Does not assume a server connection or retry itself.
@@ -39,8 +41,8 @@ class _AppActionState extends State<AppAction> {
     children: [
       FilledButton(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          minimumSize: const Size(AppTokens.tap, AppTokens.tap),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         ),
         onPressed: _busy || !widget.enabled ? null : _press,
         child: Text(

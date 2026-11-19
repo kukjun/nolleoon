@@ -129,6 +129,20 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
+        // Typography can expose only the edge after scrollUntilVisible. Align
+        // the actual tap target and prove its center is within the viewport.
+        await Scrollable.ensureVisible(
+          t.element(find.text('취소')),
+          alignment: .5,
+        );
+        await t.pumpAndSettle();
+        final cancelCenter = t.getCenter(find.text('취소'));
+        expect(
+          (Offset.zero & (t.view.physicalSize / t.view.devicePixelRatio))
+              .contains(cancelCenter),
+          isTrue,
+        );
+        expect(find.text('취소').hitTestable(), findsOneWidget);
         await t.tap(find.text('취소'));
         await t.pumpAndSettle();
         expect(transport.uploads, 0);
