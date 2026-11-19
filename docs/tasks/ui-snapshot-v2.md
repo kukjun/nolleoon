@@ -37,3 +37,7 @@
 ## 회고 / 남은 작업
 
 최종 UI 커밋 수신 → 의존성 준비/상태 고정 → 새 timestamp capture → exact 비교/시각 검토 → 문서/PNG 링크 검증 → 별도 commit 보고. 현재는 계획과 환경 확인만 완료했다.
+
+## 실행 완료 기록
+
+최종 UI f2e77b4 합성 + fixture selector 수정 3f57d00에서 clean 캡처 완료. 새 기록 `docs/ui-snapshots/2026-11-19T15-48-56+0900/`를 보존했다. 표준6장 capture 1 PASS, 도구시험5 PASS, exact 비교 changed/acceptance=false. 6장 직접 확인. 첫 출력의 self-dirty rejection과 제외 내역은 새 README에 기록했다. 기존 #216 tree 불변. 320/큰 글씨 추가 PNG 및 실기기는 미실행. 승인 후보이며 사용자 승인 아님.

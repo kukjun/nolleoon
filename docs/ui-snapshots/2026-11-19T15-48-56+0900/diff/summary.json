@@ -1,0 +1,44 @@
+{
+  "baselineStatus": "proposed-not-user-approved",
+  "acceptance": false,
+  "status": "changed",
+  "environmentMatches": true,
+  "scenes": [
+    {
+      "stage": "00-auth",
+      "changedPixels": 0,
+      "totalPixels": 329160,
+      "candidateSha256": "94ac9f4bc8b4826eb9ecb0aad93183ace19f20f397aec2b68273f51d9cf67548"
+    },
+    {
+      "stage": "01-home",
+      "changedPixels": 4955,
+      "totalPixels": 329160,
+      "candidateSha256": "ed53737879071c1f8d069a97393933575590584bf82279439f7d666d80b65224"
+    },
+    {
+      "stage": "02-lobby",
+      "changedPixels": 94708,
+      "totalPixels": 329160,
+      "candidateSha256": "170b11ae7b39607caa04c98ebf7ca5bd9d58f25f7d1e1c18f583125297d5613d"
+    },
+    {
+      "stage": "03-selection",
+      "changedPixels": 73221,
+      "totalPixels": 329160,
+      "candidateSha256": "989b32972a0f934256c9b816b647d5ba6a1816b1bbe396e7b36b889d171f8fb4"
+    },
+    {
+      "stage": "04-team-ready",
+      "changedPixels": 113288,
+      "totalPixels": 329160,
+      "candidateSha256": "86c2d6f10e060cc3e5cae24c8b9cb43b39d1572c2909371b8cb63243e38ecc85"
+    },
+    {
+      "stage": "05-team-result",
+      "changedPixels": 80193,
+      "totalPixels": 329160,
+      "candidateSha256": "011f2ca9bff91792f67e458232c7c0bd80b08b98546ef356b3085d63a680359a"
+    }
+  ]
+}

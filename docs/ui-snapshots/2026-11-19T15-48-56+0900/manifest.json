@@ -1,0 +1,153 @@
+{
+  "status": "captured-candidate",
+  "acceptance": false,
+  "userDesignApproved": false,
+  "synthetic": true,
+  "deviceVerified": false,
+  "apiVerified": false,
+  "uiSource": "f2e77b4",
+  "captureSource": {
+    "commit": "3f57d00b848c0019c9a618f7e4f0ee4ca30987e1",
+    "dirty": false,
+    "sourceDigest": "7c2fbeab2374c1ba0ee7f6314776bbdc68e86d1add5bfd27e43c5025088f99d0"
+  },
+  "captureManifest": "after/manifest.json",
+  "startedAtKST": "2026-11-19T15:48:56.208+09:00",
+  "finishedAtKST": "2026-11-19T15:48:58.677+09:00",
+  "referenceFrom": {
+    "issue": 216,
+    "path": "../2026-11-19T13-36-32+0900",
+    "gitTree": "c0076f9af9fd68218bfdc9f9a2c5cdc1565ef145",
+    "freshCapture": false,
+    "images": [
+      {
+        "file": "web/00-auth.png",
+        "sha256": "ecf0f15d813e575082bb7432fc0a0f5b60b09bd18b453c58da50b9601ae8f22b",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.431198+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.906577+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "web/01-home.png",
+        "sha256": "49dedd23d897fc2307137eeb166a27153ec3348e704aeb4a30c89ff819237492",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.431622+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.906166+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "web/02-lobby.png",
+        "sha256": "54a1f7571c4147afeff1073623141d3684f1105310c89bcca02c310a00b6af2b",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.431963+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.908093+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "web/03-selection.png",
+        "sha256": "83ed9dd46355dde28a0bf0cf786d52e4eec2728f3523f0f23865e08749fca879",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.432263+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.907764+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "web/04-team-ready.png",
+        "sha256": "40826917cc8a397cff8797067a0b1ca4028fc5ccfc37451e9b6b308c19840e98",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.432533+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.908422+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "web/05-team-result.png",
+        "sha256": "2c6169f738a2f9e009a857c8918740ce801c58b9cf9c54d12281b8622b942632",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.432785+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:29.907405+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/00-auth.png",
+        "sha256": "bc0fd2114e67c16c9ace8f65dd50b50f444b4549b4b2c736c702e4dffd75b43f",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.432968+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:17.774335+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/01-home.png",
+        "sha256": "44aff8937d88f79d739a710ba29740cd07d2b1622936ec72cccfe000fdcc6104",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.433095+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:17.896046+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/02-lobby.png",
+        "sha256": "c46ead5f7ca15cf7b3120462cec2e2bb57bad696f261759dcf3572e36fd8aa3b",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.435236+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:17.949872+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/03-selection.png",
+        "sha256": "5c0531512df9a07d61f94747b46544401394f5a8496e3636df8c35dabd5ed2dd",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.435407+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:18.039978+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/04-team-ready.png",
+        "sha256": "5ab0907619ea5c86dba6db4b1ef0dc23ceb49942c3ce211a9043d833ab8d6277",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.435575+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:18.137405+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "before/05-team-result.png",
+        "sha256": "356d279ffc08b83f569308ba5f13f50fae29a861061cf68fc3a50a397ec94b63",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.435729+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:18.155772+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/00-auth.png",
+        "sha256": "94ac9f4bc8b4826eb9ecb0aad93183ace19f20f397aec2b68273f51d9cf67548",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.435909+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:31.880574+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/01-home.png",
+        "sha256": "b261280098f55a77fd39cb609d45c4f1e6470a95e2884cdc610edd0d5625a92d",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.436051+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:32.001030+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/02-lobby.png",
+        "sha256": "e456e97406e6a271ba883fd66f84c816935794adf6e8316c3d241b9fef25cf70",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.436198+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:32.061213+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/03-selection.png",
+        "sha256": "d2910eb993605f1af2220c3701272dd3a6debb72b9c9fe71bbfd550e165b45f1",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.436346+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:32.138048+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/04-team-ready.png",
+        "sha256": "9ee217555c93ba33132d823bcd61a8d919420fbf79189782d8bc32a0ec558b57",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.436504+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:32.244286+09:00",
+        "retainedInputHashMatches": true
+      },
+      {
+        "file": "after/05-team-result.png",
+        "sha256": "c88b7ef14c8fc323cda44b0e96fb29c654a89219b2277a3f347c2f94484aeb7b",
+        "comparisonCopyMtime": "2026-11-19T13:36:32.436650+09:00",
+        "retainedInputMtime": "2026-11-19T13:36:32.263081+09:00",
+        "retainedInputHashMatches": true
+      }
+    ]
+  },
+  "comparison": "diff/summary.json",
+  "additional320OrLargeTextCapture": false
+}
