@@ -101,6 +101,11 @@ void main() {
     await visible(find.text(title));
     await tapReadyProbeAction(tester, find.text('로그아웃'));
     await visible(find.text('카카오로 로그인'));
+    final logoutDeadline = DateTime.now().add(const Duration(seconds: 20));
+    while (!auth.canLogin && DateTime.now().isBefore(logoutDeadline)) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(auth.canLogin, isTrue);
     expect(auth.phase, AuthPhase.signedOut);
     expect(await store.read(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
